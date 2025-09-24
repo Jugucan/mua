@@ -30,12 +30,12 @@ import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, 
 
 // Configuració de Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyD6UGiMPpLbqsJxJT0FDs5EQ2TcWFb6nnc",
-  authDomain: "lamevallistacompra.firebaseapp.com",
-  projectId: "lamevallistacompra",
-  storageBucket: "lamevallistacompra.firebaseapp.com",
-  messagingSenderId: "711894159364",
-  appId: "1:711894159364:web:554e4cbfee0bb98b21e551"
+  apiKey: "AIzaSyA7UHoZMIRETZzodta3O2Fm5GtxSDTK-yE",
+  authDomain: "mua-app-da319.firebaseapp.com",
+  projectId: "mua-app-da319",
+  storageBucket: "mua-app-da319.firebasestorage.app",
+  messagingSenderId: "470410760524",
+  appId: "1:470410760524:web:37ea6347402e495e393fe9"
 };
 
 // Inicialitza Firebase
