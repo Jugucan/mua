@@ -15,3 +15,34 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+.box-shadow-neomorphic-container {
+    box-shadow: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
+}
+
+.box-shadow-neomorphic-button {
+    box-shadow: 5px 5px 10px #bebebe, -5px -5px 10px #ffffff;
+}
+
+.box-shadow-neomorphic-button-inset {
+    box-shadow: inset 5px 5px 10px #bebebe, inset -5px -5px 10px #ffffff;
+}
+
+.box-shadow-neomorphic-button-small {
+    box-shadow: 2px 2px 4px #bebebe, -2px -2px 4px #ffffff;
+}
+
+.box-shadow-neomorphic-input {
+    box-shadow: inset 5px 5px 10px #bebebe, inset -5px -5px 10px #ffffff;
+}
+
+.box-shadow-neomorphic-element {
+    box-shadow: 8px 8px 16px #bebebe, -8px -8px 16px #ffffff;
+}
+
+.box-shadow-neomorphic-element-green {
+    box-shadow: 8px 8px 16px #94d82d, -8px -8px 16px #a6ff33;
+}
+
+.box-shadow-neomorphic-element-bought {
+    box-shadow: inset 8px 8px 16px #bebebe, inset -8px -8px 16px #ffffff;
+}
