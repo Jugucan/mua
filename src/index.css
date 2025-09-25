@@ -3,41 +3,41 @@
 @tailwind utilities;
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #e6e6e6; /* Un fons una mica més fosc per a més contrast */
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #f0f3f5; /* Nou color de fons, més suau */
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 /* Classes per a l'efecte Neomòrfic Suau */
 
 .box-shadow-neomorphic-container {
-    box-shadow: 8px 8px 16px #c4c4c4, -8px -8px 16px #ffffff;
+    box-shadow: 8px 8px 16px #c4d0e0, -8px -8px 16px #ffffff;
 }
 
 .box-shadow-neomorphic-button {
-    box-shadow: 4px 4px 8px #c4c4c4, -4px -4px 8px #ffffff;
+    box-shadow: 4px 4px 8px #c4d0e0, -4px -4px 8px #ffffff;
 }
 
 .box-shadow-neomorphic-button-inset {
-    box-shadow: inset 4px 4px 8px #c4c4c4, inset -4px -4px 8px #ffffff;
+    box-shadow: inset 4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
 }
 
 .box-shadow-neomorphic-button-small {
-    box-shadow: 2px 2px 4px #c4c4c4, -2px -2px 4px #ffffff;
+    box-shadow: 2px 2px 4px #c4d0e0, -2px -2px 4px #ffffff;
 }
 
 .box-shadow-neomorphic-input {
-    box-shadow: inset 4px 4px 8px #c4c4c4, inset -4px -4px 8px #ffffff;
+    box-shadow: inset 4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
 }
 
 .box-shadow-neomorphic-element {
-    box-shadow: 6px 6px 12px #c4c4c4, -6px -6px 12px #ffffff;
+    box-shadow: 6px 6px 12px #c4d0e0, -6px -6px 12px #ffffff;
 }
 
 .box-shadow-neomorphic-element-green {
@@ -45,7 +45,7 @@ code {
 }
 
 .box-shadow-neomorphic-element-bought {
-    box-shadow: inset 6px 6px 12px #c4c4c4, inset -6px -6px 12px #ffffff;
+    box-shadow: inset 6px 6px 12px #c4d0e0, inset -6px -6px 12px #ffffff;
 }
 
 /* Ajustos de la interfície d'usuari (UI) */
@@ -54,5 +54,5 @@ input, button, select, textarea {
 }
 
 button:active {
-    box-shadow: inset 4px 4px 8px #c4c4c4, inset -4px -4px 8px #ffffff;
+    box-shadow: inset 4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
 }
