@@ -330,6 +330,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
     );
 };
 
+
 function App() {
     const [userId, setUserId] = useState(null);
     const [userEmail, setUserEmail] = useState(null);
@@ -748,7 +749,7 @@ function App() {
                     </button>
                 </div>
             </div>
-            {/* Vista de despensa */}
+            {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                     <h2 className="text-xl font-bold mb-4 text-gray-700">
@@ -820,182 +821,181 @@ function App() {
                         </div>
                     )}
                 </div>
-                {/* Vista de llista de compra */}
-                {currentView === 'shoppingList' && (
-                    <div className="space-y-6">
-                        {/* Elements per comprar */}
-                        <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                            <h2 className="text-xl font-bold mb-4 text-gray-700">
-                                Productes per comprar ({unboughtItems.length})
-                            </h2>
-                            {unboughtItems.length === 0 ? (
-                                <p className="text-gray-600 text-center py-4">
-                                    No hi ha productes pendents a la teva llista de la compra.
-                                </p>
-                            ) : (
-                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
-                                    {unboughtItems.map(item => (
-                                        <div key={item.id} className="relative">
-                                            <button
-                                                onDoubleClick={() => toggleBought(item.id, item.isBought)}
-                                                className={`${displayMode === 'list' 
-                                                    ? 'flex flex-row items-center justify-start p-3' 
-                                                    : 'flex flex-col items-center justify-center p-4'
-                                                } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element-green hover:bg-[#e6e6e9] transition-all w-full text-center`}
-                                            >
-                                                <div 
-                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
-                                                    onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-                                                    onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-                                                    onDoubleClick={(e) => {
-                                                        e.preventDefault();
-                                                        if (item.secondIcon) {
-                                                            setExpandedImage(item.icon);
-                                                        }
-                                                    }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (item.secondIcon) {
-                                                            const newItems = items.map(i => {
-                                                                if (i.id === item.id) {
-                                                                    return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-                                                                }
-                                                                return i;
-                                                            });
-                                                            setItems(newItems);
-                                                        }
-                                                    }}
-                                                >
-                                                    {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
-                                                </div>
-                                                <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
-                                                    <span className="font-semibold text-sm">{item.name}</span>
-                                                    {item.quantity && (
-                                                        <span className="text-xs text-gray-500 block mt-1">{item.quantity}</span>
-                                                    )}
-                                                    {item.section && (
-                                                        <span className="text-xs text-gray-400 block mt-1">{item.section}</span>
-                                                    )}
-                                                </div>
-                                            </button>
-                                            <button
+            )}
+            {currentView === 'shoppingList' && (
+                <div className="space-y-6">
+                    {/* Elements per comprar */}
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                        <h2 className="text-xl font-bold mb-4 text-gray-700">
+                            Productes per comprar ({unboughtItems.length})
+                        </h2>
+                        {unboughtItems.length === 0 ? (
+                            <p className="text-gray-600 text-center py-4">
+                                No hi ha productes pendents a la teva llista de la compra.
+                            </p>
+                        ) : (
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
+                                {unboughtItems.map(item => (
+                                    <div key={item.id} className="relative">
+                                        <button
+                                            onDoubleClick={() => toggleBought(item.id, item.isBought)}
+                                            className={`${displayMode === 'list' 
+                                                ? 'flex flex-row items-center justify-start p-3' 
+                                                : 'flex flex-col items-center justify-center p-4'
+                                            } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element-green hover:bg-[#e6e6e9] transition-all w-full text-center`}
+                                        >
+                                            <div 
+                                                className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
+                                                onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
+                                                onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
+                                                onDoubleClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (item.secondIcon) {
+                                                        setExpandedImage(item.icon);
+                                                    }
+                                                }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setEditingItem(item);
-                                                    setShowEditModal(true);
+                                                    if (item.secondIcon) {
+                                                        const newItems = items.map(i => {
+                                                            if (i.id === item.id) {
+                                                                return { ...i, icon: i.secondIcon, secondIcon: i.icon };
+                                                            }
+                                                            return i;
+                                                        });
+                                                        setItems(newItems);
+                                                    }
                                                 }}
-                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
-                                                aria-label={`Edita ${item.name}`}
                                             >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {/* Elements comprats */}
-                        <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                            <h2 className="text-xl font-bold mb-4 text-gray-700">
-                                Productes comprats ({boughtItems.length})
-                            </h2>
-                            {boughtItems.length === 0 ? (
-                                <p className="text-gray-600 text-center py-4">
-                                    Encara no hi ha productes comprats.
-                                </p>
-                            ) : (
-                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
-                                    {boughtItems.map(item => (
-                                        <div key={item.id} className="relative">
-                                            <button
-                                                onDoubleClick={() => toggleBought(item.id, item.isBought)}
-                                                className={`${displayMode === 'list' 
-                                                    ? 'flex flex-row items-center justify-start p-3' 
-                                                    : 'flex flex-col items-center justify-center p-4'
-                                                } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element-bought hover:bg-[#e6e6e9] transition-all w-full text-center opacity-75`}
-                                            >
-                                                <div 
-                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
-                                                    onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-                                                    onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-                                                    onDoubleClick={(e) => {
-                                                        e.preventDefault();
-                                                        if (item.secondIcon) {
-                                                            setExpandedImage(item.icon);
-                                                        }
-                                                    }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (item.secondIcon) {
-                                                            const newItems = items.map(i => {
-                                                                if (i.id === item.id) {
-                                                                    return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-                                                                }
-                                                                return i;
-                                                            });
-                                                            setItems(newItems);
-                                                        }
-                                                    }}
-                                                >
-                                                    {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
-                                                </div>
-                                                <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
-                                                    <span className="font-semibold text-sm line-through">{item.name}</span>
-                                                    {item.quantity && (
-                                                        <span className="text-xs text-gray-400 block mt-1 line-through">{item.quantity}</span>
-                                                    )}
-                                                    {item.section && (
-                                                        <span className="text-xs text-gray-400 block mt-1 line-through">{item.section}</span>
-                                                    )}
-                                                </div>
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingItem(item);
-                                                    setShowEditModal(true);
-                                                }}
-                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
-                                                aria-label={`Edita ${item.name}`}
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                                {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
+                                            </div>
+                                            <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
+                                                <span className="font-semibold text-sm">{item.name}</span>
+                                                {item.quantity && (
+                                                    <span className="text-xs text-gray-500 block mt-1">{item.quantity}</span>
+                                                )}
+                                                {item.section && (
+                                                    <span className="text-xs text-gray-400 block mt-1">{item.section}</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingItem(item);
+                                                setShowEditModal(true);
+                                            }}
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
+                                            aria-label={`Edita ${item.name}`}
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
-                {/* Modal d'edició */}
-                {showEditModal && editingItem && (
-                    <EditItemModal
-                        item={editingItem}
-                        onClose={() => { setShowEditModal(false); setEditingItem(null); }}
-                        onSave={handleUpdateItem}
-                        onDelete={handleDeleteItem}
-                        availableSections={availableSections}
-                    />
-                )}
-                {/* Modal d'autenticació */}
-                {showAuthModal && (
-                    <AuthModal
-                        onLogin={handleLogin}
-                        onRegister={handleRegister}
-                        onLogout={handleLogout}
-                        userEmail={userEmail}
-                        errorMessage={authErrorMessage}
-                        onClose={() => setShowAuthModal(false)}
-                        onForgotPassword={handlePasswordReset}
-                        displayMode={displayMode}
-                        setDisplayMode={setDisplayMode}
-                    />
-                )}
-                {/* Modal per a la imatge expandida */}
-                {expandedImage && (
-                    <ImageModal src={expandedImage} onClose={() => setExpandedImage(null)} />
-                )}
-            </div>
+                    {/* Elements comprats */}
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                        <h2 className="text-xl font-bold mb-4 text-gray-700">
+                            Productes comprats ({boughtItems.length})
+                        </h2>
+                        {boughtItems.length === 0 ? (
+                            <p className="text-gray-600 text-center py-4">
+                                Encara no hi ha productes comprats.
+                            </p>
+                        ) : (
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
+                                {boughtItems.map(item => (
+                                    <div key={item.id} className="relative">
+                                        <button
+                                            onDoubleClick={() => toggleBought(item.id, item.isBought)}
+                                            className={`${displayMode === 'list' 
+                                                ? 'flex flex-row items-center justify-start p-3' 
+                                                : 'flex flex-col items-center justify-center p-4'
+                                            } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element-bought hover:bg-[#e6e6e9] transition-all w-full text-center opacity-75`}
+                                        >
+                                            <div 
+                                                className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
+                                                onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
+                                                onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
+                                                onDoubleClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (item.secondIcon) {
+                                                        setExpandedImage(item.icon);
+                                                    }
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (item.secondIcon) {
+                                                        const newItems = items.map(i => {
+                                                            if (i.id === item.id) {
+                                                                return { ...i, icon: i.secondIcon, secondIcon: i.icon };
+                                                            }
+                                                            return i;
+                                                        });
+                                                        setItems(newItems);
+                                                    }
+                                                }}
+                                            >
+                                                {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
+                                            </div>
+                                            <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
+                                                <span className="font-semibold text-sm line-through">{item.name}</span>
+                                                {item.quantity && (
+                                                    <span className="text-xs text-gray-400 block mt-1 line-through">{item.quantity}</span>
+                                                )}
+                                                {item.section && (
+                                                    <span className="text-xs text-gray-400 block mt-1 line-through">{item.section}</span>
+                                                )}
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingItem(item);
+                                                setShowEditModal(true);
+                                            }}
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
+                                            aria-label={`Edita ${item.name}`}
+                                        >
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            {/* Modal d'edició */}
+            {showEditModal && editingItem && (
+                <EditItemModal
+                    item={editingItem}
+                    onClose={() => { setShowEditModal(false); setEditingItem(null); }}
+                    onSave={handleUpdateItem}
+                    onDelete={handleDeleteItem}
+                    availableSections={availableSections}
+                />
+            )}
+            {/* Modal d'autenticació */}
+            {showAuthModal && (
+                <AuthModal
+                    onLogin={handleLogin}
+                    onRegister={handleRegister}
+                    onLogout={handleLogout}
+                    userEmail={userEmail}
+                    errorMessage={authErrorMessage}
+                    onClose={() => setShowAuthModal(false)}
+                    onForgotPassword={handlePasswordReset}
+                    displayMode={displayMode}
+                    setDisplayMode={setDisplayMode}
+                />
+            )}
+            {/* Modal per a la imatge expandida */}
+            {expandedImage && (
+                <ImageModal src={expandedImage} onClose={() => setExpandedImage(null)} />
+            )}
         </div>
     );
 }
