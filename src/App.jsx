@@ -493,87 +493,96 @@ function App() {
 
     // **NOVA FUNCIÓ PER PUJAR FITXER EXCEL (corregida)**
     const handleFileUpload = (event) => {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    const file = event.target.files[0];
+    if (!file) {
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                if (json.length < 2) {
-                    setFeedbackMessage("El fitxer Excel no té dades o el format és incorrecte.");
-                    setFeedbackType('error');
-                    return;
+            if (json.length < 2) {
+                setFeedbackMessage("El fitxer Excel no té dades o el format és incorrecte.");
+                setFeedbackType('error');
+                return;
+            }
+
+            const header = json[0].map(h => h.trim().toLowerCase());
+            const rows = json.slice(1);
+
+            const nameIndex = header.indexOf('nom');
+            const sectionIndex = header.indexOf('secció');
+            const iconIndex = header.indexOf('icona principal');
+            const secondIconIndex = header.indexOf('icona secundària');
+
+            if (nameIndex === -1) {
+                setFeedbackMessage("El fitxer Excel ha de contenir la columna 'Nom'.");
+                setFeedbackType('error');
+                return;
+            }
+
+            let successfulUploads = 0;
+            const batch = writeBatch(db);
+            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsCollectionRef = collection(db, itemsPath);
+
+            for (const row of rows) {
+                const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
+                if (itemName === '') {
+                    continue;
+                }
+                
+                // Millora la gestió de les URLs de les imatges
+                let itemIcon = iconIndex !== -1 && row[iconIndex] ? String(row[iconIndex]).trim() : '';
+                let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? String(row[secondIconIndex]).trim() : '';
+
+                // Afegir https:// si l'URL no té protocol
+                if (itemIcon && !itemIcon.startsWith('http://') && !itemIcon.startsWith('https://')) {
+                    itemIcon = 'https://' + itemIcon;
+                }
+                if (itemSecondIcon && !itemSecondIcon.startsWith('http://') && !itemSecondIcon.startsWith('https://')) {
+                    itemSecondIcon = 'https://' + itemSecondIcon;
                 }
 
-                const header = json[0].map(h => h.trim().toLowerCase());
-                const rows = json.slice(1);
+                const itemData = {
+                    name: itemName,
+                    quantity: '',
+                    section: sectionIndex !== -1 ? (row[sectionIndex] ? String(row[sectionIndex]).trim() : '') : '',
+                    icon: itemIcon,
+                    secondIcon: itemSecondIcon,
+                    isBought: false,
+                    isInShoppingList: false,
+                    createdAt: serverTimestamp(),
+                    orderIndex: null
+                };
 
-                const nameIndex = header.indexOf('nom');
-                const sectionIndex = header.indexOf('secció');
-                const iconIndex = header.indexOf('icona principal');
-                const secondIconIndex = header.indexOf('icona secundària');
+                const newDocRef = doc(itemsCollectionRef);
+                batch.set(newDocRef, itemData);
+                successfulUploads++;
+            }
 
-                if (nameIndex === -1) {
-                    setFeedbackMessage("El fitxer Excel ha de contenir la columna 'Nom'.");
-                    setFeedbackType('error');
-                    return;
-                }
-
-                let successfulUploads = 0;
-                const batch = writeBatch(db);
-                const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-                const itemsCollectionRef = collection(db, itemsPath);
-
-                for (const row of rows) {
-                    const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
-                    if (itemName === '') {
-                        continue;
-                    }
-                    
-                    const itemIcon = iconIndex !== -1 && row[iconIndex] ? String(row[iconIndex]).trim() : '';
-                    const itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? String(row[secondIconIndex]).trim() : '';
-
-                    const itemData = {
-                        name: itemName,
-                        quantity: '',
-                        section: sectionIndex !== -1 ? (row[sectionIndex] ? String(row[sectionIndex]).trim() : '') : '',
-                        icon: itemIcon,
-                        secondIcon: itemSecondIcon,
-                        isBought: false,
-                        isInShoppingList: false,
-                        createdAt: serverTimestamp(),
-                        orderIndex: null
-                    };
-
-                    const newDocRef = doc(itemsCollectionRef);
-                    batch.set(newDocRef, itemData);
-                    successfulUploads++;
-                }
-
-                if (successfulUploads > 0) {
-                    await batch.commit();
-                    setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel!`);
-                    setFeedbackType('success');
-                } else {
-                    setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
-                    setFeedbackType('error');
-                }
-            } catch (error) {
-                console.error("Error processant el fitxer:", error);
-                setFeedbackMessage("Error processant el fitxer: " + error.message);
+            if (successfulUploads > 0) {
+                await batch.commit();
+                setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel!`);
+                setFeedbackType('success');
+            } else {
+                setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
                 setFeedbackType('error');
             }
-        };
-        reader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.error("Error processant el fitxer:", error);
+            setFeedbackMessage("Error processant el fitxer: " + error.message);
+            setFeedbackType('error');
+        }
     };
+    reader.readAsArrayBuffer(file);
+};
 
     const toggleItemInShoppingList = useCallback(async (item) => {
         if (!db || !userId) return;
