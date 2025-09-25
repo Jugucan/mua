@@ -94,7 +94,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'element</label>
                     <input
                         type="text"
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none box-shadow-neomorphic-input"
+                        className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
                     />
@@ -103,7 +103,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                     <label className="block text-sm font-medium text-gray-700 mb-1">Quantitat</label>
                     <input
                         type="text"
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none box-shadow-neomorphic-input"
+                        className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={editedQuantity}
                         onChange={(e) => setEditedQuantity(e.target.value)}
                         placeholder="Ex: 1 kg, 2 litres..."
@@ -118,7 +118,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                         <input
                             type="text"
                             placeholder="URL de la imatge (opcional)"
-                            className="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none box-shadow-neomorphic-input"
+                            className="flex-grow p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                             value={editedIcon}
                             onChange={(e) => setEditedIcon(e.target.value)}
                         />
@@ -133,7 +133,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                         <input
                             type="text"
                             placeholder="URL de la imatge secundària (opcional)"
-                            className="flex-grow p-2 border border-gray-300 rounded-md focus: outline-none box-shadow-neomorphic-input"
+                            className="flex-grow p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
                             value={editedSecondIcon}
                             onChange={(e) => setEditedSecondIcon(e.target.value)}
                         />
@@ -144,7 +144,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                     <input
                         type="text"
                         list="sections-datalist"
-                        className="w-full p-2 border border-gray-300 rounded-md focus: outline-none box-shadow-neomorphic-input"
+                        className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
                         value={editedSection}
                         onChange={(e) => setEditedSection(e.target.value)}
                         placeholder="Ex: Làctics, Fruita i Verdura"
@@ -219,7 +219,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, errorMessage, onForgotPasswor
                         <label className="block text-sm font-medium text-gray-700 mb-1">Correu electrònic</label>
                         <input
                             type="email"
-                            className="w-full p-2 rounded-md focus: outline-none box-shadow-neomorphic-input"
+                            className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -229,7 +229,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, errorMessage, onForgotPasswor
                         <label className="block text-sm font-medium text-gray-700 mb-1">Contrasenya</label>
                         <input
                             type="password"
-                            className="w-full p-2 rounded-md focus: outline-none box-shadow-neomorphic-input"
+                            className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -571,7 +571,7 @@ function App() {
     const gridClasses = numColumns === 3 ? 'grid-cols-3 md:grid-cols-5 lg:grid-cols-7' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6';
 
     return (
-        <div className="min-h-screen bg-[#f0f0f3] text-gray-700 flex flex-col p-4 sm:p-6">
+        <div className="min-h-screen bg-[#e6e6e6] text-gray-700 flex flex-col p-4 sm:p-6">
             <header className="w-full mb-6 text-center relative">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
                     Llista de la compra
