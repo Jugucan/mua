@@ -19,19 +19,14 @@ import {
  onSnapshot,
  query,
  serverTimestamp,
- writeBatch,
- getDocs,
- where,
- setDoc,
- getDoc,
- arrayRemove
+ writeBatch
 } from 'firebase/firestore';
 import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react';
 
 // Importa la llibreria per a Excel
 import * as XLSX from 'xlsx';
 
-// Configuració de Firebase actualitzada
+// Configuració de Firebase
 const firebaseConfig = {
  apiKey: "AIzaSyA7UHoZMIRETZzodta3O2Fm5GtxSDTK-yE",
  authDomain: "mua-app-da319.firebaseapp.com",
@@ -45,7 +40,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-// ID consistent de l'aplicació
 const APP_ID = 'mua-app-da319';
 
 // Modal per editar elements
@@ -368,23 +362,19 @@ function App() {
         return Array.from(sections).sort();
     }, [items]);
 
-    // **CANVI CLAU PER LA PERSISTÈNCIA: Ara verifica primer l'usuari autenticat**
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Usuari ja autenticat (amb correu)
                 if (!user.isAnonymous) {
                     setUserId(user.uid);
                     setUserEmail(user.email);
                     console.log("Usuari registrat autenticat:", user.uid);
                 } else {
-                    // Usuari anònim ja existent
                     setUserId(user.uid);
                     setUserEmail(null);
                     console.log("Usuari anònim recuperat:", user.uid);
                 }
             } else {
-                // No hi ha cap usuari, s'inicia sessió anònimament com a últim recurs
                 try {
                     const anonUserCredential = await signInAnonymously(auth);
                     setUserId(anonUserCredential.user.uid);
@@ -392,7 +382,7 @@ function App() {
                     console.log("Sessió anònima iniciada:", anonUserCredential.user.uid);
                 } catch (error) {
                     console.error("Error durant l'inici de sessió anònim:", error);
-                    setUserId(crypto.randomUUID()); // Solució de fallback
+                    setUserId(crypto.randomUUID());
                     setUserEmail(null);
                     setFeedbackMessage("Error: No s'ha pogut connectar a la base de dades.");
                     setFeedbackType('error');
@@ -403,7 +393,6 @@ function App() {
         return () => unsubscribe();
     }, []);
 
-    // Carrega elements de la llista
     useEffect(() => {
         if (db && userId && isAuthReady) {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
@@ -431,7 +420,6 @@ function App() {
         }
     }, [db, userId, isAuthReady]);
 
-    // Neteja missatges de feedback
     useEffect(() => {
         if (feedbackMessage) {
             const timer = setTimeout(() => {
@@ -441,7 +429,6 @@ function App() {
         }
     }, [feedbackMessage]);
 
-    // Funció per renderitzar icones
     const renderItemIcon = useCallback((item, className = "w-16 h-16") => {
         const iconSrc = item.isHovered && item.secondIcon ? item.secondIcon : item.icon;
         if (iconSrc && (iconSrc.startsWith('http://') || iconSrc.startsWith('https://'))) {
@@ -459,7 +446,6 @@ function App() {
         return <ShoppingBag className={`${className} text-gray-600`} />;
     }, []);
 
-    // Funció per afegir elements
     const handleAddItem = useCallback(async (itemData) => {
         if (itemData.name.trim() === '' || !db || !userId) {
             setFeedbackMessage("No es pot afegir: Falta el nom de l'element.");
@@ -527,7 +513,6 @@ function App() {
                     return;
                 }
 
-                // Mapeja els noms de columna per assegurar que es llegeixen correctament, independentment de les majúscules/minúscules
                 const header = json[0].map(h => h.trim().toLowerCase());
                 const rows = json.slice(1);
 
@@ -552,13 +537,16 @@ function App() {
                     if (itemName === '') {
                         continue;
                     }
+                    
+                    const itemIcon = iconIndex !== -1 && row[iconIndex] ? String(row[iconIndex]).trim() : '';
+                    const itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? String(row[secondIconIndex]).trim() : '';
 
                     const itemData = {
                         name: itemName,
                         quantity: '',
                         section: sectionIndex !== -1 ? (row[sectionIndex] ? String(row[sectionIndex]).trim() : '') : '',
-                        icon: iconIndex !== -1 ? (row[iconIndex] ? String(row[iconIndex]).trim() : '') : '',
-                        secondIcon: secondIconIndex !== -1 ? (row[secondIconIndex] ? String(row[secondIconIndex]).trim() : '') : '',
+                        icon: itemIcon,
+                        secondIcon: itemSecondIcon,
                         isBought: false,
                         isInShoppingList: false,
                         createdAt: serverTimestamp(),
@@ -587,17 +575,13 @@ function App() {
         reader.readAsArrayBuffer(file);
     };
 
-
-    // Funció per alternar element a la llista de compra
     const toggleItemInShoppingList = useCallback(async (item) => {
         if (!db || !userId) return;
-
         try {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, item.id);
             let newIsInShoppingList;
             let newIsBought;
-
             if (item.isInShoppingList && !item.isBought) {
                 newIsInShoppingList = false;
                 newIsBought = false;
@@ -605,13 +589,11 @@ function App() {
                 newIsInShoppingList = true;
                 newIsBought = false;
             }
-
             await updateDoc(itemDocRef, {
                 isInShoppingList: newIsInShoppingList,
                 isBought: newIsBought,
                 orderIndex: null
             });
-
             setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`);
             setFeedbackType('success');
         } catch (error) {
@@ -621,17 +603,14 @@ function App() {
         }
     }, [db, userId]);
 
-    // Funció per marcar com a comprat
     const toggleBought = useCallback(async (id, currentStatus) => {
         if (!db || !userId) return;
-
         try {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, id);
             await updateDoc(itemDocRef, {
                 isBought: !currentStatus
             });
-
             setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
             setFeedbackType('success');
         } catch (error) {
@@ -641,10 +620,8 @@ function App() {
         }
     }, [db, userId]);
 
-    // Funció per actualitzar element
     const handleUpdateItem = useCallback(async (id, updatedData) => {
         if (!db || !userId) return;
-
         try {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, id);
@@ -658,13 +635,10 @@ function App() {
         }
     }, [db, userId]);
 
-    // Funció per eliminar element
     const handleDeleteItem = useCallback(async (item) => {
         if (!db || !userId) return;
-
         const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
         if (!confirmDelete) return;
-
         try {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, item.id);
@@ -678,7 +652,6 @@ function App() {
         }
     }, [db, userId]);
 
-    // Funcions d'autenticació
     const handleLogin = useCallback(async (email, password) => {
         setAuthErrorMessage('');
         try {
@@ -721,7 +694,7 @@ function App() {
         try {
             await signOut(auth);
             setUserEmail(null);
-            setShowAuthModal(false); // Tanca el modal
+            setShowAuthModal(false);
             setFeedbackMessage("Sessió tancada correctament!");
             setFeedbackType('info');
         } catch (error) {
@@ -730,7 +703,7 @@ function App() {
             setFeedbackType('error');
         }
     }, []);
-    
+
     const pantryItems = items.filter(item => !item.isInShoppingList || item.isBought);
     const shoppingListItems = items.filter(item => item.isInShoppingList);
     const unboughtItems = shoppingListItems.filter(item => !item.isBought);
