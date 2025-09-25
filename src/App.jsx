@@ -330,7 +330,6 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
     );
 };
 
-
 function App() {
     const [userId, setUserId] = useState(null);
     const [userEmail, setUserEmail] = useState(null);
@@ -646,7 +645,6 @@ function App() {
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
                     Llista de la compra
                 </h1>
-
                 {userId && (
                     <button
                         onClick={() => setShowAuthModal(true)}
@@ -656,12 +654,10 @@ function App() {
                         <User className="w-6 h-6 text-gray-700" />
                     </button>
                 )}
-
                 <p className="text-gray-700 text-lg font-semibold mt-2">
                     {userEmail ? `Usuari: ${userEmail}` : 'Mode anònim'}
                 </p>
             </header>
-
             {feedbackMessage && (
                 <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center
                     ${feedbackType === 'info' ? 'bg-blue-500' :
@@ -670,7 +666,6 @@ function App() {
                     {feedbackMessage}
                 </div>
             )}
-
             <div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb-6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button
@@ -695,7 +690,6 @@ function App() {
                     </button>
                 </div>
             </div>
-
             {/* Formulari per afegir elements */}
             <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mb-6 mx-auto w-full max-w-xl">
                 <div className="flex flex-col gap-3">
@@ -754,14 +748,12 @@ function App() {
                     </button>
                 </div>
             </div>
-
             {/* Vista de despensa */}
             {currentView === 'pantry' && (
                 <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                     <h2 className="text-xl font-bold mb-4 text-gray-700">
                         Elements a la despensa ({pantryItems.length})
                     </h2>
-
                     {pantryItems.length === 0 ? (
                         <p className="text-gray-600 text-center py-4">
                             No hi ha elements. Afegeix-ne alguns per començar!
@@ -772,9 +764,10 @@ function App() {
                                 <div key={item.id} className="relative">
                                     <button
                                         onClick={() => toggleItemInShoppingList(item)}
-                                        onDoubleClick={() => {
+                                        onDoubleClick={(e) => {
+                                            e.preventDefault();
                                             if (item.secondIcon) {
-                                                setExpandedImage(item.icon === renderItemIcon(item) ? item.secondIcon : item.icon);
+                                                setExpandedImage(item.icon);
                                             }
                                         }}
                                         className={`${displayMode === 'list' 
@@ -786,12 +779,6 @@ function App() {
                                             className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
                                             onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
                                             onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-                                            onDoubleClick={(e) => {
-                                                e.preventDefault();
-                                                if (item.secondIcon) {
-                                                    setExpandedImage(item.icon);
-                                                }
-                                            }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (item.secondIcon) {
@@ -833,7 +820,6 @@ function App() {
                         </div>
                     )}
                 </div>
-
                 {/* Vista de llista de compra */}
                 {currentView === 'shoppingList' && (
                     <div className="space-y-6">
@@ -908,7 +894,6 @@ function App() {
                                 </div>
                             )}
                         </div>
-                        
                         {/* Elements comprats */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
@@ -982,7 +967,6 @@ function App() {
                         </div>
                     </div>
                 )}
-
                 {/* Modal d'edició */}
                 {showEditModal && editingItem && (
                     <EditItemModal
@@ -993,7 +977,6 @@ function App() {
                         availableSections={availableSections}
                     />
                 )}
-
                 {/* Modal d'autenticació */}
                 {showAuthModal && (
                     <AuthModal
@@ -1008,13 +991,13 @@ function App() {
                         setDisplayMode={setDisplayMode}
                     />
                 )}
-                
                 {/* Modal per a la imatge expandida */}
                 {expandedImage && (
                     <ImageModal src={expandedImage} onClose={() => setExpandedImage(null)} />
                 )}
             </div>
-        );
-    }
+        </div>
+    );
+}
 
-    export default App;
+export default App;
