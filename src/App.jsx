@@ -26,7 +26,10 @@ import {
  getDoc,
  arrayRemove
 } from 'firebase/firestore';
-import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, Share2, LogOut, ListPlus } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react';
+
+// Importa la llibreria per a Excel
+import * as XLSX from 'xlsx';
 
 // Configuració de Firebase actualitzada
 const firebaseConfig = {
@@ -365,22 +368,23 @@ function App() {
         return Array.from(sections).sort();
     }, [items]);
 
-    // **CANVI CLAU PER LA PERSISTÈNCIA**
+    // **CANVI CLAU PER LA PERSISTÈNCIA: Ara verifica primer l'usuari autenticat**
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Usuari ja autenticat (ja sigui anònim o amb correu)
-                if (user.isAnonymous) {
-                    setUserId(user.uid);
-                    setUserEmail(null);
-                    console.log("Usuari anònim recuperat:", user.uid);
-                } else {
+                // Usuari ja autenticat (amb correu)
+                if (!user.isAnonymous) {
                     setUserId(user.uid);
                     setUserEmail(user.email);
                     console.log("Usuari registrat autenticat:", user.uid);
+                } else {
+                    // Usuari anònim ja existent
+                    setUserId(user.uid);
+                    setUserEmail(null);
+                    console.log("Usuari anònim recuperat:", user.uid);
                 }
             } else {
-                // No hi ha cap usuari, s'inicia sessió anònimament
+                // No hi ha cap usuari, s'inicia sessió anònimament com a últim recurs
                 try {
                     const anonUserCredential = await signInAnonymously(auth);
                     setUserId(anonUserCredential.user.uid);
@@ -456,8 +460,8 @@ function App() {
     }, []);
 
     // Funció per afegir elements
-    const handleAddItem = useCallback(async () => {
-        if (newItemName.trim() === '' || !db || !userId) {
+    const handleAddItem = useCallback(async (itemData) => {
+        if (itemData.name.trim() === '' || !db || !userId) {
             setFeedbackMessage("No es pot afegir: Falta el nom de l'element.");
             setFeedbackType('error');
             return;
@@ -467,28 +471,102 @@ function App() {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemsCollectionRef = collection(db, itemsPath);
             await addDoc(itemsCollectionRef, {
-                name: newItemName.trim(),
-                quantity: newItemQuantity.trim(),
+                ...itemData,
                 isBought: false,
                 isInShoppingList: false,
-                icon: newItemIcon.trim() || 'ShoppingBag',
-                secondIcon: '',
-                section: newItemSection.trim() === '' ? null : newItemSection.trim(),
                 createdAt: serverTimestamp(),
                 orderIndex: null
             });
+            return true;
+        } catch (error) {
+            console.error("Error afegint element:", error);
+            setFeedbackMessage("Error afegint element: " + error.message);
+            setFeedbackType('error');
+            return false;
+        }
+    }, [db, userId]);
+
+    const handleNewItemFormSubmit = async () => {
+        const itemData = {
+            name: newItemName.trim(),
+            quantity: newItemQuantity.trim(),
+            icon: newItemIcon.trim() || 'ShoppingBag',
+            secondIcon: newItemIcon.trim() || '',
+            section: newItemSection.trim() === '' ? null : newItemSection.trim(),
+        };
+        const success = await handleAddItem(itemData);
+        if (success) {
             setNewItemName('');
             setNewItemQuantity('');
             setNewItemIcon('');
             setNewItemSection('');
             setFeedbackMessage("Element afegit correctament!");
             setFeedbackType('success');
-        } catch (error) {
-            console.error("Error afegint element:", error);
-            setFeedbackMessage("Error afegint element: " + error.message);
-            setFeedbackType('error');
         }
-    }, [newItemName, newItemQuantity, newItemIcon, newItemSection, db, userId]);
+    };
+
+    // **NOVA FUNCIÓ PER PUJAR FITXER EXCEL**
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            if (json.length < 2) {
+                setFeedbackMessage("El fitxer Excel no té dades.");
+                setFeedbackType('error');
+                return;
+            }
+
+            const header = json[0].map(h => h.trim());
+            const rows = json.slice(1);
+
+            const nameIndex = header.indexOf('Nom');
+            const sectionIndex = header.indexOf('secció');
+            const iconIndex = header.indexOf('Icona principal');
+            const secondIconIndex = header.indexOf('Icona secundària');
+
+            if (nameIndex === -1) {
+                setFeedbackMessage("El fitxer Excel ha de contenir la columna 'Nom'.");
+                setFeedbackType('error');
+                return;
+            }
+
+            let successfulUploads = 0;
+            for (const row of rows) {
+                const itemData = {
+                    name: row[nameIndex] ? String(row[nameIndex]).trim() : '',
+                    quantity: '',
+                    section: row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
+                    icon: row[iconIndex] ? String(row[iconIndex]).trim() : '',
+                    secondIcon: row[secondIconIndex] ? String(row[secondIconIndex]).trim() : '',
+                };
+
+                const success = await handleAddItem(itemData);
+                if (success) {
+                    successfulUploads++;
+                }
+            }
+
+            if (successfulUploads > 0) {
+                setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel!`);
+                setFeedbackType('success');
+            } else {
+                setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel.");
+                setFeedbackType('error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
 
     // Funció per alternar element a la llista de compra
     const toggleItemInShoppingList = useCallback(async (item) => {
@@ -633,7 +711,6 @@ function App() {
         }
     }, []);
     
-
     const pantryItems = items.filter(item => !item.isInShoppingList || item.isBought);
     const shoppingListItems = items.filter(item => item.isInShoppingList);
     const unboughtItems = shoppingListItems.filter(item => !item.isBought);
@@ -701,7 +778,7 @@ function App() {
                         value={newItemName}
                         onChange={(e) => setNewItemName(e.target.value)}
                         onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleAddItem();
+                            if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
                     <input
@@ -711,7 +788,7 @@ function App() {
                         value={newItemQuantity}
                         onChange={(e) => setNewItemQuantity(e.target.value)}
                         onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleAddItem();
+                            if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
                     <input
@@ -721,7 +798,7 @@ function App() {
                         value={newItemIcon}
                         onChange={(e) => setNewItemIcon(e.target.value)}
                         onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleAddItem();
+                            if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
                     <input
@@ -732,7 +809,7 @@ function App() {
                         value={newItemSection}
                         onChange={(e) => setNewItemSection(e.target.value)}
                         onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleAddItem();
+                            if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
                     <datalist id="sections-datalist">
@@ -741,12 +818,18 @@ function App() {
                         ))}
                     </datalist>
                     <button
-                        onClick={handleAddItem}
+                        onClick={handleNewItemFormSubmit}
                         className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2"
                     >
                         <Plus className="w-5 h-5" />
                         Afegeix element
                     </button>
+                    {/* Botó per pujar Excel */}
+                    <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                        <FileUp className="w-5 h-5" />
+                        Puja des d'Excel
+                    </label>
+                    <input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
                 </div>
             </div>
             {/* Vistes principals */}
