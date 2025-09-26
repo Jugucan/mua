@@ -594,12 +594,10 @@ function App() {
 
                 if (successfulUploads > 0) {
                     await batch.commit();
-                    setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de 
- l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
+                    setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
                     setFeedbackType('success');
                 } else {
-                    setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. 
- Comprova que el format sigui correcte.");
+                    setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
                     setFeedbackType('error');
                 }
             } catch (error) {
@@ -635,8 +633,7 @@ function App() {
                 isBought: newIsBought,
                 orderIndex: null
             });
-            setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la 
- compra' : 'tret de la llista de la compra'}!`);
+            setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`);
             setFeedbackType('success');
         } catch (error) {
             console.error("Error canviant element:", error);
@@ -654,8 +651,7 @@ function App() {
             await updateDoc(itemDocRef, {
                 isBought: !currentStatus
             });
-            setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat 
- com a pendent'}!`);
+            setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
             setFeedbackType('success');
         } catch (error) {
             console.error("Error alternant estat:", error);
@@ -693,8 +689,7 @@ function App() {
 
     const handleDeleteItem = useCallback(async (item) => {
         if (!db || !userId) return;
-        const confirmDelete = window.confirm(`Estàs segur que vols eliminar 
- "${item.name}"?`);
+        const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
         if (!confirmDelete) return;
         try {
             const itemsPath =
@@ -816,9 +811,7 @@ function App() {
                 </p>
             </header>
             {feedbackMessage && (
-                <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 
- py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items 
- center
+                <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center
   ${feedbackType === 'info' ? 'bg-blue-500' :
                         feedbackType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
                 >
@@ -826,8 +819,7 @@ function App() {
                     {feedbackMessage}
                 </div>
             )}
-            <div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb 
- 6 mx-auto">
+            <div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb-6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button
                         onClick={() => setCurrentView('pantry')}
@@ -854,8 +846,7 @@ function App() {
                 </div>
             </div>
             {/* Formulari per afegir elements */}
-            <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container 
- mb-6 mx-auto w-full max-w-xl">
+            <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mb-6 mx-auto w-full max-w-xl">
                 <div className="flex flex-col gap-3">
                     <input
                         type="text"
@@ -909,17 +900,14 @@ function App() {
                     </datalist>
                     <button
                         onClick={handleNewItemFormSubmit}
-                        className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center 
- justify-center gap-2"
+                        className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2"
                     >
 
                         <Plus className="w-5 h-5" />
                         Afegeix element
                     </button>
                     {/* Botó per pujar Excel */}
-                    <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text 
- gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-
- [#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                    <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
                         <FileUp className="w-5 h-5" />
                         Puja des d'Excel
                     </label>
