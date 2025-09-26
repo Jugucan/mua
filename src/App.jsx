@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-
 import { initializeApp } from 'firebase/app';
-
 import {
     getAuth,
     signInAnonymously,
@@ -11,7 +9,6 @@ import {
     signOut,
     sendPasswordResetEmail
 } from 'firebase/auth';
-
 import {
     getFirestore,
     collection,
@@ -21,20 +18,16 @@ import {
     deleteDoc,
     onSnapshot,
     query,
-    orderBy,
     serverTimestamp,
     writeBatch
 } from 'firebase/firestore';
-
-import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, Share2,
-    LogOut, ListPlus, FileUp } from 'lucide-react';
-
+import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react';
 // Importa la llibreria per a Excel
 import * as XLSX from 'xlsx';
 
-// Configuració de Firebase (MANTENINT LA TEVA CONFIGURACIÓ ORIGINAL)
+// Configuració de Firebase
 const firebaseConfig = {
-    apiKey: "AlzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkl",
+    apiKey: "AIzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkI",
     authDomain: "mua-app-eed40.firebaseapp.com",
     projectId: "mua-app-eed40",
     storageBucket: "mua-app-eed40.firebasestorage.app",
@@ -46,7 +39,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const APP_ID = 'mua-app-da319'; // Mantinc el teu APP_ID
+const APP_ID = 'mua-app-da319';
 
 // Funció per validar i netejar URLs
 const cleanImageUrl = (url) => {
@@ -75,10 +68,10 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
     const handleSave = () => {
         onSave(item.id, {
             name: editedName,
-            quantity: editedQuantity === "" ? null : editedQuantity.trim(),
-            icon: cleanImageUrl(editedIcon),
-            secondIcon: cleanImageUrl(editedSecondIcon),
-            section: editedSection === "" ? null : editedSection.trim()
+            quantity: editedQuantity,
+            icon: editedIcon,
+            secondIcon: editedSecondIcon,
+            section: editedSection.trim() === '' ? null : editedSection.trim()
         });
         onClose();
     };
@@ -199,7 +192,6 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
     );
 };
 
-// Modal per a la imatge expandida
 const ImageModal = ({ src, onClose }) => {
     return (
         <div
@@ -243,7 +235,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
         if (userEmail) {
             onForgotPassword(userEmail);
         }
-    }
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
@@ -259,6 +251,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                         <h3 className="text-xl font-bold mb-4 text-gray-700">El meu compte</h3>
                         <p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span
                             className="font-semibold">{userEmail}</span></p>
+
                         <div className="mb-4">
                             <h4 className="text-lg font-bold mb-2">Preferències de visualització</h4>
                             <div className="flex justify-center gap-4">
@@ -288,6 +281,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                             onClick={onLogout}
                             className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] mt-4"
                         >
+
                             <LogOut className="inline-block w-5 h-5 mr-2" /> Tanca sessió
                         </button>
                     </div>
@@ -306,6 +300,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
+
                             </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Contrasenya</label>
@@ -316,6 +311,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
+
                             </div>
                             {errorMessage && <p className="text-red-500 text-sm mb-4">{errorMessage}</p>}
                             <div className="flex flex-col gap-3">
@@ -323,6 +319,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     type="submit"
                                     className="w-full bg-[#f0f3f5] text-green-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"
                                 >
+
                                     {isRegistering ? 'Registra\'t' : 'Inicia sessió'}
                                 </button>
                                 <button
@@ -330,6 +327,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onClick={() => setIsRegistering(!isRegistering)}
                                     className="w-full bg-[#f0f3f5] text-gray-700 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"
                                 >
+
                                     {isRegistering ? 'Ja tinc un compte' : 'No tinc un compte'}
                                 </button>
                                 <button
@@ -337,6 +335,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onClick={handleForgotPasswordClick}
                                     className="text-sm text-blue-600 hover:underline"
                                 >
+
                                     Has oblidat la contrasenya?
                                 </button>
                             </div>
@@ -348,7 +347,6 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
     );
 };
 
-
 function App() {
     const [userId, setUserId] = useState(null);
     const [userEmail, setUserEmail] = useState(null);
@@ -357,7 +355,7 @@ function App() {
     const [newItemQuantity, setNewItemQuantity] = useState("");
     const [newItemIcon, setNewItemIcon] = useState("");
     const [newItemSection, setNewItemSection] = useState("");
-    const [currentView, setCurrentView] = useState('pantry');
+    const [currentView, setCurrentView] = useState('pantry'); // Posa 'pantry' com a vista per defecte
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [feedbackType, setFeedbackType] = useState('info');
     const [isAuthReady, setIsAuthReady] = useState(false);
@@ -383,9 +381,6 @@ function App() {
         return Array.from(sections).sort();
     }, [items]);
 
-    // -------------------------------------------------------------------------
-    // GESTIÓ D'AUTENTICACIÓ (NO CAL CANVIAR AQUÍ)
-    // -------------------------------------------------------------------------
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -417,15 +412,11 @@ function App() {
         return () => unsubscribe();
     }, []);
 
-    // -------------------------------------------------------------------------
-    // LECTURA DE DADES (🔴 CANVI 1: RUTA CORREGIDA)
-    // -------------------------------------------------------------------------
     useEffect(() => {
         if (db && userId && isAuthReady) {
-            // 🟢 NOU CAMÍ CURT I CORRECTE: users/UID/items
-            const itemsPath = `users/${userId}/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemsCollectionRef = collection(db, itemsPath);
-
             const q = query(itemsCollectionRef);
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const itemsData = snapshot.docs.map(doc => ({
@@ -448,9 +439,8 @@ function App() {
 
             return () => unsubscribe();
         }
-    }, [db, userId, isAuthReady]); // La dependència 'db' es manté, però no és estrictament necessària ja que 'db' és constant
+    }, [db, userId, isAuthReady]);
 
-    // Gestió de missatges
     useEffect(() => {
         if (feedbackMessage) {
             const timer = setTimeout(() => {
@@ -460,7 +450,6 @@ function App() {
         }
     }, [feedbackMessage]);
 
-    // Renderitzat d'icones (No cal canviar aquí)
     const renderItemIcon = useCallback((item, className = "w-16 h-16") => {
         const iconSrc = item.isHovered && item.secondIcon ? item.secondIcon : item.icon;
         if (iconSrc && (iconSrc.startsWith('http://') || iconSrc.startsWith('https://'))) {
@@ -473,26 +462,23 @@ function App() {
                         e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
                     }}
                 />
+
             );
         }
         return <ShoppingBag className={`${className} text-gray-600`} />;
     }, []);
-    
-    // -------------------------------------------------------------------------
-    // ADDICCIÓ MANUAL D'ELEMENT (🔴 CANVI 2: RUTA CORREGIDA)
-    // -------------------------------------------------------------------------
+
     const handleAddItem = useCallback(async (itemData) => {
         if (itemData.name.trim() === '' || !db || !userId) {
             setFeedbackMessage("No es pot afegir: Falta el nom de l'element.");
             setFeedbackType('error');
-            return false;
+            return;
         }
 
         try {
-            // 🟢 NOU CAMÍ CURT I CORRECTE: users/UID/items
-            const itemsPath = `users/${userId}/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemsCollectionRef = collection(db, itemsPath);
-
             await addDoc(itemsCollectionRef, {
                 ...itemData,
                 isBought: false,
@@ -513,7 +499,8 @@ function App() {
         const itemData = {
             name: newItemName.trim(),
             quantity: newItemQuantity.trim(),
-            icon: cleanImageUrl(newItemIcon) || 'ShoppingBag',
+            icon: cleanImageUrl(newItemIcon) ||
+                'ShoppingBag',
             secondIcon: cleanImageUrl(newItemIcon) || '',
             section: newItemSection.trim() === '' ? null : newItemSection.trim(),
         };
@@ -527,15 +514,14 @@ function App() {
             setFeedbackType('success');
         }
     };
-    
-    // -------------------------------------------------------------------------
-    // CÀRREGA EXCEL (🔴 CANVI 3: RUTA CORREGIDA)
-    // -------------------------------------------------------------------------
+
+    // **FUNCIÓ CORREGIDA PER PUJAR FITXER EXCEL**
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) {
             return;
         }
+
 
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -554,7 +540,6 @@ function App() {
 
                 const header = json[0].map(h => String(h).trim().toLowerCase());
                 const rows = json.slice(1);
-                
                 // Busca les columnes amb més flexibilitat
                 const nameIndex = header.findIndex(h => h.includes('nom'));
                 const sectionIndex = header.findIndex(h => h.includes('secció') ||
@@ -563,12 +548,6 @@ function App() {
                     h.includes('principal'));
                 const secondIconIndex = header.findIndex(h => h.includes('icona') &&
                     (h.includes('secundària') || h.includes('secundaria')));
-                
-                // Manca la columna de Quantitat, la busquem
-                const quantityIndex = header.findIndex(h => h.includes('quantitat') || 
-                    h.includes('qty') || h.includes('qnt'));
-
-
                 if (nameIndex === -1) {
                     setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'.");
                     setFeedbackType('error');
@@ -578,9 +557,8 @@ function App() {
                 let successfulUploads = 0;
                 let skippedItems = 0;
                 const batch = writeBatch(db);
-                
-                // 🟢 NOU CAMÍ CURT I CORRECTE: users/UID/items
-                const itemsPath = `users/${userId}/items`;
+                const itemsPath =
+                    `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
                 const itemsCollectionRef = collection(db, itemsPath);
 
                 for (const row of rows) {
@@ -591,16 +569,15 @@ function App() {
                         continue;
                     }
 
+
                     // Processa les imatges amb la nova funció de neteja
                     let itemIcon = iconIndex !== -1 && row[iconIndex] ?
                         cleanImageUrl(String(row[iconIndex])) : '';
                     let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ?
                         cleanImageUrl(String(row[secondIconIndex])) : '';
-
                     const itemData = {
                         name: itemName,
-                        quantity: quantityIndex !== -1 && row[quantityIndex] ?
-                            String(row[quantityIndex]).trim() : '',
+                        quantity: '',
                         section: sectionIndex !== -1 && row[sectionIndex] ?
                             String(row[sectionIndex]).trim() : '',
                         icon: itemIcon,
@@ -610,14 +587,12 @@ function App() {
                         createdAt: serverTimestamp(),
                         orderIndex: null
                     };
-
                     const newDocRef = doc(itemsCollectionRef);
                     batch.set(newDocRef, itemData);
                     successfulUploads++;
                 }
 
                 if (successfulUploads > 0) {
-                    await batch.commit(); // ✅ Commit del batch
                     setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
                     setFeedbackType('success');
                 } else {
@@ -632,17 +607,17 @@ function App() {
         };
         reader.readAsArrayBuffer(file);
 
+
         // Reinicia el valor del input per permetre pujar el mateix fitxer novament
         event.target.value = '';
     };
 
-    // Funcions de Toggle i CRUD (Cal modificar la ruta interna a cada una)
     const toggleItemInShoppingList = useCallback(async (item) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `users/${userId}/items`; // RUTA CORREGIDA
-            const itemDocRef = doc(collection(db, itemsPath), item.id); // Ajust de la funció doc/collection
-            
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemDocRef = doc(db, itemsPath, item.id);
             let newIsInShoppingList;
             let newIsBought;
             if (item.isInShoppingList && !item.isBought) {
@@ -669,9 +644,9 @@ function App() {
     const toggleBought = useCallback(async (id, currentStatus) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `users/${userId}/items`; // RUTA CORREGIDA
-            const itemDocRef = doc(collection(db, itemsPath), id); // Ajust de la funció doc/collection
-            
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemDocRef = doc(db, itemsPath, id);
             await updateDoc(itemDocRef, {
                 isBought: !currentStatus
             });
@@ -687,8 +662,10 @@ function App() {
     const handleUpdateItem = useCallback(async (id, updatedData) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `users/${userId}/items`; // RUTA CORREGIDA
-            const itemDocRef = doc(collection(db, itemsPath), id); // Ajust de la funció doc/collection
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemDocRef = doc(db, itemsPath, id);
+
 
             // Neteja les URLs de les imatges
             if (updatedData.icon) {
@@ -697,6 +674,7 @@ function App() {
             if (updatedData.secondIcon) {
                 updatedData.secondIcon = cleanImageUrl(updatedData.secondIcon);
             }
+
 
             await updateDoc(itemDocRef, updatedData);
             setFeedbackMessage("Element actualitzat correctament!");
@@ -713,8 +691,9 @@ function App() {
         const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
         if (!confirmDelete) return;
         try {
-            const itemsPath = `users/${userId}/items`; // RUTA CORREGIDA
-            const itemDocRef = doc(collection(db, itemsPath), item.id); // Ajust de la funció doc/collection
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemDocRef = doc(db, itemsPath, item.id);
             await deleteDoc(itemDocRef);
             setFeedbackMessage("Element eliminat correctament!");
             setFeedbackType('success');
@@ -725,11 +704,13 @@ function App() {
         }
     }, [db, userId]);
 
+    // ** NOVA FUNCIÓ IMPLEMENTADA: Moure element de Despensa a Llista de la Compra **
     const afegirDeDespensaALlista = useCallback(async (item) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `users/${userId}/items`; // RUTA CORREGIDA
-            const itemDocRef = doc(collection(db, itemsPath), item.id); // Ajust de la funció doc/collection
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemDocRef = doc(db, itemsPath, item.id);
 
             // L'actualitzem per posar-lo a la llista i com a NO comprat
             await updateDoc(itemDocRef, {
@@ -746,8 +727,7 @@ function App() {
             setFeedbackType('error');
         }
     }, [db, userId]);
-    
-    // Funcions d'autenticació (No cal canviar aquí)
+
     const handleLogin = useCallback(async (email, password) => {
         setAuthErrorMessage('');
         try {
@@ -800,9 +780,6 @@ function App() {
         }
     }, []);
 
-    // -------------------------------------------------------------------------
-    // VISTES
-    // -------------------------------------------------------------------------
     const pantryItems = items.filter(item => !item.isInShoppingList || item.isBought);
     const shoppingListItems = items.filter(item => item.isInShoppingList);
     const unboughtItems = shoppingListItems.filter(item => !item.isBought);
@@ -821,9 +798,10 @@ function App() {
                 {userId && (
                     <button
                         onClick={() => setShowAuthModal(true)}
-                        className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow neomorphic-button"
+                        className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button"
                         aria-label="Menú d'usuari"
                     >
+
                         <User className="w-6 h-6 text-gray-700" />
                     </button>
                 )}
@@ -831,86 +809,89 @@ function App() {
                     {userEmail ? `Usuari: ${userEmail}` : 'Mode anònim'}
                 </p>
             </header>
-            
-            {/* Missatges de Feedback */}
             {feedbackMessage && (
                 <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center
-                ${feedbackType === 'info' ? 'bg-blue-500' :
+  ${feedbackType === 'info' ? 'bg-blue-500' :
                         feedbackType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
                 >
+
                     {feedbackMessage}
                 </div>
             )}
-            
             <div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb-6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button
                         onClick={() => setCurrentView('pantry')}
-                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow neomorphic-button ${
+                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button ${
                             currentView === 'pantry'
-                                ? 'box-shadow-neomorphic-button-inset text-green-500'
+                                ? 'box-shadow-neomorphic-button-inset text-green-500' // Fem que el botó actiu estigui enfonsat
                                 : 'text-gray-700'
                         }`}
                     >
+
                         Despensa ({pantryItems.length})
                     </button>
                     <button
                         onClick={() => setCurrentView('shoppingList')}
-                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow neomorphic-button ${
+                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button ${
                             currentView === 'shoppingList'
-                                ? 'box-shadow-neomorphic-button-inset text-green-500'
+                                ? 'box-shadow-neomorphic-button-inset text-green-500' // Fem que el botó actiu estigui enfonsat
                                 : 'text-gray-700'
                         }`}
                     >
+
                         Llista ({shoppingListItems.length})
                     </button>
                 </div>
             </div>
-
             {/* Formulari per afegir elements */}
             <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mb-6 mx-auto w-full max-w-xl">
                 <div className="flex flex-col gap-3">
                     <input
                         type="text"
                         placeholder="Nom de l'element"
-                        className="w-full p-3 rounded-md focus:outline-none box-shadow neomorphic-input"
+                        className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={newItemName}
                         onChange={(e) => setNewItemName(e.target.value)}
                         onKeyPress={(e) => {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <input
                         type="text"
                         placeholder="Quantitat (opcional)"
-                        className="w-full p-3 rounded-md focus:outline-none box-shadow neomorphic-input"
+                        className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={newItemQuantity}
                         onChange={(e) => setNewItemQuantity(e.target.value)}
                         onKeyPress={(e) => {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <input
                         type="text"
                         placeholder="URL de la imatge (opcional)"
-                        className="w-full p-3 rounded-md focus:outline-none box-shadow neomorphic-input"
+                        className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={newItemIcon}
                         onChange={(e) => setNewItemIcon(e.target.value)}
                         onKeyPress={(e) => {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <input
                         type="text"
                         list="sections-datalist"
                         placeholder="Secció (opcional)"
-                        className="w-full p-3 rounded-md focus:outline-none box-shadow neomorphic-input"
+                        className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={newItemSection}
                         onChange={(e) => setNewItemSection(e.target.value)}
                         onKeyPress={(e) => {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <datalist id="sections-datalist">
                         {availableSections.map((section, index) => (
                             <option key={index} value={section} />
@@ -920,6 +901,7 @@ function App() {
                         onClick={handleNewItemFormSubmit}
                         className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2"
                     >
+
                         <Plus className="w-5 h-5" />
                         Afegeix element
                     </button>
@@ -928,15 +910,15 @@ function App() {
                         <FileUp className="w-5 h-5" />
                         Puja des d'Excel
                     </label>
-                    <input id="file-upload" type="file"
-                        accept=".xlsx, .xls"
+                    <input id="file-upload" type="file" accept=".xlsx, .xls"
                         onChange={handleFileUpload} className="hidden" />
                 </div>
             </div>
-            
             {/* Vistes principals */}
             {currentView === 'pantry' && (
-                <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                <div className="bg-[#f0f3f5] p-4 rounded-lg
+ box-shadow-neomorphic-container
+ mx-auto w-full">
                     <h2 className="text-xl font-bold mb-4 text-gray-700">
                         Elements a la despensa ({pantryItems.length})
                     </h2>
@@ -947,7 +929,8 @@ function App() {
                                 No hi ha elements. Afegeix-ne alguns per començar!
                             </p>
                         ) : (
-                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid
+ ${gridClasses} gap-4`}>
                                 {pantryItems.map(item => (
                                     <div key={item.id} className="relative">
                                         {/* NOU BLOC PER A LA DESPENSA: CONTENIDOR AMB DOS BOTONS D'ACCIÓ */}
@@ -1020,7 +1003,8 @@ function App() {
             {currentView === 'shoppingList' && (
                 <div className="space-y-6">
                     {/* Elements per comprar */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic
+ container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes per comprar ({unboughtItems.length})
                         </h2>
@@ -1030,17 +1014,20 @@ function App() {
                                 No hi ha productes pendents a la teva llista de la compra.
                             </p>
                         ) : (
-                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid
+ ${gridClasses} gap-4`}>
                                 {unboughtItems.map(item => (
                                     <div key={item.id} className="relative">
                                         <button
+
                                             onDoubleClick={() => toggleBought(item.id, item.isBought)}
                                             className={`${displayMode === 'list'
                                                 ? 'flex flex-row items-center justify-start p-3'
                                                 : 'flex flex-col items-center justify-center p-4'
                                                 } bg-white rounded-lg box-shadow-neomorphic-element-green
-                                                hover:bg-gray-50 transition-all w-full text-center`}
+ hover:bg-gray-50 transition-all w-full text-center`}
                                         >
+
                                             <div
                                                 className={`${displayMode === 'list' ?
                                                     'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
@@ -1068,6 +1055,7 @@ function App() {
                                                     }
                                                 }}
                                             >
+
                                                 {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
                                             </div>
                                             <div className={`${displayMode === 'list' ?
@@ -1078,6 +1066,7 @@ function App() {
                                                     <span className="text-xs text-gray-500 block mt-1">{item.quantity}</span>
                                                 )}
                                                 {item.section && (
+
                                                     <span className="text-xs text-gray-400 block mt-1">{item.section}</span>
                                                 )}
                                             </div>
@@ -1088,9 +1077,11 @@ function App() {
                                                 setEditingItem(item);
                                                 setShowEditModal(true);
                                             }}
-                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text
+ gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
                                             aria-label={`Edita ${item.name}`}
                                         >
+
                                             <Edit className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -1099,7 +1090,8 @@ function App() {
                         )}
                     </div>
                     {/* Elements comprats */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic
+ container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes comprats ({boughtItems.length})
                         </h2>
@@ -1110,7 +1102,8 @@ function App() {
                                     Encara no hi ha productes comprats.
                                 </p>
                             ) : (
-                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
+                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid
+ ${gridClasses} gap-4`}>
                                     {boughtItems.map(item => (
                                         <div key={item.id} className="relative">
                                             <button
@@ -1119,11 +1112,11 @@ function App() {
                                                     ? 'flex flex-row items-center justify-start p-3'
                                                     : 'flex flex-col items-center justify-center p-4'
                                                     } bg-white rounded-lg box-shadow-neomorphic-element-bought
-                                                    hover:bg-gray-50 transition-all w-full text-center opacity-75`}
+ hover:bg-gray-50 transition-all w-full text-center opacity-75`}
                                             >
+
                                                 <div
-                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' :
-                                                        'w-12 h-12'}`}
+                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
                                                     onMouseEnter={() => setItems(prev => prev.map(i => i.id ===
                                                         item.id ? { ...i, isHovered: true }
                                                         : i))}
@@ -1148,17 +1141,21 @@ function App() {
                                                         }
                                                     }}
                                                 >
+
                                                     {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
                                                 </div>
                                                 <div className={`${displayMode === 'list' ?
                                                     'ml-4 flex-grow text-left'
                                                     : 'mt-2'}`}>
-                                                    <span className="font-semibold text-sm line-through">{item.name}</span>
+                                                    <span className="font-semibold text-sm line
+ through">{item.name}</span>
                                                     {item.quantity && (
-                                                        <span className="text-xs text-gray-400 block mt-1 line-through">{item.quantity}</span>
+                                                        <span className="text-xs text-gray-400 block mt-1 line
+ through">{item.quantity}</span>
                                                     )}
                                                     {item.section && (
-                                                        <span className="text-xs text-gray-400 block mt-1 line-through">{item.section}</span>
+                                                        <span className="text-xs text-gray-400 block mt-1 line
+ through">{item.section}</span>
                                                     )}
                                                 </div>
                                             </button>
@@ -1168,9 +1165,11 @@ function App() {
                                                     setEditingItem(item);
                                                     setShowEditModal(true);
                                                 }}
-                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
+                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text
+ gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
                                                 aria-label={`Edita ${item.name}`}
                                             >
+
                                                 <Edit className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -1189,6 +1188,7 @@ function App() {
                     onDelete={handleDeleteItem}
                     availableSections={availableSections}
                 />
+
             )}
             {/* Modal d'autenticació */}
             {showAuthModal && (
@@ -1203,6 +1203,7 @@ function App() {
                     displayMode={displayMode}
                     setDisplayMode={setDisplayMode}
                 />
+
             )}
             {/* Modal per a la imatge expandida */}
             {expandedImage && (
