@@ -27,12 +27,12 @@ import * as XLSX from 'xlsx';
 
 // Configuració de Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyA7UHoZMIRETZzodta3O2Fm5GtxSDTK-yE",
-    authDomain: "mua-app-da319.firebaseapp.com",
-    projectId: "mua-app-da319",
-    storageBucket: "mua-app-da319.firebasestorage.app",
-    messagingSenderId: "470410760524",
-    appId: "1:470410760524:web:37ea6347402e495e393fe9"
+    apiKey: "AIzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkI",
+    authDomain: "mua-app-eed40.firebaseapp.com",
+    projectId: "mua-app-eed40",
+    storageBucket: "mua-app-eed40.firebasestorage.app",
+    messagingSenderId: "792715069043",
+    appId: "1:792715069043:web:76d7596c5f3615312d0c06"
 };
 
 // Inicialitza Firebase
