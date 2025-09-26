@@ -84,23 +84,17 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
     const renderIcon = (iconString) => {
         if (iconString && (iconString.startsWith('http://') || iconString.startsWith('https://'))) {
             return (
-                <div className="w-12 h-12 bg-white rounded flex items-center justify-center overflow-hidden">
-                    <img
-                        src={iconString}
-                        alt="icona"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                            e.target.src = 'https://placehold.co/48x48/cccccc/000000?text=Error';
-                        }}
-                    />
-                </div>
+                <img
+                    src={iconString}
+                    alt="icona"
+                    className="w-12 h-12 object-cover rounded"
+                    onError={(e) => {
+                        e.target.src = 'https://placehold.co/48x48/cccccc/000000?text=Error';
+                    }}
+                />
             );
         }
-        return (
-            <div className="w-12 h-12 bg-white rounded flex items-center justify-center">
-                <ShoppingBag className="w-8 h-8 text-gray-600" />
-            </div>
-        );
+        return <ShoppingBag className="w-12 h-12 text-gray-600" />;
     };
 
     return (
@@ -458,23 +452,17 @@ function App() {
         const iconSrc = item.isHovered && item.secondIcon ? item.secondIcon : item.icon;
         if (iconSrc && (iconSrc.startsWith('http://') || iconSrc.startsWith('https://'))) {
             return (
-                <div className={`${className} bg-white rounded flex items-center justify-center overflow-hidden`}>
-                    <img 
-                        src={iconSrc} 
-                        alt="icona personalitzada" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                            e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
-                        }} 
-                    />
-                </div>
+                <img 
+                    src={iconSrc} 
+                    alt="icona personalitzada" 
+                    className={`${className} object-cover rounded`}
+                    onError={(e) => {
+                        e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
+                    }} 
+                />
             );
         }
-        return (
-            <div className={`${className} bg-white rounded flex items-center justify-center`}>
-                <ShoppingBag className={`${className === 'w-8 h-8' ? 'w-6 h-6' : 'w-10 h-10'} text-gray-600`} />
-            </div>
-        );
+        return <ShoppingBag className={`${className} text-gray-600`} />;
     }, []);
 
     const handleAddItem = useCallback(async (itemData) => {
@@ -897,7 +885,7 @@ function App() {
                                         className={`${displayMode === 'list' 
                                             ? 'flex flex-row items-center justify-start p-3' 
                                             : 'flex flex-col items-center justify-center p-4'
-                                        } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element hover:bg-[#e6e6e9] transition-all w-full text-center`}
+                                        } bg-white rounded-lg box-shadow-neomorphic-element hover:bg-gray-50 transition-all w-full text-center`}
                                     >
                                         <div 
                                             className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
@@ -965,7 +953,7 @@ function App() {
                                             className={`${displayMode === 'list' 
                                                 ? 'flex flex-row items-center justify-start p-3' 
                                                 : 'flex flex-col items-center justify-center p-4'
-                                            } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element-green hover:bg-[#e6e6e9] transition-all w-full text-center`}
+                                            } bg-white rounded-lg box-shadow-neomorphic-element-green hover:bg-gray-50 transition-all w-full text-center`}
                                         >
                                             <div 
                                                 className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
@@ -1036,7 +1024,7 @@ function App() {
                                             className={`${displayMode === 'list' 
                                                 ? 'flex flex-row items-center justify-start p-3' 
                                                 : 'flex flex-col items-center justify-center p-4'
-                                            } bg-[#f0f3f5] rounded-lg box-shadow-neomorphic-element-bought hover:bg-[#e6e6e9] transition-all w-full text-center opacity-75`}
+                                            } bg-white rounded-lg box-shadow-neomorphic-element-bought hover:bg-gray-50 transition-all w-full text-center opacity-75`}
                                         >
                                             <div 
                                                 className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
