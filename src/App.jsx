@@ -27,7 +27,7 @@ import * as XLSX from 'xlsx';
 
 // Configuració de Firebase
 const firebaseConfig = {
-    apiKey: "AlzaSyA7UHOZMIRETZzodta3O2Fm5GtxSDTK-yE",
+    apiKey: "AlzaSyA7UHOZMIRETZzodta3O3Fm5GtxSDTK-yE",
     authDomain: "mua-app-da319.firebaseapp.com",
     projectId: "mua-app-da319",
     storageBucket: "mua-app-da319.firebasestorage.app",
@@ -593,7 +593,6 @@ function App() {
                 }
 
                 if (successfulUploads > 0) {
-                    await batch.commit();
                     setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
                     setFeedbackType('success');
                 } else {
@@ -704,22 +703,22 @@ function App() {
             setFeedbackType('error');
         }
     }, [db, userId]);
-    
+
     // ** NOVA FUNCIÓ IMPLEMENTADA: Moure element de Despensa a Llista de la Compra **
     const afegirDeDespensaALlista = useCallback(async (item) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = 
-    `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, item.id);
-            
+
             // L'actualitzem per posar-lo a la llista i com a NO comprat
             await updateDoc(itemDocRef, {
                 isInShoppingList: true,
                 isBought: false,
                 orderIndex: null
             });
-            
+
             setFeedbackMessage(`'${item.name}' afegit a la llista de la compra.`);
             setFeedbackType('success');
         } catch (error) {
@@ -917,8 +916,8 @@ function App() {
             </div>
             {/* Vistes principals */}
             {currentView === 'pantry' && (
-                <div className="bg-[#f0f3f5] p-4 rounded-lg 
- box-shadow-neomorphic-container 
+                <div className="bg-[#f0f3f5] p-4 rounded-lg
+ box-shadow-neomorphic-container
  mx-auto w-full">
                     <h2 className="text-xl font-bold mb-4 text-gray-700">
                         Elements a la despensa ({pantryItems.length})
@@ -930,7 +929,7 @@ function App() {
                                 No hi ha elements. Afegeix-ne alguns per començar!
                             </p>
                         ) : (
-                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid 
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid
  ${gridClasses} gap-4`}>
                                 {pantryItems.map(item => (
                                     <div key={item.id} className="relative">
@@ -1004,7 +1003,7 @@ function App() {
             {currentView === 'shoppingList' && (
                 <div className="space-y-6">
                     {/* Elements per comprar */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic 
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic
  container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes per comprar ({unboughtItems.length})
@@ -1015,7 +1014,7 @@ function App() {
                                 No hi ha productes pendents a la teva llista de la compra.
                             </p>
                         ) : (
-                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid 
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid
  ${gridClasses} gap-4`}>
                                 {unboughtItems.map(item => (
                                     <div key={item.id} className="relative">
@@ -1025,7 +1024,7 @@ function App() {
                                             className={`${displayMode === 'list'
                                                 ? 'flex flex-row items-center justify-start p-3'
                                                 : 'flex flex-col items-center justify-center p-4'
-                                                } bg-white rounded-lg box-shadow-neomorphic-element-green 
+                                                } bg-white rounded-lg box-shadow-neomorphic-element-green
  hover:bg-gray-50 transition-all w-full text-center`}
                                         >
 
@@ -1078,7 +1077,7 @@ function App() {
                                                 setEditingItem(item);
                                                 setShowEditModal(true);
                                             }}
-                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text 
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text
  gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
                                             aria-label={`Edita ${item.name}`}
                                         >
@@ -1091,7 +1090,7 @@ function App() {
                         )}
                     </div>
                     {/* Elements comprats */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic 
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic
  container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes comprats ({boughtItems.length})
@@ -1103,7 +1102,7 @@ function App() {
                                     Encara no hi ha productes comprats.
                                 </p>
                             ) : (
-                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid 
+                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid
  ${gridClasses} gap-4`}>
                                     {boughtItems.map(item => (
                                         <div key={item.id} className="relative">
@@ -1112,13 +1111,12 @@ function App() {
                                                 className={`${displayMode === 'list'
                                                     ? 'flex flex-row items-center justify-start p-3'
                                                     : 'flex flex-col items-center justify-center p-4'
-                                                    } bg-white rounded-lg box-shadow-neomorphic-element-bought 
+                                                    } bg-white rounded-lg box-shadow-neomorphic-element-bought
  hover:bg-gray-50 transition-all w-full text-center opacity-75`}
                                             >
 
                                                 <div
-                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w 
- 12 h-12'}`}
+                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
                                                     onMouseEnter={() => setItems(prev => prev.map(i => i.id ===
                                                         item.id ? { ...i, isHovered: true }
                                                         : i))}
@@ -1149,14 +1147,14 @@ function App() {
                                                 <div className={`${displayMode === 'list' ?
                                                     'ml-4 flex-grow text-left'
                                                     : 'mt-2'}`}>
-                                                    <span className="font-semibold text-sm line 
+                                                    <span className="font-semibold text-sm line
  through">{item.name}</span>
                                                     {item.quantity && (
-                                                        <span className="text-xs text-gray-400 block mt-1 line 
+                                                        <span className="text-xs text-gray-400 block mt-1 line
  through">{item.quantity}</span>
                                                     )}
                                                     {item.section && (
-                                                        <span className="text-xs text-gray-400 block mt-1 line 
+                                                        <span className="text-xs text-gray-400 block mt-1 line
  through">{item.section}</span>
                                                     )}
                                                 </div>
@@ -1167,7 +1165,7 @@ function App() {
                                                     setEditingItem(item);
                                                     setShowEditModal(true);
                                                 }}
-                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text 
+                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text
  gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
                                                 aria-label={`Edita ${item.name}`}
                                             >
