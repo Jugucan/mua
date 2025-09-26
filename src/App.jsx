@@ -42,6 +42,26 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const APP_ID = 'mua-app-da319';
 
+// Funció per validar i netejar URLs
+const cleanImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    
+    const cleanedUrl = url.trim();
+    
+    // Si ja té protocol, retorna-la tal com està
+    if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
+        return cleanedUrl;
+    }
+    
+    // Si sembla una URL vàlida sense protocol, afegeix https://
+    if (cleanedUrl.includes('.') && !cleanedUrl.includes(' ')) {
+        return 'https://' + cleanedUrl;
+    }
+    
+    // Si no és una URL vàlida, retorna buit
+    return '';
+};
+
 // Modal per editar elements
 const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) => {
     const [editedName, setEditedName] = useState(item.name);
@@ -130,7 +150,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                         <input
                             type="text"
                             placeholder="URL de la imatge secundària (opcional)"
-                            className="flex-grow p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
+                            className="flex-grow p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                             value={editedSecondIcon}
                             onChange={(e) => setEditedSecondIcon(e.target.value)}
                         />
@@ -141,7 +161,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
                     <input
                         type="text"
                         list="sections-datalist"
-                        className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
+                        className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={editedSection}
                         onChange={(e) => setEditedSection(e.target.value)}
                         placeholder="Ex: Làctics, Fruita i Verdura"
@@ -280,7 +300,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Correu electrònic</label>
                                 <input
                                     type="email"
-                                    className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
+                                    className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
@@ -290,7 +310,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Contrasenya</label>
                                 <input
                                     type="password"
-                                    className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-neomorphic-input"
+                                    className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
@@ -326,7 +346,6 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
         </div>
     );
 };
-
 
 function App() {
     const [userId, setUserId] = useState(null);
@@ -476,8 +495,8 @@ function App() {
         const itemData = {
             name: newItemName.trim(),
             quantity: newItemQuantity.trim(),
-            icon: newItemIcon.trim() || 'ShoppingBag',
-            secondIcon: newItemIcon.trim() || '',
+            icon: cleanImageUrl(newItemIcon) || 'ShoppingBag',
+            secondIcon: cleanImageUrl(newItemIcon) || '',
             section: newItemSection.trim() === '' ? null : newItemSection.trim(),
         };
         const success = await handleAddItem(itemData);
@@ -491,98 +510,96 @@ function App() {
         }
     };
 
-    // **NOVA FUNCIÓ PER PUJAR FITXER EXCEL (corregida)**
+    // **FUNCIÓ CORREGIDA PER PUJAR FITXER EXCEL**
     const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) {
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-            if (json.length < 2) {
-                setFeedbackMessage("El fitxer Excel no té dades o el format és incorrecte.");
-                setFeedbackType('error');
-                return;
-            }
-
-            const header = json[0].map(h => h.trim().toLowerCase());
-            const rows = json.slice(1);
-
-            const nameIndex = header.indexOf('nom');
-            const sectionIndex = header.indexOf('secció');
-            const iconIndex = header.indexOf('icona principal');
-            const secondIconIndex = header.indexOf('icona secundària');
-
-            if (nameIndex === -1) {
-                setFeedbackMessage("El fitxer Excel ha de contenir la columna 'Nom'.");
-                setFeedbackType('error');
-                return;
-            }
-
-            let successfulUploads = 0;
-            const batch = writeBatch(db);
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-            const itemsCollectionRef = collection(db, itemsPath);
-
-            for (const row of rows) {
-                const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
-                if (itemName === '') {
-                    continue;
-                }
-                
-                // Millora la gestió de les URLs de les imatges
-                let itemIcon = iconIndex !== -1 && row[iconIndex] ? String(row[iconIndex]).trim() : '';
-                let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? String(row[secondIconIndex]).trim() : '';
-
-                // Afegir https:// si l'URL no té protocol
-                if (itemIcon && !itemIcon.startsWith('http://') && !itemIcon.startsWith('https://')) {
-                    itemIcon = 'https://' + itemIcon;
-                }
-                if (itemSecondIcon && !itemSecondIcon.startsWith('http://') && !itemSecondIcon.startsWith('https://')) {
-                    itemSecondIcon = 'https://' + itemSecondIcon;
-                }
-
-                const itemData = {
-                    name: itemName,
-                    quantity: '',
-                    section: sectionIndex !== -1 ? (row[sectionIndex] ? String(row[sectionIndex]).trim() : '') : '',
-                    icon: itemIcon,
-                    secondIcon: itemSecondIcon,
-                    isBought: false,
-                    isInShoppingList: false,
-                    createdAt: serverTimestamp(),
-                    orderIndex: null
-                };
-
-                const newDocRef = doc(itemsCollectionRef);
-                batch.set(newDocRef, itemData);
-                successfulUploads++;
-            }
-
-            if (successfulUploads > 0) {
-                await batch.commit();
-                setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel!`);
-                setFeedbackType('success');
-            } else {
-                setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
-                setFeedbackType('error');
-            }
-        } catch (error) {
-            console.error("Error processant el fitxer:", error);
-            setFeedbackMessage("Error processant el fitxer: " + error.message);
-            setFeedbackType('error');
+        const file = event.target.files[0];
+        if (!file) {
+            return;
         }
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (json.length < 2) {
+                    setFeedbackMessage("El fitxer Excel no té dades o el format és incorrecte.");
+                    setFeedbackType('error');
+                    return;
+                }
+
+                const header = json[0].map(h => String(h).trim().toLowerCase());
+                const rows = json.slice(1);
+
+                // Busca les columnes amb més flexibilitat
+                const nameIndex = header.findIndex(h => h.includes('nom'));
+                const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
+                const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
+                const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
+
+                if (nameIndex === -1) {
+                    setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'.");
+                    setFeedbackType('error');
+                    return;
+                }
+
+                let successfulUploads = 0;
+                let skippedItems = 0;
+                const batch = writeBatch(db);
+                const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+                const itemsCollectionRef = collection(db, itemsPath);
+
+                for (const row of rows) {
+                    const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
+                    if (itemName === '') {
+                        skippedItems++;
+                        continue;
+                    }
+                    
+                    // Processa les imatges amb la nova funció de neteja
+                    let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
+                    let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
+                    
+                    const itemData = {
+                        name: itemName,
+                        quantity: '',
+                        section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
+                        icon: itemIcon,
+                        secondIcon: itemSecondIcon,
+                        isBought: false,
+                        isInShoppingList: false,
+                        createdAt: serverTimestamp(),
+                        orderIndex: null
+                    };
+
+                    const newDocRef = doc(itemsCollectionRef);
+                    batch.set(newDocRef, itemData);
+                    successfulUploads++;
+                }
+
+                if (successfulUploads > 0) {
+                    await batch.commit();
+                    setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
+                    setFeedbackType('success');
+                } else {
+                    setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
+                    setFeedbackType('error');
+                }
+            } catch (error) {
+                console.error("Error processant el fitxer:", error);
+                setFeedbackMessage("Error processant el fitxer: " + error.message);
+                setFeedbackType('error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        
+        // Reinicia el valor del input per permetre pujar el mateix fitxer novament
+        event.target.value = '';
     };
-    reader.readAsArrayBuffer(file);
-};
 
     const toggleItemInShoppingList = useCallback(async (item) => {
         if (!db || !userId) return;
@@ -634,6 +651,15 @@ function App() {
         try {
             const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, id);
+            
+            // Neteja les URLs de les imatges
+            if (updatedData.icon) {
+                updatedData.icon = cleanImageUrl(updatedData.icon);
+            }
+            if (updatedData.secondIcon) {
+                updatedData.secondIcon = cleanImageUrl(updatedData.secondIcon);
+            }
+            
             await updateDoc(itemDocRef, updatedData);
             setFeedbackMessage("Element actualitzat correctament!");
             setFeedbackType('success');
