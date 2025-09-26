@@ -1,58 +1,75 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family:
+-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #f0f3f5; /* Nou color de fons, més suau */
+    background-color:
+#f0f3f5; /* Nou color de fons, més suau */
 }
-
+ 
 code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+    font-family:
+source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
-
+ 
 /* Classes per a l'efecte Neomòrfic Suau */
-
+ 
 .box-shadow-neomorphic-container {
-    box-shadow: 8px 8px 16px #c4d0e0, -8px -8px 16px #ffffff;
+    box-shadow: 8px
+8px 16px #c4d0e0, -8px -8px 16px #ffffff;
 }
-
+ 
 .box-shadow-neomorphic-button {
-    box-shadow: 4px 4px 8px #c4d0e0, -4px -4px 8px #ffffff;
+    box-shadow: 4px
+4px 8px #c4d0e0, -4px -4px 8px #ffffff;
 }
-
+ 
 .box-shadow-neomorphic-button-inset {
-    box-shadow: inset 4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
+    box-shadow: inset
+4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
 }
-
+ 
 .box-shadow-neomorphic-button-small {
-    box-shadow: 2px 2px 4px #c4d0e0, -2px -2px 4px #ffffff;
+    box-shadow: 2px
+2px 4px #c4d0e0, -2px -2px 4px #ffffff;
 }
-
+ 
 .box-shadow-neomorphic-input {
-    box-shadow: inset 4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
+    box-shadow: inset
+4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
 }
-
+ 
 .box-shadow-neomorphic-element {
-    box-shadow: 6px 6px 12px #c4d0e0, -6px -6px 12px #ffffff;
+    box-shadow: 6px
+6px 12px #c4d0e0, -6px -6px 12px #ffffff;
 }
-
+ 
 .box-shadow-neomorphic-element-green {
-    box-shadow: 6px 6px 12px #94d82d, -6px -6px 12px #a6ff33;
+    box-shadow: 6px
+6px 12px #94d82d, -6px -6px 12px #a6ff33;
 }
-
+ 
 .box-shadow-neomorphic-element-bought {
-    box-shadow: inset 6px 6px 12px #c4d0e0, inset -6px -6px 12px #ffffff;
+    box-shadow: inset
+6px 6px 12px #c4d0e0, inset -6px -6px 12px #ffffff;
 }
-
+ 
 /* Ajustos de la interfície d'usuari (UI) */
 input, button, select, textarea {
     outline: none;
 }
-
+ 
+/* ** CANVI VISUAL SOL·LICITAT **: Els botons actius (fent clic) s'enfonsen. */
+/* Això aplica l'estil enfonsat a TOTS els botons quan es premen. */
 button:active {
-    box-shadow: inset 4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
+    box-shadow: inset
+4px 4px 8px #c4d0e0, inset -4px -4px 8px #ffffff;
+    /* Redueix lleugerament el desplaçament en fer clic per simular que s'enfonsa */
+    transform: translateY(1px); 
 }
