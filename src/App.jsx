@@ -27,7 +27,7 @@ import * as XLSX from 'xlsx';
 
 // Configuració de Firebase
 const firebaseConfig = {
-    apiKey: "AlzaSyA7UHOZMIRETZzodta3O3Fm5GtxSDTK-yE",
+    apiKey: "AIzaSyA7UHoZMIRETZzodta3O2Fm5GtxSDTK-yE",
     authDomain: "mua-app-da319.firebaseapp.com",
     projectId: "mua-app-da319",
     storageBucket: "mua-app-da319.firebasestorage.app",
