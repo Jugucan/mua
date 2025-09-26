@@ -1,39 +1,38 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
- getAuth,
- signInAnonymously,
- onAuthStateChanged,
- createUserWithEmailAndPassword,
- signInWithEmailAndPassword,
- signOut,
- sendPasswordResetEmail
+    getAuth,
+    signInAnonymously,
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import {
- getFirestore,
- collection,
- doc,
- addDoc,
- updateDoc,
- deleteDoc,
- onSnapshot,
- query,
- serverTimestamp,
- writeBatch
+    getFirestore,
+    collection,
+    doc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    onSnapshot,
+    query,
+    serverTimestamp,
+    writeBatch
 } from 'firebase/firestore';
 import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, Edit, Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react';
-
 // Importa la llibreria per a Excel
 import * as XLSX from 'xlsx';
 
 // Configuració de Firebase
 const firebaseConfig = {
- apiKey: "AIzaSyA7UHoZMIRETZzodta3O2Fm5GtxSDTK-yE",
- authDomain: "mua-app-da319.firebaseapp.com",
- projectId: "mua-app-da319",
- storageBucket: "mua-app-da319.firebasestorage.app",
- messagingSenderId: "470410760524",
- appId: "1:470410760524:web:37ea6347402e495e393fe9"
+    apiKey: "AlzaSyA7UHOZMIRETZzodta3O2Fm5GtxSDTK-yE",
+    authDomain: "mua-app-da319.firebaseapp.com",
+    projectId: "mua-app-da319",
+    storageBucket: "mua-app-da319.firebasestorage.app",
+    messagingSenderId: "470410760524",
+    appId: "1:470410760524:web:37ea6347402e495e393fe9"
 };
 
 // Inicialitza Firebase
@@ -44,22 +43,18 @@ const APP_ID = 'mua-app-da319';
 
 // Funció per validar i netejar URLs
 const cleanImageUrl = (url) => {
-    if (!url || typeof url !== 'string') return '';
-    
+    if (!url || typeof url !== 'string') return "";
     const cleanedUrl = url.trim();
-    
     // Si ja té protocol, retorna-la tal com està
     if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
         return cleanedUrl;
     }
-    
     // Si sembla una URL vàlida sense protocol, afegeix https://
     if (cleanedUrl.includes('.') && !cleanedUrl.includes(' ')) {
         return 'https://' + cleanedUrl;
     }
-    
     // Si no és una URL vàlida, retorna buit
-    return '';
+    return "";
 };
 
 // Modal per editar elements
@@ -76,7 +71,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
             quantity: editedQuantity,
             icon: editedIcon,
             secondIcon: editedSecondIcon,
-            section: editedSection.trim() === "" ? null : editedSection.trim()
+            section: editedSection.trim() === '' ? null : editedSection.trim()
         });
         onClose();
     };
@@ -199,18 +194,18 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
 
 const ImageModal = ({ src, onClose }) => {
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4 z-50"
             onClick={onClose}
         >
             <div className="relative" onClick={e => e.stopPropagation()}>
-                <img 
-                    src={src} 
-                    alt="Expanded" 
-                    className="max-w-full max-h-[90vh] rounded-lg shadow-lg" 
+                <img
+                    src={src}
+                    alt="Expanded"
+                    className="max-w-full max-h-[90vh] rounded-lg shadow-lg"
                 />
-                <button 
-                    onClick={onClose} 
+                <button
+                    onClick={onClose}
                     className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2"
                 >
                     <X className="w-6 h-6" />
@@ -251,11 +246,11 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                 >
                     <X className="w-5 h-5" />
                 </button>
-                
                 {userEmail ? (
                     <div>
                         <h3 className="text-xl font-bold mb-4 text-gray-700">El meu compte</h3>
-                        <p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span className="font-semibold">{userEmail}</span></p>
+                        <p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span
+                            className="font-semibold">{userEmail}</span></p>
 
                         <div className="mb-4">
                             <h4 className="text-lg font-bold mb-2">Preferències de visualització</h4>
@@ -263,9 +258,9 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                 <button
                                     onClick={() => setDisplayMode('list')}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${
-                                        displayMode === 'list' 
-                                        ? 'bg-[#f0f3f5] text-green-500' 
-                                        : 'bg-[#f0f3f5] text-gray-700'
+                                        displayMode === 'list'
+                                            ? 'bg-[#f0f3f5] text-green-500'
+                                            : 'bg-[#f0f3f5] text-gray-700'
                                     }`}
                                 >
                                     <List className="w-5 h-5" /> Vista llista
@@ -273,20 +268,20 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                 <button
                                     onClick={() => setDisplayMode('grid')}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${
-                                        displayMode === 'grid' 
-                                        ? 'bg-[#f0f3f5] text-green-500' 
-                                        : 'bg-[#f0f3f5] text-gray-700'
+                                        displayMode === 'grid'
+                                            ? 'bg-[#f0f3f5] text-green-500'
+                                            : 'bg-[#f0f3f5] text-gray-700'
                                     }`}
                                 >
                                     <Grid className="w-5 h-5" /> Vista quadrícula
                                 </button>
                             </div>
                         </div>
-
                         <button
                             onClick={onLogout}
                             className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] mt-4"
                         >
+
                             <LogOut className="inline-block w-5 h-5 mr-2" /> Tanca sessió
                         </button>
                     </div>
@@ -305,6 +300,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
+
                             </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Contrasenya</label>
@@ -315,6 +311,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
+
                             </div>
                             {errorMessage && <p className="text-red-500 text-sm mb-4">{errorMessage}</p>}
                             <div className="flex flex-col gap-3">
@@ -322,6 +319,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     type="submit"
                                     className="w-full bg-[#f0f3f5] text-green-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"
                                 >
+
                                     {isRegistering ? 'Registra\'t' : 'Inicia sessió'}
                                 </button>
                                 <button
@@ -329,6 +327,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onClick={() => setIsRegistering(!isRegistering)}
                                     className="w-full bg-[#f0f3f5] text-gray-700 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"
                                 >
+
                                     {isRegistering ? 'Ja tinc un compte' : 'No tinc un compte'}
                                 </button>
                                 <button
@@ -336,6 +335,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
                                     onClick={handleForgotPasswordClick}
                                     className="text-sm text-blue-600 hover:underline"
                                 >
+
                                     Has oblidat la contrasenya?
                                 </button>
                             </div>
@@ -355,7 +355,7 @@ function App() {
     const [newItemQuantity, setNewItemQuantity] = useState("");
     const [newItemIcon, setNewItemIcon] = useState("");
     const [newItemSection, setNewItemSection] = useState("");
-    const [currentView, setCurrentView] = useState('pantry');
+    const [currentView, setCurrentView] = useState('pantry'); // Posa 'pantry' com a vista per defecte
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [feedbackType, setFeedbackType] = useState('info');
     const [isAuthReady, setIsAuthReady] = useState(false);
@@ -370,7 +370,7 @@ function App() {
     // Seccions disponibles
     const availableSections = useMemo(() => {
         const sections = new Set([
-            'Fruita i Verdura', 'Làctics', 'Carn i Peix', 'Pa i Pastisseria', 
+            'Fruita i Verdura', 'Làctics', 'Carn i Peix', 'Pa i Pastisseria',
             'Begudes', 'Neteja', 'Higiene Personal', 'Altres'
         ]);
         items.forEach(item => {
@@ -414,7 +414,8 @@ function App() {
 
     useEffect(() => {
         if (db && userId && isAuthReady) {
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemsCollectionRef = collection(db, itemsPath);
             const q = query(itemsCollectionRef);
             const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -435,6 +436,7 @@ function App() {
                 setFeedbackType('error');
                 setItems([]);
             });
+
             return () => unsubscribe();
         }
     }, [db, userId, isAuthReady]);
@@ -452,14 +454,15 @@ function App() {
         const iconSrc = item.isHovered && item.secondIcon ? item.secondIcon : item.icon;
         if (iconSrc && (iconSrc.startsWith('http://') || iconSrc.startsWith('https://'))) {
             return (
-                <img 
-                    src={iconSrc} 
-                    alt="icona personalitzada" 
+                <img
+                    src={iconSrc}
+                    alt="icona personalitzada"
                     className={`${className} object-cover rounded`}
                     onError={(e) => {
                         e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
-                    }} 
+                    }}
                 />
+
             );
         }
         return <ShoppingBag className={`${className} text-gray-600`} />;
@@ -473,7 +476,8 @@ function App() {
         }
 
         try {
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemsCollectionRef = collection(db, itemsPath);
             await addDoc(itemsCollectionRef, {
                 ...itemData,
@@ -495,7 +499,8 @@ function App() {
         const itemData = {
             name: newItemName.trim(),
             quantity: newItemQuantity.trim(),
-            icon: cleanImageUrl(newItemIcon) || 'ShoppingBag',
+            icon: cleanImageUrl(newItemIcon) ||
+                'ShoppingBag',
             secondIcon: cleanImageUrl(newItemIcon) || '',
             section: newItemSection.trim() === '' ? null : newItemSection.trim(),
         };
@@ -516,7 +521,8 @@ function App() {
         if (!file) {
             return;
         }
-        
+
+
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -534,13 +540,14 @@ function App() {
 
                 const header = json[0].map(h => String(h).trim().toLowerCase());
                 const rows = json.slice(1);
-
                 // Busca les columnes amb més flexibilitat
                 const nameIndex = header.findIndex(h => h.includes('nom'));
-                const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
-                const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
-                const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
-
+                const sectionIndex = header.findIndex(h => h.includes('secció') ||
+                    h.includes('seccio'));
+                const iconIndex = header.findIndex(h => h.includes('icona') &&
+                    h.includes('principal'));
+                const secondIconIndex = header.findIndex(h => h.includes('icona') &&
+                    (h.includes('secundària') || h.includes('secundaria')));
                 if (nameIndex === -1) {
                     setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'.");
                     setFeedbackType('error');
@@ -550,24 +557,29 @@ function App() {
                 let successfulUploads = 0;
                 let skippedItems = 0;
                 const batch = writeBatch(db);
-                const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+                const itemsPath =
+                    `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
                 const itemsCollectionRef = collection(db, itemsPath);
 
                 for (const row of rows) {
                     const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
+
                     if (itemName === '') {
                         skippedItems++;
                         continue;
                     }
-                    
+
+
                     // Processa les imatges amb la nova funció de neteja
-                    let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
-                    let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
-                    
+                    let itemIcon = iconIndex !== -1 && row[iconIndex] ?
+                        cleanImageUrl(String(row[iconIndex])) : '';
+                    let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ?
+                        cleanImageUrl(String(row[secondIconIndex])) : '';
                     const itemData = {
                         name: itemName,
                         quantity: '',
-                        section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
+                        section: sectionIndex !== -1 && row[sectionIndex] ?
+                            String(row[sectionIndex]).trim() : '',
                         icon: itemIcon,
                         secondIcon: itemSecondIcon,
                         isBought: false,
@@ -575,7 +587,6 @@ function App() {
                         createdAt: serverTimestamp(),
                         orderIndex: null
                     };
-
                     const newDocRef = doc(itemsCollectionRef);
                     batch.set(newDocRef, itemData);
                     successfulUploads++;
@@ -583,10 +594,12 @@ function App() {
 
                 if (successfulUploads > 0) {
                     await batch.commit();
-                    setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
+                    setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de 
+ l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
                     setFeedbackType('success');
                 } else {
-                    setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
+                    setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. 
+ Comprova que el format sigui correcte.");
                     setFeedbackType('error');
                 }
             } catch (error) {
@@ -596,7 +609,8 @@ function App() {
             }
         };
         reader.readAsArrayBuffer(file);
-        
+
+
         // Reinicia el valor del input per permetre pujar el mateix fitxer novament
         event.target.value = '';
     };
@@ -604,7 +618,8 @@ function App() {
     const toggleItemInShoppingList = useCallback(async (item) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, item.id);
             let newIsInShoppingList;
             let newIsBought;
@@ -620,7 +635,8 @@ function App() {
                 isBought: newIsBought,
                 orderIndex: null
             });
-            setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`);
+            setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la 
+ compra' : 'tret de la llista de la compra'}!`);
             setFeedbackType('success');
         } catch (error) {
             console.error("Error canviant element:", error);
@@ -632,12 +648,14 @@ function App() {
     const toggleBought = useCallback(async (id, currentStatus) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, id);
             await updateDoc(itemDocRef, {
                 isBought: !currentStatus
             });
-            setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
+            setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat 
+ com a pendent'}!`);
             setFeedbackType('success');
         } catch (error) {
             console.error("Error alternant estat:", error);
@@ -649,9 +667,11 @@ function App() {
     const handleUpdateItem = useCallback(async (id, updatedData) => {
         if (!db || !userId) return;
         try {
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, id);
-            
+
+
             // Neteja les URLs de les imatges
             if (updatedData.icon) {
                 updatedData.icon = cleanImageUrl(updatedData.icon);
@@ -659,7 +679,8 @@ function App() {
             if (updatedData.secondIcon) {
                 updatedData.secondIcon = cleanImageUrl(updatedData.secondIcon);
             }
-            
+
+
             await updateDoc(itemDocRef, updatedData);
             setFeedbackMessage("Element actualitzat correctament!");
             setFeedbackType('success');
@@ -672,10 +693,12 @@ function App() {
 
     const handleDeleteItem = useCallback(async (item) => {
         if (!db || !userId) return;
-        const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
+        const confirmDelete = window.confirm(`Estàs segur que vols eliminar 
+ "${item.name}"?`);
         if (!confirmDelete) return;
         try {
-            const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemsPath =
+                `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
             const itemDocRef = doc(db, itemsPath, item.id);
             await deleteDoc(itemDocRef);
             setFeedbackMessage("Element eliminat correctament!");
@@ -683,6 +706,30 @@ function App() {
         } catch (error) {
             console.error("Error eliminant element:", error);
             setFeedbackMessage("Error eliminant element: " + error.message);
+            setFeedbackType('error');
+        }
+    }, [db, userId]);
+    
+    // ** NOVA FUNCIÓ IMPLEMENTADA: Moure element de Despensa a Llista de la Compra **
+    const afegirDeDespensaALlista = useCallback(async (item) => {
+        if (!db || !userId) return;
+        try {
+            const itemsPath = 
+    `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+            const itemDocRef = doc(db, itemsPath, item.id);
+            
+            // L'actualitzem per posar-lo a la llista i com a NO comprat
+            await updateDoc(itemDocRef, {
+                isInShoppingList: true,
+                isBought: false,
+                orderIndex: null
+            });
+            
+            setFeedbackMessage(`'${item.name}' afegit a la llista de la compra.`);
+            setFeedbackType('success');
+        } catch (error) {
+            console.error("Error afegint de la despensa a la llista:", error);
+            setFeedbackMessage("Error afegint de la despensa a la llista: " + error.message);
             setFeedbackType('error');
         }
     }, [db, userId]);
@@ -743,7 +790,9 @@ function App() {
     const shoppingListItems = items.filter(item => item.isInShoppingList);
     const unboughtItems = shoppingListItems.filter(item => !item.isBought);
     const boughtItems = shoppingListItems.filter(item => item.isBought);
-    const gridClasses = numColumns === 3 ? 'grid-cols-3 md:grid-cols-5 lg:grid-cols-7' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6';
+    const gridClasses = numColumns === 3 ?
+        'grid-cols-3 md:grid-cols-5 lg:grid-cols-7' :
+        'grid-cols-2 md:grid-cols-4 lg:grid-cols-6';
 
     return (
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
@@ -751,12 +800,14 @@ function App() {
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
                     Llista de la compra
                 </h1>
+
                 {userId && (
                     <button
                         onClick={() => setShowAuthModal(true)}
                         className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button"
                         aria-label="Menú d'usuari"
                     >
+
                         <User className="w-6 h-6 text-gray-700" />
                     </button>
                 )}
@@ -765,39 +816,46 @@ function App() {
                 </p>
             </header>
             {feedbackMessage && (
-                <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center
-                    ${feedbackType === 'info' ? 'bg-blue-500' :
+                <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 
+ py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items 
+ center
+  ${feedbackType === 'info' ? 'bg-blue-500' :
                         feedbackType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
                 >
+
                     {feedbackMessage}
                 </div>
             )}
-            <div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb-6 mx-auto">
+            <div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb 
+ 6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button
                         onClick={() => setCurrentView('pantry')}
-                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button-inset ${
-                            currentView === 'pantry' 
-                            ? 'bg-[#f0f3f5] text-green-500' 
-                            : 'bg-[#f0f3f5] text-gray-700'
+                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button ${
+                            currentView === 'pantry'
+                                ? 'box-shadow-neomorphic-button-inset text-green-500' // Fem que el botó actiu estigui enfonsat
+                                : 'text-gray-700'
                         }`}
                     >
+
                         Despensa ({pantryItems.length})
                     </button>
                     <button
                         onClick={() => setCurrentView('shoppingList')}
-                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button-inset ${
-                            currentView === 'shoppingList' 
-                            ? 'bg-[#f0f3f5] text-green-500' 
-                            : 'bg-[#f0f3f5] text-gray-700'
+                        className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button ${
+                            currentView === 'shoppingList'
+                                ? 'box-shadow-neomorphic-button-inset text-green-500' // Fem que el botó actiu estigui enfonsat
+                                : 'text-gray-700'
                         }`}
                     >
+
                         Llista ({shoppingListItems.length})
                     </button>
                 </div>
             </div>
             {/* Formulari per afegir elements */}
-            <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mb-6 mx-auto w-full max-w-xl">
+            <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container 
+ mb-6 mx-auto w-full max-w-xl">
                 <div className="flex flex-col gap-3">
                     <input
                         type="text"
@@ -809,6 +867,7 @@ function App() {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <input
                         type="text"
                         placeholder="Quantitat (opcional)"
@@ -819,6 +878,7 @@ function App() {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <input
                         type="text"
                         placeholder="URL de la imatge (opcional)"
@@ -829,6 +889,7 @@ function App() {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <input
                         type="text"
                         list="sections-datalist"
@@ -840,6 +901,7 @@ function App() {
                             if (e.key === 'Enter') handleNewItemFormSubmit();
                         }}
                     />
+
                     <datalist id="sections-datalist">
                         {availableSections.map((section, index) => (
                             <option key={index} value={section} />
@@ -847,118 +909,146 @@ function App() {
                     </datalist>
                     <button
                         onClick={handleNewItemFormSubmit}
-                        className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2"
+                        className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center 
+ justify-center gap-2"
                     >
+
                         <Plus className="w-5 h-5" />
                         Afegeix element
                     </button>
                     {/* Botó per pujar Excel */}
-                    <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                    <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text 
+ gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-
+ [#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
                         <FileUp className="w-5 h-5" />
                         Puja des d'Excel
                     </label>
-                    <input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+                    <input id="file-upload" type="file" accept=".xlsx, .xls"
+                        onChange={handleFileUpload} className="hidden" />
                 </div>
             </div>
             {/* Vistes principals */}
             {currentView === 'pantry' && (
-                <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                <div className="bg-[#f0f3f5] p-4 rounded-lg 
+ box-shadow-neomorphic-container 
+ mx-auto w-full">
                     <h2 className="text-xl font-bold mb-4 text-gray-700">
                         Elements a la despensa ({pantryItems.length})
                     </h2>
-                    {pantryItems.length === 0 ? (
-                        <p className="text-gray-600 text-center py-4">
-                            No hi ha elements. Afegeix-ne alguns per començar!
-                        </p>
-                    ) : (
-                        <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
-                            {pantryItems.map(item => (
-                                <div key={item.id} className="relative">
-                                    <button
-                                        onClick={() => toggleItemInShoppingList(item)}
-                                        onDoubleClick={(e) => {
-                                            e.preventDefault();
-                                            if (item.secondIcon) {
-                                                setExpandedImage(item.icon);
-                                            }
-                                        }}
-                                        className={`${displayMode === 'list' 
-                                            ? 'flex flex-row items-center justify-start p-3' 
-                                            : 'flex flex-col items-center justify-center p-4'
-                                        } bg-white rounded-lg box-shadow-neomorphic-element hover:bg-gray-50 transition-all w-full text-center`}
-                                    >
-                                        <div 
-                                            className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
-                                            onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-                                            onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (item.secondIcon) {
-                                                    const newItems = items.map(i => {
-                                                        if (i.id === item.id) {
-                                                            return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-                                                        }
-                                                        return i;
-                                                    });
-                                                    setItems(newItems);
-                                                }
-                                            }}
-                                        >
-                                            {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
+
+                    {pantryItems.length === 0 ?
+                        (
+                            <p className="text-gray-600 text-center py-4">
+                                No hi ha elements. Afegeix-ne alguns per començar!
+                            </p>
+                        ) : (
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid 
+ ${gridClasses} gap-4`}>
+                                {pantryItems.map(item => (
+                                    <div key={item.id} className="relative">
+                                        {/* NOU BLOC PER A LA DESPENSA: CONTENIDOR AMB DOS BOTONS D'ACCIÓ */}
+                                        <div className="relative flex items-center bg-[#f0f3f5] p-3 rounded-lg box-shadow-neomorphic-container w-full">
+                                            {/* CONTENIDOR DE LA INFORMACIÓ DE L'ELEMENT */}
+                                            <div
+                                                className="flex-shrink-0 mr-3 cursor-pointer"
+                                                onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ?
+                                                    { ...i, isHovered: true } : i))}
+                                                onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id
+                                                    ? { ...i, isHovered: false } : i))}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (item.secondIcon) {
+                                                        const newItems = items.map(i => {
+                                                            if (i.id === item.id) {
+                                                                return { ...i, icon: i.secondIcon, secondIcon: i.icon };
+                                                            }
+                                                            return i;
+                                                        });
+                                                        setItems(newItems);
+                                                    }
+                                                }}
+                                            >
+                                                {renderItemIcon(item, 'w-10 h-10')}
+                                            </div>
+
+                                            {/* TEXT DE L'ELEMENT */}
+                                            <div className="flex-grow text-left overflow-hidden">
+                                                <span className="font-semibold text-sm block truncate">{item.name}</span>
+                                                {item.quantity && (
+                                                    <span className="text-xs text-gray-500 block truncate">{item.quantity}</span>
+                                                )}
+                                                {item.section && (
+                                                    <span className="text-xs text-gray-400 block truncate">{item.section}</span>
+                                                )}
+                                            </div>
+
+                                            {/* CONTENIDOR DELS BOTONS D'ACCIÓ */}
+                                            <div className="flex flex-shrink-0 ml-3 gap-2">
+                                                {/* BOTÓ D'AFEGIR A LA LLISTA (Noves Funcions) */}
+                                                <button
+                                                    onClick={() => afegirDeDespensaALlista(item)}
+                                                    className="p-2 rounded-full bg-[#f0f3f5] text-green-500 box-shadow-neomorphic-button-small"
+                                                    aria-label={`Afegir ${item.name} a la llista`}
+                                                >
+                                                    <ListPlus className="w-5 h-5" />
+                                                </button>
+
+                                                {/* BOTÓ D'EDICIÓ */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingItem(item);
+                                                        setShowEditModal(true);
+                                                    }}
+                                                    className="p-2 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small"
+                                                    aria-label={`Edita ${item.name}`}
+                                                >
+                                                    <Edit className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
-                                            <span className="font-semibold text-sm">{item.name}</span>
-                                            {item.quantity && (
-                                                <span className="text-xs text-gray-500 block mt-1">{item.quantity}</span>
-                                            )}
-                                            {item.section && (
-                                                <span className="text-xs text-gray-400 block mt-1">{item.section}</span>
-                                            )}
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingItem(item);
-                                            setShowEditModal(true);
-                                        }}
-                                        className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
-                                        aria-label={`Edita ${item.name}`}
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                 </div>
             )}
             {currentView === 'shoppingList' && (
                 <div className="space-y-6">
                     {/* Elements per comprar */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic 
+ container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes per comprar ({unboughtItems.length})
                         </h2>
+
                         {unboughtItems.length === 0 ? (
                             <p className="text-gray-600 text-center py-4">
                                 No hi ha productes pendents a la teva llista de la compra.
                             </p>
                         ) : (
-                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
+                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid 
+ ${gridClasses} gap-4`}>
                                 {unboughtItems.map(item => (
                                     <div key={item.id} className="relative">
                                         <button
+
                                             onDoubleClick={() => toggleBought(item.id, item.isBought)}
-                                            className={`${displayMode === 'list' 
-                                                ? 'flex flex-row items-center justify-start p-3' 
+                                            className={`${displayMode === 'list'
+                                                ? 'flex flex-row items-center justify-start p-3'
                                                 : 'flex flex-col items-center justify-center p-4'
-                                            } bg-white rounded-lg box-shadow-neomorphic-element-green hover:bg-gray-50 transition-all w-full text-center`}
+                                                } bg-white rounded-lg box-shadow-neomorphic-element-green 
+ hover:bg-gray-50 transition-all w-full text-center`}
                                         >
-                                            <div 
-                                                className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
-                                                onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-                                                onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
+
+                                            <div
+                                                className={`${displayMode === 'list' ?
+                                                    'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
+                                                onMouseEnter={() => setItems(prev => prev.map(i => i.id ===
+                                                    item.id ? { ...i, isHovered: true } : i))}
+
+                                                onMouseLeave={() => setItems(prev => prev.map(i => i.id ===
+                                                    item.id ? { ...i, isHovered: false } : i))}
                                                 onDoubleClick={(e) => {
                                                     e.preventDefault();
                                                     if (item.secondIcon) {
@@ -978,14 +1068,18 @@ function App() {
                                                     }
                                                 }}
                                             >
+
                                                 {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
                                             </div>
-                                            <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
+                                            <div className={`${displayMode === 'list' ?
+                                                'ml-4 flex-grow text-left'
+                                                : 'mt-2'}`}>
                                                 <span className="font-semibold text-sm">{item.name}</span>
                                                 {item.quantity && (
                                                     <span className="text-xs text-gray-500 block mt-1">{item.quantity}</span>
                                                 )}
                                                 {item.section && (
+
                                                     <span className="text-xs text-gray-400 block mt-1">{item.section}</span>
                                                 )}
                                             </div>
@@ -996,9 +1090,11 @@ function App() {
                                                 setEditingItem(item);
                                                 setShowEditModal(true);
                                             }}
-                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text 
+ gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
                                             aria-label={`Edita ${item.name}`}
                                         >
+
                                             <Edit className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -1007,75 +1103,93 @@ function App() {
                         )}
                     </div>
                     {/* Elements comprats */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic 
+ container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes comprats ({boughtItems.length})
                         </h2>
-                        {boughtItems.length === 0 ? (
-                            <p className="text-gray-600 text-center py-4">
-                                Encara no hi ha productes comprats.
-                            </p>
-                        ) : (
-                            <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid ${gridClasses} gap-4`}>
-                                {boughtItems.map(item => (
-                                    <div key={item.id} className="relative">
-                                        <button
-                                            onDoubleClick={() => toggleBought(item.id, item.isBought)}
-                                            className={`${displayMode === 'list' 
-                                                ? 'flex flex-row items-center justify-start p-3' 
-                                                : 'flex flex-col items-center justify-center p-4'
-                                            } bg-white rounded-lg box-shadow-neomorphic-element-bought hover:bg-gray-50 transition-all w-full text-center opacity-75`}
-                                        >
-                                            <div 
-                                                className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w-12 h-12'}`}
-                                                onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-                                                onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-                                                onDoubleClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (item.secondIcon) {
-                                                        setExpandedImage(item.icon);
-                                                    }
-                                                }}
+
+                        {boughtItems.length === 0 ?
+                            (
+                                <p className="text-gray-600 text-center py-4">
+                                    Encara no hi ha productes comprats.
+                                </p>
+                            ) : (
+                                <div className={displayMode === 'list' ? 'flex flex-col gap-3' : `grid 
+ ${gridClasses} gap-4`}>
+                                    {boughtItems.map(item => (
+                                        <div key={item.id} className="relative">
+                                            <button
+                                                onDoubleClick={() => toggleBought(item.id, item.isBought)}
+                                                className={`${displayMode === 'list'
+                                                    ? 'flex flex-row items-center justify-start p-3'
+                                                    : 'flex flex-col items-center justify-center p-4'
+                                                    } bg-white rounded-lg box-shadow-neomorphic-element-bought 
+ hover:bg-gray-50 transition-all w-full text-center opacity-75`}
+                                            >
+
+                                                <div
+                                                    className={`${displayMode === 'list' ? 'w-8 h-8 flex-shrink-0' : 'w 
+ 12 h-12'}`}
+                                                    onMouseEnter={() => setItems(prev => prev.map(i => i.id ===
+                                                        item.id ? { ...i, isHovered: true }
+                                                        : i))}
+                                                    onMouseLeave={() => setItems(prev => prev.map(i => i.id ===
+                                                        item.id ? { ...i, isHovered: false } : i))}
+                                                    onDoubleClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (item.secondIcon) {
+                                                            setExpandedImage(item.icon);
+                                                        }
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (item.secondIcon) {
+                                                            const newItems = items.map(i => {
+                                                                if (i.id === item.id) {
+                                                                    return { ...i, icon: i.secondIcon, secondIcon: i.icon };
+                                                                }
+                                                                return i;
+                                                            });
+                                                            setItems(newItems);
+                                                        }
+                                                    }}
+                                                >
+
+                                                    {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
+                                                </div>
+                                                <div className={`${displayMode === 'list' ?
+                                                    'ml-4 flex-grow text-left'
+                                                    : 'mt-2'}`}>
+                                                    <span className="font-semibold text-sm line 
+ through">{item.name}</span>
+                                                    {item.quantity && (
+                                                        <span className="text-xs text-gray-400 block mt-1 line 
+ through">{item.quantity}</span>
+                                                    )}
+                                                    {item.section && (
+                                                        <span className="text-xs text-gray-400 block mt-1 line 
+ through">{item.section}</span>
+                                                    )}
+                                                </div>
+                                            </button>
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (item.secondIcon) {
-                                                        const newItems = items.map(i => {
-                                                            if (i.id === item.id) {
-                                                                return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-                                                            }
-                                                            return i;
-                                                        });
-                                                        setItems(newItems);
-                                                    }
+                                                    setEditingItem(item);
+                                                    setShowEditModal(true);
                                                 }}
+                                                className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text 
+ gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
+                                                aria-label={`Edita ${item.name}`}
                                             >
-                                                {renderItemIcon(item, displayMode === 'list' ? 'w-8 h-8' : 'w-12 h-12')}
-                                            </div>
-                                            <div className={`${displayMode === 'list' ? 'ml-4 flex-grow text-left' : 'mt-2'}`}>
-                                                <span className="font-semibold text-sm line-through">{item.name}</span>
-                                                {item.quantity && (
-                                                    <span className="text-xs text-gray-400 block mt-1 line-through">{item.quantity}</span>
-                                                )}
-                                                {item.section && (
-                                                    <span className="text-xs text-gray-400 block mt-1 line-through">{item.section}</span>
-                                                )}
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingItem(item);
-                                                setShowEditModal(true);
-                                            }}
-                                            className="absolute top-1 right-1 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9]"
-                                            aria-label={`Edita ${item.name}`}
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+
+                                                <Edit className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                     </div>
                 </div>
             )}
@@ -1088,6 +1202,7 @@ function App() {
                     onDelete={handleDeleteItem}
                     availableSections={availableSections}
                 />
+
             )}
             {/* Modal d'autenticació */}
             {showAuthModal && (
@@ -1102,6 +1217,7 @@ function App() {
                     displayMode={displayMode}
                     setDisplayMode={setDisplayMode}
                 />
+
             )}
             {/* Modal per a la imatge expandida */}
             {expandedImage && (
