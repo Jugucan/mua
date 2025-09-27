@@ -231,8 +231,16 @@ onLogin(email, password);
 }
 };
 const handleForgotPasswordClick = () => {
-const userEmail = prompt("Introdueix el teu correu electrònic per restablir la
-contrasenya:");
+// CORRECCIÓ DE L'ERROR: Ús de backticks (`) per a strings multi-línia
+const userEmail = prompt(`Introdueix el teu correu electrònic per restablir la
+contrasenya:`);
+if (userEmail) {
+onForgotPassword(userEmail);
+}
+};
+const handleForgotPasswordClick = () => {
+const userEmail = prompt(`Introdueix el teu correu electrònic per restablir la
+contrasenya:`);
 if (userEmail) {
 onForgotPassword(userEmail);
 }
