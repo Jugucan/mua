@@ -73,3 +73,15 @@ button:active {
     /* Redueix lleugerament el desplaçament en fer clic per simular que s'enfonsa */
     transform: translateY(1px); 
 }
+/* Estils per limitar el text a 2 línies */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Efectes hover millorats */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
