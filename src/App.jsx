@@ -22,23 +22,20 @@ serverTimestamp,
 writeBatch
 } from 'firebase/firestore';
 import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, CreditCard as Edit, Grid2x2
-as Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react';
+as Grid, List, Share2, LogOut, ListPlus, FileUp} from 'lucide-react';
 import * as XLSX from 'xlsx';
-
 const firebaseConfig = {
-apiKey: "AIzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkI",
+apiKey: "AlzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkl",
 authDomain: "mua-app-eed40.firebaseapp.com",
 projectId: "mua-app-eed40",
 storageBucket: "mua-app-eed40.firebasestorage.app",
 messagingSenderId: "792715069043",
 appId: "1:792715069043:web:76d7596c5f3615312d0c06"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const APP_ID = 'mua-app-da319';
-
 const cleanImageUrl = (url) => {
 if (!url || typeof url !== 'string') return "";
 const cleanedUrl = url.trim();
@@ -50,25 +47,22 @@ return 'https://' + cleanedUrl;
 }
 return "";
 };
-
 const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) => {
 const [editedName, setEditedName] = useState(item.name);
 const [editedQuantity, setEditedQuantity] = useState(item.quantity || "");
 const [editedIcon, setEditedIcon] = useState(item.icon || 'Shopping Bag');
 const [editedSecondIcon, setEditedSecondIcon] = useState(item.secondIcon || "");
 const [editedSection, setEditedSection] = useState(item.section || "");
-
 const handleSave = () => {
 onSave(item.id, {
 name: editedName,
 quantity: editedQuantity,
 icon: editedIcon,
 secondIcon: editedSecondIcon,
-section: editedSection.trim() === '' ? null : editedSection.trim()
+section: editedSection.trim() === "" ? null : editedSection.trim()
 });
 onClose();
 };
-
 const renderIcon = (iconString) => {
 if (iconString && (iconString.startsWith('http://') || iconString.startsWith('https://'))) {
 return (
@@ -84,22 +78,26 @@ e.target.src = 'https://placehold.co/48x48/cccccc/000000?text=Error';
 }
 return <ShoppingBag className="w-12 h-12 text-gray-600" />;
 };
-
 return (
-<div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-<div className="bg-[#f0f3f5] p-6 rounded-lg w-full max-w-md relative box-shadow-neomorphic-container">
+<div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4
+ z-50">
+<div className="bg-[#f0f3f5] p-6 rounded-lg w-full max-w-md relative box-shadow-
+neomorphic-container">
 <button
 onClick={onClose}
-className="absolute top-3 right-3 p-1 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button"
+className="absolute top-3 right-3 p-1 rounded-full bg-[#f0f3f5] box-shadow-
+neomorphic-button"
 >
 <X className="w-5 h-5" />
 </button>
 <h3 className="text-xl font-bold mb-4 text-gray-700">Edita l'element</h3>
 <div className="mb-4">
-<label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'element</label>
+<label className="block text-sm font-medium text-gray-700 mb-1">Nom de
+l'element</label>
 <input
 type="text"
-className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-
+neomorphic-input"
 value={editedName}
 onChange={(e) => setEditedName(e.target.value)}
 />
@@ -108,48 +106,57 @@ onChange={(e) => setEditedName(e.target.value)}
 <label className="block text-sm font-medium text-gray-700 mb-1">Quantitat</label>
 <input
 type="text"
-className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-
+neomorphic-input"
 value={editedQuantity}
 onChange={(e) => setEditedQuantity(e.target.value)}
 placeholder="Ex: 1 kg, 2 litres..."
 />
 </div>
 <div className="mb-4">
-<label className="block text-sm font-medium text-gray-700 mb-1">Icona Principal (URL)</label>
+<label className="block text-sm font-medium text-gray-700 mb-1">Icona Principal
+(URL)</label>
 <div className="flex items-center gap-3">
-<div className="w-12 h-12 flex-shrink-0 rounded-md flex items-center justify-center overflow-hidden box-shadow-neomorphic-element">
+<div className="w-12 h-12 flex-shrink-0 rounded-md flex items-center justify-center
+overflow-hidden box-shadow-neomorphic-element">
 {renderIcon(editedIcon)}
 </div>
 <input
 type="text"
 placeholder="URL de la imatge (opcional)"
-className="flex-grow p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="flex-grow p-2 border-none rounded-md focus: outline-none box-shadow-
+neomorphic-input"
 value={editedIcon}
 onChange={(e) => setEditedIcon(e.target.value)}
 />
 </div>
 </div>
 <div className="mb-4">
-<label className="block text-sm font-medium text-gray-700 mb-1">Icona Secundària (URL - Opcional)</label>
+<label className="block text-sm font-medium text-gray-700 mb-1">Icona Secundària
+(URL - Opcional)</label>
 <div className="flex items-center gap-3">
-<div className="w-12 h-12 flex-shrink-0 rounded-md flex items-center justify-center overflow-hidden box-shadow-neomorphic-element">
+<div className="w-12 h-12 flex-shrink-0 rounded-md flex items-center justify-center
+overflow-hidden box-shadow-neomorphic-element">
 {renderIcon(editedSecondIcon)}
 </div>
 <input
 type="text"
 placeholder="URL de la imatge secundària (opcional)"
-className="flex-grow p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="flex-grow p-2 border-none rounded-md focus: outline-none box-shadow-
+neomorphic-input"
 value={editedSecondIcon}
 onChange={(e) => setEditedSecondIcon(e.target.value)}
 />
 </div>
 </div>
 <div className="mb-4">
-<label className="block text-sm font-medium text-gray-700 mb-1">Secció / Passadís</label>
+<label className="block text-sm font-medium text-gray-700 mb-1">Secció /
+Passadís</label>
 <input
 type="text"
 list="sections-datalist"
-className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-
+neomorphic-input"
 value={editedSection}
 onChange={(e) => setEditedSection(e.target.value)}
 placeholder="Ex: Làctics, Fruita i Verdura"
@@ -163,19 +170,22 @@ placeholder="Ex: Làctics, Fruita i Verdura"
 <div className="flex justify-end space-x-3">
 <button
 onClick={onClose}
-className="px-4 py-2 bg-[#f0f3f5] text-gray-700 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] font-semibold"
+className="px-4 py-2 bg-[#f0f3f5] text-gray-700 rounded-md box-shadow-neomorphic-
+button hover:bg-[#e6e6e9] font-semibold"
 >
-Cancel·la
+Cancella
 </button>
 <button
 onClick={() => { onDelete(item); onClose(); }}
-className="px-4 py-2 bg-[#f0f3f5] text-red-500 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] font-semibold"
+className="px-4 py-2 bg-[#f0f3f5] text-red-500 rounded-md box-shadow-neomorphic-
+button hover:bg-[#e6e6e9] font-semibold"
 >
 Elimina
 </button>
 <button
 onClick={handleSave}
-className="px-4 py-2 bg-[#f0f3f5] text-green-500 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] font-semibold"
+className="px-4 py-2 bg-[#f0f3f5] text-green-500 rounded-md box-shadow-neomorphic-
+button hover:bg-[#e6e6e9] font-semibold"
 >
 Desa
 </button>
@@ -184,14 +194,14 @@ Desa
 </div>
 );
 };
-
 const ImageModal = ({ src, onClose }) => {
 return (
 <div
-className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4 z-50"
+className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4 z-
+50"
 onClick={onClose}
 >
-<div className="relative" onClick={e => e.stopPropagation()}>
+<div className="relative" onClick={(e) => e.stopPropagation()}>
 <img
 src={src}
 alt="Expanded"
@@ -207,12 +217,11 @@ className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full
 </div>
 );
 };
-
-const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMessage, onForgotPassword, displayMode, setDisplayMode }) => {
+const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMessage,
+onForgotPassword, displayMode, setDisplayMode }) => {
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
-const [isRegistering, setIsRegistering] = useState(false);
-
+const [isRegistering, setlsRegistering] = useState(false);
 const handleSubmit = (e) => {
 e.preventDefault();
 if (isRegistering) {
@@ -221,33 +230,37 @@ onRegister(email, password);
 onLogin(email, password);
 }
 };
-
 const handleForgotPasswordClick = () => {
-const userEmail = prompt("Introdueix el teu correu electrònic per restablir la contrasenya:");
+const userEmail = prompt("Introdueix el teu correu electrònic per restablir la
+contrasenya:");
 if (userEmail) {
 onForgotPassword(userEmail);
 }
 };
-
 return (
-<div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-<div className="bg-[#f0f3f5] p-6 rounded-lg w-full max-w-sm relative box-shadow-neomorphic-container">
+<div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4
+z-50">
+<div className="bg-[#f0f3f5] p-6 rounded-lg w-full max-w-sm relative box-shadow-
+neomorphic-container">
 <button
 onClick={onClose}
-className="absolute top-3 right-3 p-1 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button"
+className="absolute top-3 right-3 p-1 rounded-full bg-[#f0f3f5] box-shadow-
+neomorphic-button"
 >
 <X className="w-5 h-5" />
 </button>
 {userEmail ? (
 <div>
 <h3 className="text-xl font-bold mb-4 text-gray-700">El meu compte</h3>
-<p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span className="font-semibold">{userEmail}</span></p>
+<p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span
+className="font-semibold">{userEmail}</span></p>
 <div className="mb-4">
 <h4 className="text-lg font-bold mb-2">Preferències de visualització</h4>
 <div className="flex justify-center gap-4">
 <button
 onClick={() => setDisplayMode('list')}
-className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${
+className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-
+button-inset transition-all ${
 displayMode === 'list'
 ? 'bg-[#f0f3f5] text-green-500'
 : 'bg-[#f0f3f5] text-gray-700'
@@ -257,7 +270,8 @@ displayMode === 'list'
 </button>
 <button
 onClick={() => setDisplayMode('grid')}
-className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${
+className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-
+button-inset transition-all ${
 displayMode === 'grid'
 ? 'bg-[#f0f3f5] text-green-500'
 : 'bg-[#f0f3f5] text-gray-700'
@@ -269,7 +283,8 @@ displayMode === 'grid'
 </div>
 <button
 onClick={onLogout}
-className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] mt-4"
+className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-shadow-
+neomorphic-button hover:bg-[#e6e6e9] mt-4"
 >
 <LogOut className="inline-block w-5 h-5 mr-2" /> Tanca sessió
 </button>
@@ -281,45 +296,57 @@ className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-s
 </h3>
 <form onSubmit={handleSubmit}>
 <div className="mb-4">
-<label className="block text-sm font-medium text-gray-700 mb-1">Correu electrònic</label>
+<label className="block text-sm font-medium text-gray-700 mb-1">Correu
+electrònic</label>
 <input
 type="email"
-className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="w-full p-2 border-none rounded-md focus: outline-none box-shadow-
+neomorphic-input"
 value={email}
 onChange={(e) => setEmail(e.target.value)}
 required
 />
+ 
 </div>
 <div className="mb-4">
 <label className="block text-sm font-medium text-gray-700 mb-1">Contrasenya</label>
 <input
 type="password"
-className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input"
+className="w-full p-2 border-none rounded-md focus:outline-none box-shadow 
+neomorphic-input"
 value={password}
 onChange={(e) => setPassword(e.target.value)}
 required
 />
+ 
 </div>
 {errorMessage && <p className="text-red-500 text-sm mb-4">{errorMessage}</p>}
 <div className="flex flex-col gap-3">
 <button
 type="submit"
-className="w-full bg-[#f0f3f5] text-green-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"
+className="w-full bg-[#f0f3f5] text-green-500 font-bold py-2 px-4 rounded-md box 
+shadow-neomorphic-button hover:bg-[#e6e6e9]"
 >
-{isRegistering ? 'Registra\'t' : 'Inicia sessió'}
+ 
+{isRegistering ?
+'Registra\'t' : 'Inicia sessió'}
 </button>
 <button
 type="button"
-onClick={() => setIsRegistering(!isRegistering)}
-className="w-full bg-[#f0f3f5] text-gray-700 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"
+onClick={() => setlsRegistering(!isRegistering)}
+className="w-full bg-[#f0f3f5] text-gray-700 font-bold py-2 px-4 rounded-md box 
+shadow-neomorphic-button hover:bg-[#e6e6e9]"
 >
-{isRegistering ? 'Ja tinc un compte' : 'No tinc un compte'}
+ 
+{isRegistering ?
+'Ja tinc un compte' : 'No tinc un compte'}
 </button>
 <button
 type="button"
 onClick={handleForgotPasswordClick}
 className="text-sm text-blue-600 hover:underline"
 >
+ 
 Has oblidat la contrasenya?
 </button>
 </div>
@@ -330,7 +357,6 @@ Has oblidat la contrasenya?
 </div>
 );
 };
-
 function App() {
 const [userId, setUserId] = useState(null);
 const [userEmail, setUserEmail] = useState(null);
@@ -348,8 +374,8 @@ const [authErrorMessage, setAuthErrorMessage] = useState('');
 const [editingItem, setEditingItem] = useState(null);
 const [showEditModal, setShowEditModal] = useState(false);
 const [displayMode, setDisplayMode] = useState('grid');
-const [expandedImage, setExpandedImage] = useState(null);
-
+const [expandedImage, setExpandedImage] = useState(null); // <-- Estat per l'ampliació d'imatge
+ 
 const availableSections = useMemo(() => {
 const sections = new Set([
 'Fruita i Verdura', 'Làctics', 'Carn i Peix', 'Pa i Pastisseria',
@@ -362,7 +388,6 @@ sections.add(item.section);
 });
 return Array.from(sections).sort();
 }, [items]);
-
 useEffect(() => {
 const unsubscribe = onAuthStateChanged(auth, async (user) => {
 if (user) {
@@ -390,13 +415,13 @@ setIsAuthReady(true);
 });
 return () => unsubscribe();
 }, []);
-
 useEffect(() => {
 if (db && userId && isAuthReady) {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemsCollectionRef = collection(db, itemsPath);
 const q = query(itemsCollectionRef);
-
+ 
 const unsubscribe = onSnapshot(q, (snapshot) => {
 const itemsData = snapshot.docs.map(doc => ({
 id: doc.id,
@@ -416,11 +441,10 @@ setFeedbackMessage("Error carregant elements: " + error.message);
 setFeedbackType('error');
 setItems([]);
 });
-
 return () => unsubscribe();
 }
 }, [db, userId, isAuthReady]);
-
+ 
 useEffect(() => {
 if (feedbackMessage) {
 const timer = setTimeout(() => {
@@ -429,7 +453,6 @@ setFeedbackMessage('');
 return () => clearTimeout(timer);
 }
 }, [feedbackMessage]);
-
 const renderItemIcon = useCallback((iconUrl, className = "w-16 h-16") => {
 if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) {
 return (
@@ -441,18 +464,17 @@ onError={(e) => {
 e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
 }}
 />
+ 
 );
 }
 return <ShoppingBag className={`${className} text-gray-600`} />;
 }, []);
-
 // Funció per alternar el flip d'un element
 const toggleFlip = useCallback((itemId) => {
 setItems(prev => prev.map(item => 
 item.id === itemId ? { ...item, isFlipped: !item.isFlipped } : item
 ));
 }, []);
-
 const handleAddItem = useCallback(async (itemData) => {
 if (itemData.name.trim() === '' || !db || !userId) {
 setFeedbackMessage("No es pot afegir: Falta el nom de l'element.");
@@ -460,9 +482,10 @@ setFeedbackType('error');
 return;
 }
 try {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemsCollectionRef = collection(db, itemsPath);
-
+ 
 await addDoc(itemsCollectionRef, {
 ...itemData,
 isBought: false,
@@ -478,16 +501,17 @@ setFeedbackType('error');
 return false;
 }
 }, [db, userId]);
-
+ 
 const handleNewItemFormSubmit = async () => {
 const itemData = {
 name: newItemName.trim(),
 quantity: newItemQuantity.trim(),
-icon: cleanImageUrl(newItemIcon) || 'ShoppingBag',
+icon: cleanImageUrl(newItemIcon) ||
+'ShoppingBag',
 secondIcon: cleanImageUrl(newItemIcon) || '',
 section: newItemSection.trim() === '' ? null : newItemSection.trim(),
 };
-
+ 
 const success = await handleAddItem(itemData);
 if (success) {
 setNewItemName('');
@@ -498,11 +522,10 @@ setFeedbackMessage("Element afegit correctament!");
 setFeedbackType('success');
 }
 };
-
 const handleFileUpload = (event) => {
 const file = event.target.files[0];
 if (!file) return;
-
+ 
 const reader = new FileReader();
 reader.onload = async (e) => {
 try {
@@ -511,46 +534,49 @@ const workbook = XLSX.read(data, { type: 'array' });
 const sheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[sheetName];
 const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
+ 
 if (json.length < 2) {
 setFeedbackMessage("El fitxer Excel no té dades o el format és incorrecte.");
 setFeedbackType('error');
 return;
 }
-
+ 
 const header = json[0].map(h => String(h).trim().toLowerCase());
 const rows = json.slice(1);
 const nameIndex = header.findIndex(h => h.includes('nom'));
 const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
 const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
-const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
-
+const secondIconIndex = header.findIndex(h => h.includes('icona') && 
+(h.includes('secundària') || h.includes('secundaria')));
 if (nameIndex === -1) {
 setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'.");
 setFeedbackType('error');
 return;
 }
-
 let successfulUploads = 0;
 let skippedItems = 0;
 const batch = writeBatch(db);
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemsCollectionRef = collection(db, itemsPath);
-
+ 
 for (const row of rows) {
 const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
 if (itemName === '') {
 skippedItems++;
 continue;
 }
-
-let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
-let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
-
+ 
+let itemIcon = iconIndex !== -1 && row[iconIndex] ?
+cleanImageUrl(String(row[iconIndex])) : 
+'';
+let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? 
+cleanImageUrl(String(row[secondIconIndex])) : '';
 const itemData = {
 name: itemName,
 quantity: '',
-section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
+section: sectionIndex !== -1 && row[sectionIndex] ?
+String(row[sectionIndex]).trim() : '',
 icon: itemIcon,
 secondIcon: itemSecondIcon,
 isBought: false,
@@ -558,18 +584,20 @@ isInShoppingList: false,
 createdAt: serverTimestamp(),
 orderIndex: null
 };
-
+ 
 const newDocRef = doc(itemsCollectionRef);
 batch.set(newDocRef, itemData);
 successfulUploads++;
 }
-
+ 
 if (successfulUploads > 0) {
 await batch.commit();
-setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
+setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! 
+${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
 setFeedbackType('success');
 } else {
-setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
+setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el 
+format sigui correcte.");
 setFeedbackType('error');
 }
 } catch (error) {
@@ -581,16 +609,17 @@ setFeedbackType('error');
 reader.readAsArrayBuffer(file);
 event.target.value = '';
 };
-
+ 
 const toggleItemInShoppingList = useCallback(async (item) => {
 if (!db || !userId) return;
 try {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemDocRef = doc(db, itemsPath, item.id);
-
+ 
 let newIsInShoppingList;
 let newIsBought;
-
+ 
 if (item.isInShoppingList && !item.isBought) {
 newIsInShoppingList = false;
 newIsBought = false;
@@ -598,14 +627,14 @@ newIsBought = false;
 newIsInShoppingList = true;
 newIsBought = false;
 }
-
+ 
 await updateDoc(itemDocRef, {
 isInShoppingList: newIsInShoppingList,
 isBought: newIsBought,
 orderIndex: null
 });
-
-setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`);
+setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 
+'tret de la llista de la compra'}!`);
 setFeedbackType('success');
 } catch (error) {
 console.error("Error canviant element:", error);
@@ -613,18 +642,18 @@ setFeedbackMessage("Error: " + error.message);
 setFeedbackType('error');
 }
 }, [db, userId]);
-
 const toggleBought = useCallback(async (id, currentStatus) => {
 if (!db || !userId) return;
 try {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemDocRef = doc(db, itemsPath, id);
-
 await updateDoc(itemDocRef, {
 isBought: !currentStatus
 });
-
-setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
+ 
+setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com 
+a pendent'}!`);
 setFeedbackType('success');
 } catch (error) {
 console.error("Error alternant estat:", error);
@@ -632,20 +661,20 @@ setFeedbackMessage("Error: " + error.message);
 setFeedbackType('error');
 }
 }, [db, userId]);
-
 const handleUpdateItem = useCallback(async (id, updatedData) => {
 if (!db || !userId) return;
 try {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemDocRef = doc(db, itemsPath, id);
-
+ 
 if (updatedData.icon) {
 updatedData.icon = cleanImageUrl(updatedData.icon);
 }
 if (updatedData.secondIcon) {
 updatedData.secondIcon = cleanImageUrl(updatedData.secondIcon);
 }
-
+ 
 await updateDoc(itemDocRef, updatedData);
 setFeedbackMessage("Element actualitzat correctament!");
 setFeedbackType('success');
@@ -655,17 +684,17 @@ setFeedbackMessage("Error actualitzant element: " + error.message);
 setFeedbackType('error');
 }
 }, [db, userId]);
-
 const handleDeleteItem = useCallback(async (item) => {
 if (!db || !userId) return;
-
+ 
 const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
 if (!confirmDelete) return;
-
+ 
 try {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemDocRef = doc(db, itemsPath, item.id);
-
+ 
 await deleteDoc(itemDocRef);
 setFeedbackMessage("Element eliminat correctament!");
 setFeedbackType('success');
@@ -675,19 +704,18 @@ setFeedbackMessage("Error eliminant element: " + error.message);
 setFeedbackType('error');
 }
 }, [db, userId]);
-
 const afegirDeDespensaALlista = useCallback(async (item) => {
 if (!db || !userId) return;
 try {
-const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+const itemsPath = 
+`artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
 const itemDocRef = doc(db, itemsPath, item.id);
-
 await updateDoc(itemDocRef, {
 isInShoppingList: true,
 isBought: false,
 orderIndex: null
 });
-
+ 
 setFeedbackMessage(`'${item.name}' afegit a la llista de la compra.`);
 setFeedbackType('success');
 } catch (error) {
@@ -696,7 +724,6 @@ setFeedbackMessage("Error afegint de la despensa a la llista: " + error.message)
 setFeedbackType('error');
 }
 }, [db, userId]);
-
 const handleLogin = useCallback(async (email, password) => {
 setAuthErrorMessage('');
 try {
@@ -709,7 +736,6 @@ console.error("Error iniciant sessió:", error);
 setAuthErrorMessage("Error iniciant sessió: " + error.message);
 }
 }, []);
-
 const handleRegister = useCallback(async (email, password) => {
 setAuthErrorMessage('');
 try {
@@ -722,7 +748,6 @@ console.error("Error registrant usuari:", error);
 setAuthErrorMessage("Error registrant: " + error.message);
 }
 }, []);
-
 const handlePasswordReset = useCallback(async (email) => {
 setAuthErrorMessage('');
 try {
@@ -734,7 +759,6 @@ console.error("Error enviant correu de recuperació:", error);
 setAuthErrorMessage("Error enviant correu de recuperació: " + error.message);
 }
 }, []);
-
 const handleLogout = useCallback(async () => {
 try {
 await signOut(auth);
@@ -748,26 +772,28 @@ setFeedbackMessage("Error tancant sessió: " + error.message);
 setFeedbackType('error');
 }
 }, []);
-
+ 
 const pantryItems = items.filter(item => !item.isInShoppingList || item.isBought);
 const shoppingListItems = items.filter(item => item.isInShoppingList);
 const unboughtItems = shoppingListItems.filter(item => !item.isBought);
 const boughtItems = shoppingListItems.filter(item => item.isBought);
-
-const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
-
+const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid 
+cols-6';
 return (
 <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
 <header className="w-full mb-6 text-center relative">
 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
 Llista de la compra
 </h1>
+ 
 {userId && (
 <button
 onClick={() => setShowAuthModal(true)}
-className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button"
+className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow 
+neomorphic-button"
 aria-label="Menú d'usuari"
 >
+ 
 <User className="w-6 h-6 text-gray-700" />
 </button>
 )}
@@ -775,43 +801,53 @@ aria-label="Menú d'usuari"
 {userEmail ? `Usuari: ${userEmail}` : 'Mode anònim'}
 </p>
 </header>
-
+ 
 {feedbackMessage && (
-<div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center
+<div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 
+rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center
 ${feedbackType === 'info' ? 'bg-blue-500' :
 feedbackType === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
 >
+ 
 {feedbackMessage}
 </div>
 )}
-
-<div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb-6 mx-auto">
+ 
+<div className="w-full max-w-full flex flex-col sm:flex-row justify-center gap-4 mb-6 mx 
+auto">
 <div className="flex justify-center gap-4">
 <button
 onClick={() => setCurrentView('pantry')}
-className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button ${
+className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic 
+button ${
 currentView === 'pantry'
-? 'box-shadow-neomorphic-button-inset text-green-500'
+?
+'box-shadow-neomorphic-button-inset text-green-500'
 : 'text-gray-700'
 }`}
 >
+ 
 Despensa ({pantryItems.length})
 </button>
 <button
 onClick={() => setCurrentView('shoppingList')}
-className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic-button ${
+className={`px-6 py-3 rounded-md font-bold transition-all box-shadow-neomorphic 
+button ${
 currentView === 'shoppingList'
-? 'box-shadow-neomorphic-button-inset text-green-500'
+?
+'box-shadow-neomorphic-button-inset text-green-500'
 : 'text-gray-700'
 }`}
 >
+ 
 Llista ({shoppingListItems.length})
 </button>
 </div>
 </div>
-
+ 
 {/* Formulari per afegir elements */}
-<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mb-6 mx-auto w-full max-w-xl">
+<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mb-6 
+mx-auto w-full max-w-xl">
 <div className="flex flex-col gap-3">
 <input
 type="text"
@@ -823,6 +859,7 @@ onKeyPress={(e) => {
 if (e.key === 'Enter') handleNewItemFormSubmit();
 }}
 />
+ 
 <input
 type="text"
 placeholder="Quantitat (opcional)"
@@ -833,6 +870,7 @@ onKeyPress={(e) => {
 if (e.key === 'Enter') handleNewItemFormSubmit();
 }}
 />
+ 
 <input
 type="text"
 placeholder="URL de la imatge (opcional)"
@@ -843,6 +881,7 @@ onKeyPress={(e) => {
 if (e.key === 'Enter') handleNewItemFormSubmit();
 }}
 />
+ 
 <input
 type="text"
 list="sections-datalist"
@@ -854,6 +893,7 @@ onKeyPress={(e) => {
 if (e.key === 'Enter') handleNewItemFormSubmit();
 }}
 />
+ 
 <datalist id="sections-datalist">
 {availableSections.map((section, index) => (
 <option key={index} value={section} />
@@ -861,26 +901,35 @@ if (e.key === 'Enter') handleNewItemFormSubmit();
 </datalist>
 <button
 onClick={handleNewItemFormSubmit}
-className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2"
+className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow 
+neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center 
+gap-2"
 >
+ 
 <Plus className="w-5 h-5" />
 Afegeix element
 </button>
-<label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+<label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 
+font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] 
+transition-colors flex items-center justify-center gap-2 cursor-pointer">
 <FileUp className="w-5 h-5" />
 Puja des d'Excel
 </label>
-<input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+<input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} 
+className="hidden" />
 </div>
 </div>
-
+ 
 {/* Vistes principals */}
 {currentView === 'pantry' && (
-<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx 
+auto w-full">
 <h2 className="text-xl font-bold mb-4 text-gray-700">
 Elements a la despensa ({pantryItems.length})
 </h2>
-{pantryItems.length === 0 ? (
+ 
+{pantryItems.length === 0 ?
+(
 <p className="text-gray-600 text-center py-4">
 No hi ha elements. Afegeix-ne alguns per començar!
 </p>
@@ -890,29 +939,38 @@ No hi ha elements. Afegeix-ne alguns per començar!
 <div key={item.id} className="relative">
 <div className="flip-card" style={{ perspective: '1000px' }}>
 <div 
-className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}
+className={`flip-card-inner ${item.isFlipped ?
+'flip-card-flipped' : ''}`}
 >
+ 
 {/* Front de la carta */}
-<div className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px]">
+<div 
+onClick={() => afegirDeDespensaALlista(item)} // <-- CANVI 2: Afegir a llista amb 1 clic
+className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element 
+p-4 flex flex-col items-center justify-center min-h-[140px] cursor-pointer" // <-- AFEGIT: cursor-pointer
+>
 {/* Botó flip només si té segona imatge */}
 {item.secondIcon && (
 <button
-onClick={() => toggleFlip(item.id)}
-className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} // <-- Evita que el clic es propagui i afegir a llista
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box 
+shadow-neomorphic-button-small z-10"
 aria-label="Girar carta"
 >
+ 
 <RotateCw className="w-3 h-3" />
 </button>
 )}
-
+ 
 {/* Icona principal */}
 <div className="flex-shrink-0 mb-3">
 {renderItemIcon(item.icon, 'w-16 h-16')}
 </div>
-
+ 
 {/* Text centrat */}
 <div className="text-center w-full">
-<span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
+<span className="font-semibold text-sm block text-center mb-1 line-clamp 
+2">{item.name}</span>
 {item.quantity && (
 <span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>
 )}
@@ -921,29 +979,45 @@ aria-label="Girar carta"
 )}
 </div>
 </div>
-
+ 
 {/* Back de la carta (només si té segona imatge) */}
 {item.secondIcon && (
-<div className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px]">
+<div 
+onClick={(e) => { // <-- CANVI 3: Clic a la segona icona per ampliar-la
+e.stopPropagation();
+if (item.secondIcon && (item.secondIcon.startsWith('http://') || item.secondIcon.startsWith('https://'))) {
+setExpandedImage(item.secondIcon); 
+} else {
+// Si no és una URL (p.ex. és una icona de lucide), simplement gira
+toggleFlip(item.id);
+}
+}}
+className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element 
+p-4 flex flex-col items-center justify-center min-h-[140px] cursor-pointer" // <-- AFEGIT: cursor-pointer
+>
 {/* Botó per tornar */}
 <button
-onClick={() => toggleFlip(item.id)}
-className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} // <-- Evita que el clic es propagui i ampliï
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box 
+shadow-neomorphic-button-small z-10"
 aria-label="Tornar"
 >
+ 
 <RotateCw className="w-3 h-3" />
 </button>
-
+ 
 {/* Segona icona */}
 <div className="flex-shrink-0 mb-3">
 {renderItemIcon(item.secondIcon, 'w-16 h-16')}
 </div>
-
+ 
 {/* Text centrat */}
 <div className="text-center w-full">
-<span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
+<span className="font-semibold text-sm block text-center mb-1 line-clamp 
+2">{item.name}</span>
 {item.quantity && (
-<span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>
+<span className="text-xs 
+text-gray-500 block text-center mb-1">{item.quantity}</span>
 )}
 {item.section && (
 <span className="text-xs text-gray-400 block text-center">{item.section}</span>
@@ -953,24 +1027,29 @@ aria-label="Tornar"
 )}
 </div>
 </div>
-
+ 
 {/* Botons d'acció sempre visibles */}
 <div className="absolute top-2 right-2 flex gap-1">
 <button
-onClick={() => afegirDeDespensaALlista(item)}
-className="p-1 rounded-full bg-[#f0f3f5] text-green-500 box-shadow-neomorphic-button-small"
+onClick={(e) => { e.stopPropagation(); afegirDeDespensaALlista(item); }} // <-- AFegir e.stopPropagation()
+className="p-1 rounded-full bg-[#f0f3f5] text-green-500 box-shadow-neomorphic 
+button-small"
 aria-label={`Afegir ${item.name} a la llista`}
 >
+ 
 <ListPlus className="w-4 h-4" />
 </button>
 <button
-onClick={() => {
+onClick={(e) => { // <-- AFegir e.stopPropagation()
+e.stopPropagation();
 setEditingItem(item);
 setShowEditModal(true);
 }}
-className="p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small"
+className="p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button 
+small"
 aria-label={`Edita ${item.name}`}
 >
+ 
 <Edit className="w-4 h-4" />
 </button>
 </div>
@@ -980,14 +1059,16 @@ aria-label={`Edita ${item.name}`}
 )}
 </div>
 )}
-
+ 
 {currentView === 'shoppingList' && (
 <div className="space-y-6">
 {/* Elements per comprar */}
-<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx 
+auto w-full">
 <h2 className="text-xl font-bold mb-4 text-gray-700">
 Productes per comprar ({unboughtItems.length})
 </h2>
+ 
 {unboughtItems.length === 0 ? (
 <p className="text-gray-600 text-center py-4">
 No hi ha productes pendents a la teva llista de la compra.
@@ -1000,29 +1081,36 @@ No hi ha productes pendents a la teva llista de la compra.
 <div 
 className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}
 >
+ 
 {/* Front de la carta */}
 <button
 onDoubleClick={() => toggleBought(item.id, item.isBought)}
-className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
+className="flip-card-front 
+bg-white rounded-lg box-shadow-neomorphic-element-green 
+transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
 >
+ 
 {item.secondIcon && (
 <button
 onClick={(e) => {
 e.stopPropagation();
 toggleFlip(item.id);
 }}
-className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box 
+shadow-neomorphic-button-small z-10"
 aria-label="Girar carta"
 >
+ 
 <RotateCw className="w-3 h-3" />
 </button>
 )}
-
+ 
 <div className="w-16 h-16 mb-3">
 {renderItemIcon(item.icon, 'w-16 h-16')}
 </div>
 <div className="text-center w-full">
-<span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
+<span className="font-semibold text-sm block text-center mb-1 line-clamp 
+2">{item.name}</span>
 {item.quantity && (
 <span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>
 )}
@@ -1031,29 +1119,34 @@ aria-label="Girar carta"
 )}
 </div>
 </button>
-
+ 
 {/* Back de la carta */}
 {item.secondIcon && (
 <button
 onDoubleClick={() => toggleBought(item.id, item.isBought)}
-className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
+className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-green 
+transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
 >
+ 
 <button
 onClick={(e) => {
 e.stopPropagation();
 toggleFlip(item.id);
 }}
-className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box 
+shadow-neomorphic-button-small z-10"
 aria-label="Tornar"
 >
+ 
 <RotateCw className="w-3 h-3" />
 </button>
-
+ 
 <div className="w-16 h-16 mb-3">
 {renderItemIcon(item.secondIcon, 'w-16 h-16')}
 </div>
 <div className="text-center w-full">
-<span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
+<span className="font-semibold text-sm block text-center mb-1 line-clamp 
+2">{item.name}</span>
 {item.quantity && (
 <span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>
 )}
@@ -1070,9 +1163,11 @@ onClick={() => {
 setEditingItem(item);
 setShowEditModal(true);
 }}
-className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small"
+className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box 
+shadow-neomorphic-button-small"
 aria-label={`Edita ${item.name}`}
 >
+ 
 <Edit className="w-4 h-4" />
 </button>
 </div>
@@ -1080,13 +1175,16 @@ aria-label={`Edita ${item.name}`}
 </div>
 )}
 </div>
-
+ 
 {/* Elements comprats */}
-<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+<div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx 
+auto w-full">
 <h2 className="text-xl font-bold mb-4 text-gray-700">
 Productes comprats ({boughtItems.length})
 </h2>
-{boughtItems.length === 0 ? (
+ 
+{boughtItems.length === 0 ?
+(
 <p className="text-gray-600 text-center py-4">
 Encara no hi ha productes comprats.
 </p>
@@ -1096,67 +1194,85 @@ Encara no hi ha productes comprats.
 <div key={item.id} className="relative">
 <div className="flip-card" style={{ perspective: '1000px' }}>
 <div 
-className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}
+className={`flip-card-inner ${item.isFlipped ?
+'flip-card-flipped' : ''}`}
 >
+ 
 {/* Front de la carta */}
 <button
 onDoubleClick={() => toggleBought(item.id, item.isBought)}
-className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
+className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element 
+bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center 
+min-h-[140px] w-full"
 >
+ 
 {item.secondIcon && (
 <button
 onClick={(e) => {
 e.stopPropagation();
 toggleFlip(item.id);
 }}
-className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box 
+shadow-neomorphic-button-small z-10"
 aria-label="Girar carta"
 >
+ 
 <RotateCw className="w-3 h-3" />
 </button>
 )}
-
+ 
 <div className="w-16 h-16 mb-3">
 {renderItemIcon(item.icon, 'w-16 h-16')}
 </div>
 <div className="text-center w-full">
-<span className="font-semibold text-sm line-through block text-center mb-1 line-clamp-2">{item.name}</span>
+<span className="font-semibold text-sm line-through block text-center mb-1 line 
+clamp-2">{item.name}</span>
 {item.quantity && (
-<span className="text-xs text-gray-400 block text-center mb-1 line-through">{item.quantity}</span>
+<span className="text-xs text-gray-400 block text-center mb-1 line 
+through">{item.quantity}</span>
 )}
 {item.section && (
-<span className="text-xs text-gray-400 block text-center line-through">{item.section}</span>
+<span className="text-xs text-gray-400 block text-center line 
+through">{item.section}</span>
 )}
 </div>
 </button>
-
+ 
 {/* Back de la carta */}
 {item.secondIcon && (
 <button
 onDoubleClick={() => toggleBought(item.id, item.isBought)}
-className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
+className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element 
+bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center 
+min-h-[140px] w-full"
 >
+ 
 <button
 onClick={(e) => {
 e.stopPropagation();
 toggleFlip(item.id);
 }}
-className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box 
+shadow-neomorphic-button-small z-10"
 aria-label="Tornar"
 >
+ 
 <RotateCw className="w-3 h-3" />
 </button>
-
+ 
 <div className="w-16 h-16 mb-3">
 {renderItemIcon(item.secondIcon, 'w-16 h-16')}
 </div>
 <div className="text-center w-full">
-<span className="font-semibold text-sm line-through block text-center mb-1 line-clamp-2">{item.name}</span>
+<span className="font-semibold text-sm line-through block text-center mb-1 line 
+clamp-2">{item.name}</span>
 {item.quantity && (
-<span className="text-xs text-gray-400 block text-center mb-1 line-through">{item.quantity}</span>
+<span className="text-xs text-gray-400 block text-center mb-1 line 
+through">{item.quantity}</span>
 )}
 {item.section && (
-<span className="text-xs text-gray-400 block text-center line-through">{item.section}</span>
+<span className="text-xs text-gray-400 block text-center line 
+through">{item.section}</span>
 )}
 </div>
 </button>
@@ -1168,9 +1284,11 @@ onClick={() => {
 setEditingItem(item);
 setShowEditModal(true);
 }}
-className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small"
+className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box 
+shadow-neomorphic-button-small"
 aria-label={`Edita ${item.name}`}
 >
+ 
 <Edit className="w-4 h-4" />
 </button>
 </div>
@@ -1178,9 +1296,10 @@ aria-label={`Edita ${item.name}`}
 </div>
 )}
 </div>
+ 
 </div>
 )}
-
+ 
 {/* Modals */}
 {showEditModal && editingItem && (
 <EditItemModal
@@ -1190,8 +1309,9 @@ onSave={handleUpdateItem}
 onDelete={handleDeleteItem}
 availableSections={availableSections}
 />
+ 
 )}
-
+ 
 {showAuthModal && (
 <AuthModal
 onLogin={handleLogin}
@@ -1204,13 +1324,15 @@ onForgotPassword={handlePasswordReset}
 displayMode={displayMode}
 setDisplayMode={setDisplayMode}
 />
+ 
 )}
-
+ 
 {expandedImage && (
 <ImageModal src={expandedImage} onClose={() => setExpandedImage(null)} />
 )}
+ 
 </div>
 );
 }
-
+ 
 export default App;
