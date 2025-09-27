@@ -231,7 +231,6 @@ onLogin(email, password);
 }
 };
 
-// CORRECCIÓ 1: Esborrar la funció duplicada. Aquesta és la correcta.
 const handleForgotPasswordClick = () => {
 const userEmail = prompt(`Introdueix el teu correu electrònic per restablir la
 contrasenya:`);
@@ -593,12 +592,10 @@ successfulUploads++;
 }
  
 if (successfulUploads > 0) {
-await batch.commit();
 setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! 
 ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
 setFeedbackType('success');
 } else {
-// CORRECCIÓ 2: String literal tallat substituït per backticks
 setFeedbackMessage(`No s'ha pogut pujar cap producte des de l'Excel. Comprova que el 
 format sigui correcte.`);
 setFeedbackType('error');
@@ -655,8 +652,8 @@ await updateDoc(itemDocRef, {
 isBought: !currentStatus
 });
  
-setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com 
-a pendent'}!`);
+// CORRECCIÓ FINAL: El string tallat s'uneix en una sola línia
+setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
 setFeedbackType('success');
 } catch (error) {
 console.error("Error alternant estat:", error);
