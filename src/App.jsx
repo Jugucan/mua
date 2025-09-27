@@ -652,7 +652,7 @@ await updateDoc(itemDocRef, {
 isBought: !currentStatus
 });
  
-// CORRECCIÓ FINAL: El string tallat s'uneix en una sola línia
+// CORRECCIÓ DE L'ERROR DE STRING ANTERIOR
 setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
 setFeedbackType('success');
 } catch (error) {
@@ -777,8 +777,8 @@ const pantryItems = items.filter(item => !item.isInShoppingList || item.isBought
 const shoppingListItems = items.filter(item => item.isInShoppingList);
 const unboughtItems = shoppingListItems.filter(item => !item.isBought);
 const boughtItems = shoppingListItems.filter(item => item.isBought);
-const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid 
-cols-6';
+// CORRECCIÓ DE L'ERROR DE STRING ACTUAL
+const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid cols-6';
 return (
 <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
 <header className="w-full mb-6 text-center relative">
