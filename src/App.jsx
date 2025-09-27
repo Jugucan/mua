@@ -230,14 +230,8 @@ onRegister(email, password);
 onLogin(email, password);
 }
 };
-const handleForgotPasswordClick = () => {
-// CORRECCIÓ DE L'ERROR: Ús de backticks (`) per a strings multi-línia
-const userEmail = prompt(`Introdueix el teu correu electrònic per restablir la
-contrasenya:`);
-if (userEmail) {
-onForgotPassword(userEmail);
-}
-};
+
+// CORRECCIÓ 1: Esborrar la funció duplicada. Aquesta és la correcta.
 const handleForgotPasswordClick = () => {
 const userEmail = prompt(`Introdueix el teu correu electrònic per restablir la
 contrasenya:`);
@@ -604,8 +598,9 @@ setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel!
 ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`);
 setFeedbackType('success');
 } else {
-setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el 
-format sigui correcte.");
+// CORRECCIÓ 2: String literal tallat substituït per backticks
+setFeedbackMessage(`No s'ha pogut pujar cap producte des de l'Excel. Comprova que el 
+format sigui correcte.`);
 setFeedbackType('error');
 }
 } catch (error) {
