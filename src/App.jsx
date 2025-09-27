@@ -23,10 +23,8 @@ writeBatch
 } from 'firebase/firestore';
 import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, CreditCard as Edit, Grid2x2
 as Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react';
-// Importa la llibreria per a Excel
 import * as XLSX from 'xlsx';
 
-// Configuració de Firebase
 const firebaseConfig = {
 apiKey: "AIzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkI",
 authDomain: "mua-app-eed40.firebaseapp.com",
@@ -36,29 +34,23 @@ messagingSenderId: "792715069043",
 appId: "1:792715069043:web:76d7596c5f3615312d0c06"
 };
 
-// Inicialitza Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const APP_ID = 'mua-app-da319';
 
-// Funció per validar i netejar URLs
 const cleanImageUrl = (url) => {
 if (!url || typeof url !== 'string') return "";
 const cleanedUrl = url.trim();
-// Si ja té protocol, retorna-la tal com està
 if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
 return cleanedUrl;
 }
-// Si sembla una URL vàlida sense protocol, afegeix https://
 if (cleanedUrl.includes('.') && !cleanedUrl.includes(' ')) {
 return 'https://' + cleanedUrl;
 }
-// Si no és una URL vàlida, retorna buit
 return "";
 };
 
-// Modal per editar elements
 const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) => {
 const [editedName, setEditedName] = useState(item.name);
 const [editedQuantity, setEditedQuantity] = useState(item.quantity || "");
@@ -216,7 +208,6 @@ className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full
 );
 };
 
-// Modal d'autenticació
 const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMessage, onForgotPassword, displayMode, setDisplayMode }) => {
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -357,10 +348,8 @@ const [authErrorMessage, setAuthErrorMessage] = useState('');
 const [editingItem, setEditingItem] = useState(null);
 const [showEditModal, setShowEditModal] = useState(false);
 const [displayMode, setDisplayMode] = useState('grid');
-const [numColumns, setNumColumns] = useState(2);
 const [expandedImage, setExpandedImage] = useState(null);
 
-// Seccions disponibles
 const availableSections = useMemo(() => {
 const sections = new Set([
 'Fruita i Verdura', 'Làctics', 'Carn i Peix', 'Pa i Pastisseria',
@@ -380,18 +369,15 @@ if (user) {
 if (!user.isAnonymous) {
 setUserId(user.uid);
 setUserEmail(user.email);
-console.log("Usuari registrat autenticat:", user.uid);
 } else {
 setUserId(user.uid);
 setUserEmail(null);
-console.log("Usuari anònim recuperat:", user.uid);
 }
 } else {
 try {
 const anonUserCredential = await signInAnonymously(auth);
 setUserId(anonUserCredential.user.uid);
 setUserEmail(null);
-console.log("Sessió anònima iniciada:", anonUserCredential.user.uid);
 } catch (error) {
 console.error("Error durant l'inici de sessió anònim:", error);
 setUserId(crypto.randomUUID());
@@ -420,7 +406,8 @@ const processedItems = itemsData.map(item => ({
 ...item,
 isInShoppingList: !!item.isInShoppingList,
 isBought: !!item.isBought,
-section: item.section || ''
+section: item.section || '',
+isFlipped: false // Inicialitzem l'estat flip
 }));
 setItems(processedItems);
 }, (error) => {
@@ -443,12 +430,11 @@ return () => clearTimeout(timer);
 }
 }, [feedbackMessage]);
 
-const renderItemIcon = useCallback((item, className = "w-16 h-16") => {
-const iconSrc = item.isHovered && item.secondIcon ? item.secondIcon : item.icon;
-if (iconSrc && (iconSrc.startsWith('http://') || iconSrc.startsWith('https://'))) {
+const renderItemIcon = useCallback((iconUrl, className = "w-16 h-16") => {
+if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) {
 return (
 <img
-src={iconSrc}
+src={iconUrl}
 alt="icona personalitzada"
 className={`${className} object-cover rounded`}
 onError={(e) => {
@@ -458,6 +444,13 @@ e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
 );
 }
 return <ShoppingBag className={`${className} text-gray-600`} />;
+}, []);
+
+// Funció per alternar el flip d'un element
+const toggleFlip = useCallback((itemId) => {
+setItems(prev => prev.map(item => 
+item.id === itemId ? { ...item, isFlipped: !item.isFlipped } : item
+));
 }, []);
 
 const handleAddItem = useCallback(async (itemData) => {
@@ -508,9 +501,7 @@ setFeedbackType('success');
 
 const handleFileUpload = (event) => {
 const file = event.target.files[0];
-if (!file) {
-return;
-}
+if (!file) return;
 
 const reader = new FileReader();
 reader.onload = async (e) => {
@@ -763,7 +754,6 @@ const shoppingListItems = items.filter(item => item.isInShoppingList);
 const unboughtItems = shoppingListItems.filter(item => !item.isBought);
 const boughtItems = shoppingListItems.filter(item => item.isBought);
 
-// Nou estil de grid més gran i quadrat
 const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
 return (
@@ -876,7 +866,6 @@ className="bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow
 <Plus className="w-5 h-5" />
 Afegeix element
 </button>
-{/* Botó per pujar Excel */}
 <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
 <FileUp className="w-5 h-5" />
 Puja des d'Excel
@@ -898,27 +887,27 @@ No hi ha elements. Afegeix-ne alguns per començar!
 ) : (
 <div className={`${gridClasses} gap-4`}>
 {pantryItems.map(item => (
-<div key={item.id} className="relative group">
-<div className="bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px] hover:bg-gray-50 transition-all">
-{/* Icona gran */}
-<div
-className="flex-shrink-0 mb-3 cursor-pointer"
-onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-onClick={(e) => {
-e.stopPropagation();
-if (item.secondIcon) {
-const newItems = items.map(i => {
-if (i.id === item.id) {
-return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-}
-return i;
-});
-setItems(newItems);
-}
-}}
+<div key={item.id} className="relative">
+<div className="flip-card" style={{ perspective: '1000px' }}>
+<div 
+className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}
 >
-{renderItemIcon(item, 'w-16 h-16')}
+{/* Front de la carta */}
+<div className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px]">
+{/* Botó flip només si té segona imatge */}
+{item.secondIcon && (
+<button
+onClick={() => toggleFlip(item.id)}
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+aria-label="Girar carta"
+>
+<RotateCw className="w-3 h-3" />
+</button>
+)}
+
+{/* Icona principal */}
+<div className="flex-shrink-0 mb-3">
+{renderItemIcon(item.icon, 'w-16 h-16')}
 </div>
 
 {/* Text centrat */}
@@ -931,9 +920,42 @@ setItems(newItems);
 <span className="text-xs text-gray-400 block text-center">{item.section}</span>
 )}
 </div>
+</div>
 
-{/* Botons que apareixen en hover */}
-<div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+{/* Back de la carta (només si té segona imatge) */}
+{item.secondIcon && (
+<div className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px]">
+{/* Botó per tornar */}
+<button
+onClick={() => toggleFlip(item.id)}
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+aria-label="Tornar"
+>
+<RotateCw className="w-3 h-3" />
+</button>
+
+{/* Segona icona */}
+<div className="flex-shrink-0 mb-3">
+{renderItemIcon(item.secondIcon, 'w-16 h-16')}
+</div>
+
+{/* Text centrat */}
+<div className="text-center w-full">
+<span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
+{item.quantity && (
+<span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>
+)}
+{item.section && (
+<span className="text-xs text-gray-400 block text-center">{item.section}</span>
+)}
+</div>
+</div>
+)}
+</div>
+</div>
+
+{/* Botons d'acció sempre visibles */}
+<div className="absolute top-2 right-2 flex gap-1">
 <button
 onClick={() => afegirDeDespensaALlista(item)}
 className="p-1 rounded-full bg-[#f0f3f5] text-green-500 box-shadow-neomorphic-button-small"
@@ -942,8 +964,7 @@ aria-label={`Afegir ${item.name} a la llista`}
 <ListPlus className="w-4 h-4" />
 </button>
 <button
-onClick={(e) => {
-e.stopPropagation();
+onClick={() => {
 setEditingItem(item);
 setShowEditModal(true);
 }}
@@ -952,7 +973,6 @@ aria-label={`Edita ${item.name}`}
 >
 <Edit className="w-4 h-4" />
 </button>
-</div>
 </div>
 </div>
 ))}
@@ -975,35 +995,31 @@ No hi ha productes pendents a la teva llista de la compra.
 ) : (
 <div className={`${gridClasses} gap-4`}>
 {unboughtItems.map(item => (
-<div key={item.id} className="relative group">
+<div key={item.id} className="relative">
+<div className="flip-card" style={{ perspective: '1000px' }}>
+<div 
+className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}
+>
+{/* Front de la carta */}
 <button
 onDoubleClick={() => toggleBought(item.id, item.isBought)}
-className="bg-white rounded-lg box-shadow-neomorphic-element-green hover:bg-gray-50 transition-all w-full p-4 flex flex-col items-center justify-center min-h-[140px]"
+className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
 >
-<div
-className="w-16 h-16 mb-3"
-onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-onDoubleClick={(e) => {
-e.preventDefault();
-if (item.secondIcon) {
-setExpandedImage(item.icon);
-}
-}}
+{item.secondIcon && (
+<button
 onClick={(e) => {
 e.stopPropagation();
-if (item.secondIcon) {
-const newItems = items.map(i => {
-if (i.id === item.id) {
-return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-}
-return i;
-});
-setItems(newItems);
-}
+toggleFlip(item.id);
 }}
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+aria-label="Girar carta"
 >
-{renderItemIcon(item, 'w-16 h-16')}
+<RotateCw className="w-3 h-3" />
+</button>
+)}
+
+<div className="w-16 h-16 mb-3">
+{renderItemIcon(item.icon, 'w-16 h-16')}
 </div>
 <div className="text-center w-full">
 <span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
@@ -1015,13 +1031,46 @@ setItems(newItems);
 )}
 </div>
 </button>
+
+{/* Back de la carta */}
+{item.secondIcon && (
+<button
+onDoubleClick={() => toggleBought(item.id, item.isBought)}
+className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
+>
 <button
 onClick={(e) => {
 e.stopPropagation();
+toggleFlip(item.id);
+}}
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+aria-label="Tornar"
+>
+<RotateCw className="w-3 h-3" />
+</button>
+
+<div className="w-16 h-16 mb-3">
+{renderItemIcon(item.secondIcon, 'w-16 h-16')}
+</div>
+<div className="text-center w-full">
+<span className="font-semibold text-sm block text-center mb-1 line-clamp-2">{item.name}</span>
+{item.quantity && (
+<span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>
+)}
+{item.section && (
+<span className="text-xs text-gray-400 block text-center">{item.section}</span>
+)}
+</div>
+</button>
+)}
+</div>
+</div>
+<button
+onClick={() => {
 setEditingItem(item);
 setShowEditModal(true);
 }}
-className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9] opacity-0 group-hover:opacity-100 transition-opacity"
+className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small"
 aria-label={`Edita ${item.name}`}
 >
 <Edit className="w-4 h-4" />
@@ -1044,35 +1093,31 @@ Encara no hi ha productes comprats.
 ) : (
 <div className={`${gridClasses} gap-4`}>
 {boughtItems.map(item => (
-<div key={item.id} className="relative group">
+<div key={item.id} className="relative">
+<div className="flip-card" style={{ perspective: '1000px' }}>
+<div 
+className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}
+>
+{/* Front de la carta */}
 <button
 onDoubleClick={() => toggleBought(item.id, item.isBought)}
-className="bg-white rounded-lg box-shadow-neomorphic-element-bought hover:bg-gray-50 transition-all w-full text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px]"
+className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
 >
-<div
-className="w-16 h-16 mb-3"
-onMouseEnter={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: true } : i))}
-onMouseLeave={() => setItems(prev => prev.map(i => i.id === item.id ? { ...i, isHovered: false } : i))}
-onDoubleClick={(e) => {
-e.preventDefault();
-if (item.secondIcon) {
-setExpandedImage(item.icon);
-}
-}}
+{item.secondIcon && (
+<button
 onClick={(e) => {
 e.stopPropagation();
-if (item.secondIcon) {
-const newItems = items.map(i => {
-if (i.id === item.id) {
-return { ...i, icon: i.secondIcon, secondIcon: i.icon };
-}
-return i;
-});
-setItems(newItems);
-}
+toggleFlip(item.id);
 }}
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+aria-label="Girar carta"
 >
-{renderItemIcon(item, 'w-16 h-16')}
+<RotateCw className="w-3 h-3" />
+</button>
+)}
+
+<div className="w-16 h-16 mb-3">
+{renderItemIcon(item.icon, 'w-16 h-16')}
 </div>
 <div className="text-center w-full">
 <span className="font-semibold text-sm line-through block text-center mb-1 line-clamp-2">{item.name}</span>
@@ -1084,13 +1129,46 @@ setItems(newItems);
 )}
 </div>
 </button>
+
+{/* Back de la carta */}
+{item.secondIcon && (
+<button
+onDoubleClick={() => toggleBought(item.id, item.isBought)}
+className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px] w-full"
+>
 <button
 onClick={(e) => {
 e.stopPropagation();
+toggleFlip(item.id);
+}}
+className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10"
+aria-label="Tornar"
+>
+<RotateCw className="w-3 h-3" />
+</button>
+
+<div className="w-16 h-16 mb-3">
+{renderItemIcon(item.secondIcon, 'w-16 h-16')}
+</div>
+<div className="text-center w-full">
+<span className="font-semibold text-sm line-through block text-center mb-1 line-clamp-2">{item.name}</span>
+{item.quantity && (
+<span className="text-xs text-gray-400 block text-center mb-1 line-through">{item.quantity}</span>
+)}
+{item.section && (
+<span className="text-xs text-gray-400 block text-center line-through">{item.section}</span>
+)}
+</div>
+</button>
+)}
+</div>
+</div>
+<button
+onClick={() => {
 setEditingItem(item);
 setShowEditModal(true);
 }}
-className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small hover:bg-[#e6e6e9] opacity-0 group-hover:opacity-100 transition-opacity"
+className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small"
 aria-label={`Edita ${item.name}`}
 >
 <Edit className="w-4 h-4" />
@@ -1103,7 +1181,7 @@ aria-label={`Edita ${item.name}`}
 </div>
 )}
 
-{/* Modal d'edició */}
+{/* Modals */}
 {showEditModal && editingItem && (
 <EditItemModal
 item={editingItem}
@@ -1114,7 +1192,6 @@ availableSections={availableSections}
 />
 )}
 
-{/* Modal d'autenticació */}
 {showAuthModal && (
 <AuthModal
 onLogin={handleLogin}
@@ -1129,7 +1206,6 @@ setDisplayMode={setDisplayMode}
 />
 )}
 
-{/* Modal per a la imatge expandida */}
 {expandedImage && (
 <ImageModal src={expandedImage} onClose={() => setExpandedImage(null)} />
 )}
