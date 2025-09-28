@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Shopping Bag, Plus, User, FileUp } from 'lucide-react';
+import { ShoppingBag, Plus, User, FileUp } from 'lucide-react'; // <--- SOLUCIONAT: ShoppingBag (tot junt)
 import * as XLSX from 'xlsx';
 
 // Components
@@ -15,7 +15,6 @@ import { useFirebase } from './hooks/useFirebase';
 
 function App() {
     // Estats locals
-    // ESTEM ELIMINANT: newItemName, newItemQuantity, newItemIcon, newItemSection de l'estat local d'App.jsx
     const [currentView, setCurrentView] = useState('pantry');
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [feedbackType, setFeedbackType] = useState('info');
@@ -260,7 +259,6 @@ function App() {
                 </div>
             </div>
 
-            {/* AQUESTA SECCIÓ HA ESTAT ELIMINADA: EL FORMULARI D'AFEGIR ELEMENTS */}
             {/* Vistes principals (resta del codi de les targetes) */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
