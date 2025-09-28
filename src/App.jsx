@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore'; 
 
 import { ShoppingBag, Plus, Minus, User, X, Trash2, RotateCw, CreditCard as Edit, Grid2x2 
-  as Grid, List, Share2, LogOut, ListPlus, FileUp } from 'lucide-react'; 
+  as Grid, List, Share2, LogOut, FileUp } from 'lucide-react'; 
 
 import * as XLSX from 'xlsx'; 
 
@@ -146,14 +146,14 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
           </div> 
         </div> 
         <div className="mb-4"> 
-          <label className="block text-sm font-medium text-gray-700 mb-1">Icona Secundària (URL - Opcional)</label> 
+          <label className="block text-sm font-medium text-gray-700 mb-1">Icona SecundÃ ria (URL - Opcional)</label> 
           <div className="flex items-center gap-3"> 
             <div className="w-12 h-12 flex-shrink-0 rounded-md flex items-center justify-center overflow-hidden box-shadow-neomorphic-element"> 
               {renderIcon(editedSecondIcon)} 
             </div> 
             <input 
               type="text" 
-              placeholder="URL de la imatge secundària (opcional)" 
+              placeholder="URL de la imatge secundÃ ria (opcional)" 
               className="flex-grow p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input" 
               value={editedSecondIcon} 
               onChange={(e) => setEditedSecondIcon(e.target.value)} 
@@ -161,14 +161,14 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
           </div> 
         </div> 
         <div className="mb-4"> 
-          <label className="block text-sm font-medium text-gray-700 mb-1">Secció / Passadís</label> 
+          <label className="block text-sm font-medium text-gray-700 mb-1">SecciÃ³ / PassadÃ­s</label> 
           <input 
             type="text" 
             list="sections-datalist" 
             className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input" 
             value={editedSection} 
             onChange={(e) => setEditedSection(e.target.value)} 
-            placeholder="Ex: Làctics, Fruita i Verdura" 
+            placeholder="Ex: LÃ ctics, Fruita i Verdura" 
           /> 
           <datalist id="sections-datalist"> 
             {availableSections.map((section, index) => ( 
@@ -178,7 +178,7 @@ const EditItemModal = ({ item, onClose, onSave, onDelete, availableSections }) =
         </div> 
         <div className="flex justify-end space-x-3"> 
           <button onClick={onClose} className="px-4 py-2 bg-[#f0f3f5] text-gray-700 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] font-semibold"> 
-            Cancel·la 
+            CancelÂ·la 
           </button> 
           <button onClick={() => { onDelete(item); onClose(); }} className="px-4 py-2 bg-[#f0f3f5] text-red-500 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] font-semibold"> 
             Elimina 
@@ -228,7 +228,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
  
 
   const handleForgotPasswordClick = () => { 
-    const userEmail = prompt("Introdueix el teu correu electrònic per restablir la contrasenya:"); 
+    const userEmail = prompt("Introdueix el teu correu electrÃ²nic per restablir la contrasenya:"); 
     if (userEmail) { 
       onForgotPassword(userEmail); 
     } 
@@ -245,28 +245,28 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
         {userEmail ? ( 
           <div> 
             <h3 className="text-xl font-bold mb-4 text-gray-700">El meu compte</h3> 
-            <p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span className="font-semibold">{userEmail}</span></p> 
+            <p className="text-gray-700 mb-4">SessiÃ³ iniciada com a <br /><span className="font-semibold">{userEmail}</span></p> 
             <div className="mb-4"> 
-              <h4 className="text-lg font-bold mb-2">Preferències de visualització</h4> 
+              <h4 className="text-lg font-bold mb-2">PreferÃ¨ncies de visualitzaciÃ³</h4> 
               <div className="flex justify-center gap-4"> 
                 <button onClick={() => setDisplayMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${displayMode === 'list' ? 'bg-[#f0f3f5] text-green-500' : 'bg-[#f0f3f5] text-gray-700'}`}> 
                   <List className="w-5 h-5" /> Vista llista 
                 </button> 
                 <button onClick={() => setDisplayMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${displayMode === 'grid' ? 'bg-[#f0f3f5] text-green-500' : 'bg-[#f0f3f5] text-gray-700'}`}> 
-                  <Grid className="w-5 h-5" /> Vista quadrícula 
+                  <Grid className="w-5 h-5" /> Vista quadrÃ­cula 
                 </button> 
               </div> 
             </div> 
             <button onClick={onLogout} className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] mt-4"> 
-              <LogOut className="inline-block w-5 h-5 mr-2" /> Tanca sessió 
+              <LogOut className="inline-block w-5 h-5 mr-2" /> Tanca sessiÃ³ 
             </button> 
           </div> 
         ) : ( 
           <div> 
-            <h3 className="text-xl font-bold mb-4 text-gray-700">{isRegistering ? 'Registra\'t' : 'Inicia sessió'}</h3> 
+            <h3 className="text-xl font-bold mb-4 text-gray-700">{isRegistering ? 'Registra\'t' : 'Inicia sessiÃ³'}</h3> 
             <form onSubmit={handleSubmit}> 
               <div className="mb-4"> 
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correu electrònic</label> 
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correu electrÃ²nic</label> 
                 <input type="email" className="w-full p-2 border-none rounded-md focus:outline-none box-shadow-neomorphic-input" value={email} onChange={(e) => setEmail(e.target.value)} required /> 
               </div> 
               <div className="mb-4"> 
@@ -276,7 +276,7 @@ const AuthModal = ({ onClose, onLogin, onRegister, onLogout, userEmail, errorMes
               {errorMessage && <p className="text-red-500 text-sm mb-4">{errorMessage}</p>} 
               <div className="flex flex-col gap-3"> 
                 <button type="submit" className="w-full bg-[#f0f3f5] text-green-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"> 
-                  {isRegistering ? 'Registra\'t' : 'Inicia sessió'} 
+                  {isRegistering ? 'Registra\'t' : 'Inicia sessiÃ³'} 
                 </button> 
                 <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="w-full bg-[#f0f3f5] text-gray-700 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9]"> 
                   {isRegistering ? 'Ja tinc un compte' : 'No tinc un compte'} 
@@ -317,7 +317,7 @@ function App() {
 
   const availableSections = useMemo(() => { 
     const sections = new Set([ 
-      'Fruita i Verdura', 'Làctics', 'Carn i Peix', 'Pa i Pastisseria', 
+      'Fruita i Verdura', 'LÃ ctics', 'Carn i Peix', 'Pa i Pastisseria', 
       'Begudes', 'Neteja', 'Higiene Personal', 'Altres' 
     ]); 
     items.forEach(item => { 
@@ -346,7 +346,7 @@ function App() {
           setUserId(anonUserCredential.user.uid); 
           setUserEmail(null); 
         } catch (error) { 
-          console.error("Error durant l'inici de sessió anònim:", error); 
+          console.error("Error durant l'inici de sessiÃ³ anÃ²nim:", error); 
           setUserId(crypto.randomUUID()); 
           setUserEmail(null); 
           setFeedbackMessage("Error: No s'ha pogut connectar a la base de dades."); 
@@ -410,7 +410,7 @@ function App() {
 
  
 
-  // renderItemIcon ara accepta un tercer paràmetre onClick per quan volem que la imatge sigui clicable (p.ex. per ampliar) 
+  // renderItemIcon ara accepta un tercer parÃ metre onClick per quan volem que la imatge sigui clicable (p.ex. per ampliar) 
   const renderItemIcon = useCallback((iconUrl, className = "w-16 h-16", onClick) => { 
     if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) { 
       return ( 
@@ -425,7 +425,7 @@ function App() {
         /> 
       ); 
     } 
-    // Si no hi ha una URL vàlida, mostrem l'icona per defecte i permetem també onClick si es passa (encara que normalment només fem clic a imatges reals) 
+    // Si no hi ha una URL vÃ lida, mostrem l'icona per defecte i permetem tambÃ© onClick si es passa (encara que normalment nomÃ©s fem clic a imatges reals) 
     return ( 
       <div onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined} className={onClick ? 'cursor-pointer' : ''}> 
         <ShoppingBag className={`${className} text-gray-600`} /> 
@@ -435,7 +435,7 @@ function App() {
 
  
 
-  // Funció per alternar el flip d'un element 
+  // FunciÃ³ per alternar el flip d'un element 
   const toggleFlip = useCallback((itemId) => { 
     setItems(prev => prev.map(item => item.id === itemId ? { ...item, isFlipped: !item.isFlipped } : item)); 
   }, []); 
@@ -505,16 +505,16 @@ function App() {
         const worksheet = workbook.Sheets[sheetName]; 
         const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
         if (json.length < 2) { 
-          setFeedbackMessage("El fitxer Excel no té dades o el format és incorrecte."); 
+          setFeedbackMessage("El fitxer Excel no tÃ© dades o el format Ã©s incorrecte."); 
           setFeedbackType('error'); 
           return; 
         } 
         const header = json[0].map(h => String(h).trim().toLowerCase()); 
         const rows = json.slice(1); 
         const nameIndex = header.findIndex(h => h.includes('nom')); 
-        const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio')); 
+        const sectionIndex = header.findIndex(h => h.includes('secciÃ³') || h.includes('seccio')); 
         const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal')); 
-        const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria'))); 
+        const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundÃ ria') || h.includes('secundaria'))); 
         if (nameIndex === -1) { 
           setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'."); 
           setFeedbackType('error'); 
@@ -636,7 +636,7 @@ function App() {
 
   const handleDeleteItem = useCallback(async (item) => { 
     if (!db || !userId) return; 
-    const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`); 
+    const confirmDelete = window.confirm(`EstÃ s segur que vols eliminar "${item.name}"?`); 
     if (!confirmDelete) return; 
     try { 
       const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
@@ -675,11 +675,11 @@ function App() {
     try { 
       await signInWithEmailAndPassword(auth, email, password); 
       setShowAuthModal(false); 
-      setFeedbackMessage("Sessió iniciada correctament!"); 
+      setFeedbackMessage("SessiÃ³ iniciada correctament!"); 
       setFeedbackType('success'); 
     } catch (error) { 
-      console.error("Error iniciant sessió:", error); 
-      setAuthErrorMessage("Error iniciant sessió: " + error.message); 
+      console.error("Error iniciant sessiÃ³:", error); 
+      setAuthErrorMessage("Error iniciant sessiÃ³: " + error.message); 
     } 
   }, []); 
 
@@ -690,7 +690,7 @@ function App() {
     try { 
       await createUserWithEmailAndPassword(auth, email, password); 
       setShowAuthModal(false); 
-      setFeedbackMessage("Registre completat i sessió iniciada!"); 
+      setFeedbackMessage("Registre completat i sessiÃ³ iniciada!"); 
       setFeedbackType('success'); 
     } catch (error) { 
       console.error("Error registrant usuari:", error); 
@@ -704,11 +704,11 @@ function App() {
     setAuthErrorMessage(''); 
     try { 
       await sendPasswordResetEmail(auth, email); 
-      setFeedbackMessage("S'ha enviat un correu de recuperació de contrasenya."); 
+      setFeedbackMessage("S'ha enviat un correu de recuperaciÃ³ de contrasenya."); 
       setFeedbackType('success'); 
     } catch (error) { 
-      console.error("Error enviant correu de recuperació:", error); 
-      setAuthErrorMessage("Error enviant correu de recuperació: " + error.message); 
+      console.error("Error enviant correu de recuperaciÃ³:", error); 
+      setAuthErrorMessage("Error enviant correu de recuperaciÃ³: " + error.message); 
     } 
   }, []); 
 
@@ -719,11 +719,11 @@ function App() {
       await signOut(auth); 
       setUserEmail(null); 
       setShowAuthModal(false); 
-      setFeedbackMessage("Sessió tancada correctament!"); 
+      setFeedbackMessage("SessiÃ³ tancada correctament!"); 
       setFeedbackType('info'); 
     } catch (error) { 
-      console.error("Error tancant sessió:", error); 
-      setFeedbackMessage("Error tancant sessió: " + error.message); 
+      console.error("Error tancant sessiÃ³:", error); 
+      setFeedbackMessage("Error tancant sessiÃ³: " + error.message); 
       setFeedbackType('error'); 
     } 
   }, []); 
@@ -746,11 +746,11 @@ function App() {
       <header className="w-full mb-6 text-center relative"> 
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">Llista de la compra</h1> 
         {userId && ( 
-          <button onClick={() => setShowAuthModal(true)} className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button" aria-label="Menú d'usuari"> 
+          <button onClick={() => setShowAuthModal(true)} className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button" aria-label="MenÃº d'usuari"> 
             <User className="w-6 h-6 text-gray-700" /> 
           </button> 
         )} 
-        <p className="text-gray-700 text-lg font-semibold mt-2">{userEmail ? `Usuari: ${userEmail}` : 'Mode anònim'}</p> 
+        <p className="text-gray-700 text-lg font-semibold mt-2">{userEmail ? `Usuari: ${userEmail}` : 'Mode anÃ²nim'}</p> 
       </header> 
 
  
@@ -782,7 +782,7 @@ function App() {
           <input type="text" placeholder="Nom de l'element" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') handleNewItemFormSubmit(); }} /> 
           <input type="text" placeholder="Quantitat (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" value={newItemQuantity} onChange={(e) => setNewItemQuantity(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') handleNewItemFormSubmit(); }} /> 
           <input type="text" placeholder="URL de la imatge (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" value={newItemIcon} onChange={(e) => setNewItemIcon(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') handleNewItemFormSubmit(); }} /> 
-          <input type="text" list="sections-datalist" placeholder="Secció (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" value={newItemSection} onChange={(e) => setNewItemSection(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') handleNewItemFormSubmit(); }} /> 
+          <input type="text" list="sections-datalist" placeholder="SecciÃ³ (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" value={newItemSection} onChange={(e) => setNewItemSection(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') handleNewItemFormSubmit(); }} /> 
           <datalist id="sections-datalist"> 
             {availableSections.map((section, index) => ( <option key={index} value={section} /> ))} 
           </datalist> 
@@ -803,7 +803,7 @@ function App() {
         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full"> 
           <h2 className="text-xl font-bold mb-4 text-gray-700">Elements a la despensa ({pantryItems.length})</h2> 
           {pantryItems.length === 0 ? ( 
-            <p className="text-gray-600 text-center py-4">No hi ha elements. Afegeix-ne alguns per començar!</p> 
+            <p className="text-gray-600 text-center py-4">No hi ha elements. Afegeix-ne alguns per comenÃ§ar!</p> 
           ) : ( 
             <div className={`${gridClasses} gap-4`}> 
               {pantryItems.map(item => ( 
@@ -811,8 +811,8 @@ function App() {
                   <div className="flip-card" style={{ perspective: '1000px' }}> 
                     <div className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}> 
                       {/* Front de la carta */} 
-                      <div className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px]" onClick={() => afegirDeDespensaALlista(item)} aria-label={`Clica per afegir ${item.name} a la llista`}> 
-                        {/* Botó flip només si té segona imatge */} 
+                      <div className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[180px]" onClick={() => afegirDeDespensaALlista(item)} aria-label={`Clica per afegir ${item.name} a la llista`}> 
+                        {/* BotÃ³ flip nomÃ©s si tÃ© segona imatge */} 
                         {item.secondIcon && ( 
                           <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Girar carta"> 
                             <RotateCw className="w-3 h-3" /> 
@@ -827,14 +827,14 @@ function App() {
                           {item.section && (<span className="text-xs text-gray-400 block text-center">{item.section}</span>)} 
                         </div> 
                       </div> 
-                      {/* Back de la carta (només si té segona imatge) */} 
+                      {/* Back de la carta (nomÃ©s si tÃ© segona imatge) */} 
                       {item.secondIcon && ( 
-                        <div className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[140px]" onClick={() => afegirDeDespensaALlista(item)} aria-label={`Clica per afegir ${item.name} a la llista`}> 
-                          {/* Botó per tornar */} 
+                        <div className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element p-4 flex flex-col items-center justify-center min-h-[180px]" onClick={() => afegirDeDespensaALlista(item)} aria-label={`Clica per afegir ${item.name} a la llista`}> 
+                          {/* BotÃ³ per tornar */} 
                           <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Tornar"> 
                             <RotateCw className="w-3 h-3" /> 
                           </button> 
-                          {/* Segona icona (ara és clicable per ampliar) */} 
+                          {/* Segona icona (ara Ã©s clicable per ampliar) */} 
                           <div className="flex-shrink-0 mb-3"> 
                             {renderItemIcon(item.secondIcon, 'w-16 h-16', () => { 
                               const url = cleanImageUrl(item.secondIcon) || item.secondIcon; 
@@ -851,11 +851,8 @@ function App() {
                       )} 
                     </div> 
                   </div> 
-                  {/* Botons d'acció sempre visibles */} 
-                  <div className="absolute top-2 right-2 flex gap-1"> 
-                    <button onClick={() => afegirDeDespensaALlista(item)} className="p-1 rounded-full bg-[#f0f3f5] text-green-500 box-shadow-neomorphic-button-small" aria-label={`Afegir ${item.name} a la llista`}> 
-                      <ListPlus className="w-4 h-4" /> 
-                    </button> 
+                  {/* Només botó d'edició */} 
+                  <div className="absolute top-2 right-2"> 
                     <button onClick={() => { setEditingItem(item); setShowEditModal(true); }} className="p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small" aria-label={`Edita ${item.name}`}> 
                       <Edit className="w-4 h-4" /> 
                     </button> 
@@ -883,7 +880,7 @@ function App() {
                     <div className="flip-card" style={{ perspective: '1000px' }}> 
                       <div className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}> 
                         {/* Front de la carta */} 
-                        <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"> 
+                        <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[180px] w-full"> 
                           {item.secondIcon && ( 
                             <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Girar carta"> 
                               <RotateCw className="w-3 h-3" /> 
@@ -900,7 +897,7 @@ function App() {
                         </button> 
                         {/* Back de la carta */} 
                         {item.secondIcon && ( 
-                          <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[140px] w-full"> 
+                          <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-green transition-all p-4 flex flex-col items-center justify-center min-h-[180px] w-full"> 
                             <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Tornar"> 
                               <RotateCw className="w-3 h-3" /> 
                             </button> 
@@ -939,7 +936,7 @@ function App() {
                     <div className="flip-card" style={{ perspective: '1000px' }}> 
                       <div className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}> 
                         {/* Front de la carta */} 
-                        <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px] w-full"> 
+                        <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[180px] w-full"> 
                           {item.secondIcon && ( 
                             <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Girar carta"> 
                               <RotateCw className="w-3 h-3" /> 
@@ -954,7 +951,7 @@ function App() {
                         </button> 
                         {/* Back de la carta */} 
                         {item.secondIcon && ( 
-                          <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[140px] w-full"> 
+                          <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[180px] w-full"> 
                             <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Tornar"> 
                               <RotateCw className="w-3 h-3" /> 
                             </button> 
