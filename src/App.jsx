@@ -363,245 +363,6 @@ function App() {
   useEffect(() => { 
     if (db && userId && isAuthReady) { 
       const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
-      const itemsCollectionRef = collection(db, itemsPath); 
-      const q = query(itemsCollectionRef); 
-
- 
-
-      const unsubscribe = onSnapshot(q, (snapshot) => { 
-        const itemsData = snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data() 
-        })); 
-        const processedItems = itemsData.map(item => ({ 
-          ...item, 
-          isInShoppingList: !!item.isInShoppingList, 
-          isBought: !!item.isBought, 
-          section: item.section || '', 
-          isFlipped: false // Inicialitzem l'estat flip 
-        })); 
-
- 
-
-        setItems(processedItems); 
-      }, (error) => { 
-        console.error("Error carregant elements:", error); 
-        setFeedbackMessage("Error carregant elements: " + error.message); 
-        setFeedbackType('error'); 
-        setItems([]); 
-      }); 
-
- 
-
-      return () => unsubscribe(); 
-    } 
-  }, [db, userId, isAuthReady]); 
-
- 
-
-  useEffect(() => { 
-    if (feedbackMessage) { 
-      const timer = setTimeout(() => { 
-        setFeedbackMessage(''); 
-      }, 3000); 
-      return () => clearTimeout(timer); 
-    } 
-  }, [feedbackMessage]); 
-
- 
-
-  // renderItemIcon ara accepta un tercer parÃ metre onClick per quan volem que la imatge sigui clicable (p.ex. per ampliar) 
-  const renderItemIcon = useCallback((iconUrl, className = "w-16 h-16", onClick) => { 
-    if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) { 
-      return ( 
-        <img 
-          src={iconUrl} 
-          alt="icona personalitzada" 
-          className={`${className} object-cover rounded ${onClick ? 'cursor-pointer' : ''}`} 
-          onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined} 
-          onError={(e) => { 
-            e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error'; 
-          }} 
-        /> 
-      ); 
-    } 
-    // Si no hi ha una URL vÃ lida, mostrem l'icona per defecte i permetem tambÃ© onClick si es passa (encara que normalment nomÃ©s fem clic a imatges reals) 
-    return ( 
-      <div onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined} className={onClick ? 'cursor-pointer' : ''}> 
-        <ShoppingBag className={`${className} text-gray-600`} /> 
-      </div> 
-    ); 
-  }, []); 
-
- 
-
-  // FunciÃ³ per alternar el flip d'un element 
-  const toggleFlip = useCallback((itemId) => { 
-    setItems(prev => prev.map(item => item.id === itemId ? { ...item, isFlipped: !item.isFlipped } : item)); 
-  }, []); 
-
- 
-
-  const handleAddItem = useCallback(async (itemData) => { 
-    if (itemData.name.trim() === '' || !db || !userId) { 
-      setFeedbackMessage("No es pot afegir: Falta el nom de l'element."); 
-      setFeedbackType('error'); 
-      return; 
-    } 
-    try { 
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
-      const itemsCollectionRef = collection(db, itemsPath); 
-      await addDoc(itemsCollectionRef, { 
-        ...itemData, 
-        isBought: false, 
-        isInShoppingList: false, 
-        createdAt: serverTimestamp(), 
-        orderIndex: null 
-      }); 
-      return true; 
-    } catch (error) { 
-      console.error("Error afegint element:", error); 
-      setFeedbackMessage("Error afegint element: " + error.message); 
-      setFeedbackType('error'); 
-      return false; 
-    } 
-  }, [db, userId]); 
-
- 
-
-  const handleNewItemFormSubmit = async () => { 
-    const itemData = { 
-      name: newItemName.trim(), 
-      quantity: newItemQuantity.trim(), 
-      icon: cleanImageUrl(newItemIcon) || 'ShoppingBag', 
-      secondIcon: cleanImageUrl(newItemIcon) || '', 
-      section: newItemSection.trim() === '' ? null : newItemSection.trim(), 
-    }; 
-
- 
-
-    const success = await handleAddItem(itemData); 
-    if (success) { 
-      setNewItemName(''); 
-      setNewItemQuantity(''); 
-      setNewItemIcon(''); 
-      setNewItemSection(''); 
-      setFeedbackMessage("Element afegit correctament!"); 
-      setFeedbackType('success'); 
-    } 
-  }; 
-
- 
-
-  const handleFileUpload = (event) => { 
-    const file = event.target.files[0]; 
-    if (!file) return; 
-    const reader = new FileReader(); 
-    reader.onload = async (e) => { 
-      try { 
-        const data = new Uint8Array(e.target.result); 
-        const workbook = XLSX.read(data, { type: 'array' }); 
-        const sheetName = workbook.SheetNames[0]; 
-        const worksheet = workbook.Sheets[sheetName]; 
-        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
-        if (json.length < 2) { 
-          setFeedbackMessage("El fitxer Excel no tÃ© dades o el format Ã©s incorrecte."); 
-          setFeedbackType('error'); 
-          return; 
-        } 
-        const header = json[0].map(h => String(h).trim().toLowerCase()); 
-        const rows = json.slice(1); 
-        const nameIndex = header.findIndex(h => h.includes('nom')); 
-        const sectionIndex = header.findIndex(h => h.includes('secciÃ³') || h.includes('seccio')); 
-        const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal')); 
-        const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundÃ ria') || h.includes('secundaria'))); 
-        if (nameIndex === -1) { 
-          setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'."); 
-          setFeedbackType('error'); 
-          return; 
-        } 
-        let successfulUploads = 0; 
-        let skippedItems = 0; 
-        const batch = writeBatch(db); 
-        const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
-        const itemsCollectionRef = collection(db, itemsPath); 
-        for (const row of rows) { 
-          const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : ''; 
-          if (itemName === '') { 
-            skippedItems++; 
-            continue; 
-          } 
-          let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : ''; 
-          let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : ''; 
-          const itemData = { 
-            name: itemName, 
-            quantity: '', 
-            section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '', 
-            icon: itemIcon, 
-            secondIcon: itemSecondIcon, 
-            isBought: false, 
-            isInShoppingList: false, 
-            createdAt: serverTimestamp(), 
-            orderIndex: null 
-          }; 
-          const newDocRef = doc(itemsCollectionRef); 
-          batch.set(newDocRef, itemData); 
-          successfulUploads++; 
-        } 
-        if (successfulUploads > 0) { 
-          await batch.commit(); 
-          setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`); 
-          setFeedbackType('success'); 
-        } else { 
-          setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte."); 
-          setFeedbackType('error'); 
-        } 
-      } catch (error) { 
-        console.error("Error processant el fitxer:", error); 
-        setFeedbackMessage("Error processant el fitxer: " + error.message); 
-        setFeedbackType('error'); 
-      } 
-    }; 
-    reader.readAsArrayBuffer(file); 
-    event.target.value = ''; 
-  }; 
-
- 
-
-  const toggleItemInShoppingList = useCallback(async (item) => { 
-    if (!db || !userId) return; 
-    try { 
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
-      const itemDocRef = doc(db, itemsPath, item.id); 
-      let newIsInShoppingList; 
-      let newIsBought; 
-      if (item.isInShoppingList && !item.isBought) { 
-        newIsInShoppingList = false; 
-        newIsBought = false; 
-      } else { 
-        newIsInShoppingList = true; 
-        newIsBought = false; 
-      } 
-      await updateDoc(itemDocRef, { 
-        isInShoppingList: newIsInShoppingList, 
-        isBought: newIsBought, 
-        orderIndex: null 
-      }); 
-      setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`); 
-      setFeedbackType('success'); 
-    } catch (error) { 
-      console.error("Error canviant element:", error); 
-      setFeedbackMessage("Error: " + error.message); 
-      setFeedbackType('error'); 
-    } 
-  }, [db, userId]); 
-
- 
-
-  const toggleBought = useCallback(async (id, currentStatus) => { 
-    if (!db || !userId) return; 
-    try { 
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
       const itemDocRef = doc(db, itemsPath, id); 
       await updateDoc(itemDocRef, { isBought: !currentStatus }); 
       setFeedbackMessage(`Element ${!currentStatus ? 'marcat com a comprat' : 'marcat com a pendent'}!`); 
@@ -936,7 +697,7 @@ function App() {
                     <div className="flip-card" style={{ perspective: '1000px' }}> 
                       <div className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}> 
                         {/* Front de la carta */} 
-                        <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-back bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[180px] w-full"> 
+                        <button onDoubleClick={() => toggleBought(item.id, item.isBought)} className="flip-card-front bg-white rounded-lg box-shadow-neomorphic-element-bought transition-all text-center opacity-75 p-4 flex flex-col items-center justify-center min-h-[180px] w-full"> 
                           {item.secondIcon && ( 
                             <button onClick={(e) => { e.stopPropagation(); toggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Girar carta"> 
                               <RotateCw className="w-3 h-3" /> 
@@ -1003,4 +764,243 @@ function App() {
 
  
 
-export default App;
+export default App;}/users/${userId}/shoppingLists/mainShoppingList/items`; 
+      const itemsCollectionRef = collection(db, itemsPath); 
+      const q = query(itemsCollectionRef); 
+
+ 
+
+      const unsubscribe = onSnapshot(q, (snapshot) => { 
+        const itemsData = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        })); 
+        const processedItems = itemsData.map(item => ({ 
+          ...item, 
+          isInShoppingList: !!item.isInShoppingList, 
+          isBought: !!item.isBought, 
+          section: item.section || '', 
+          isFlipped: false // Inicialitzem l'estat flip 
+        })); 
+
+ 
+
+        setItems(processedItems); 
+      }, (error) => { 
+        console.error("Error carregant elements:", error); 
+        setFeedbackMessage("Error carregant elements: " + error.message); 
+        setFeedbackType('error'); 
+        setItems([]); 
+      }); 
+
+ 
+
+      return () => unsubscribe(); 
+    } 
+  }, [db, userId, isAuthReady]); 
+
+ 
+
+  useEffect(() => { 
+    if (feedbackMessage) { 
+      const timer = setTimeout(() => { 
+        setFeedbackMessage(''); 
+      }, 3000); 
+      return () => clearTimeout(timer); 
+    } 
+  }, [feedbackMessage]); 
+
+ 
+
+  // renderItemIcon ara accepta un tercer parÃ metre onClick per quan volem que la imatge sigui clicable (p.ex. per ampliar) 
+  const renderItemIcon = useCallback((iconUrl, className = "w-16 h-16", onClick) => { 
+    if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) { 
+      return ( 
+        <img 
+          src={iconUrl} 
+          alt="icona personalitzada" 
+          className={`${className} object-cover rounded ${onClick ? 'cursor-pointer' : ''}`} 
+          onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined} 
+          onError={(e) => { 
+            e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error'; 
+          }} 
+        /> 
+      ); 
+    } 
+    // Si no hi ha una URL vÃ lida, mostrem l'icona per defecte i permetem tambÃ© onClick si es passa (encara que normalment nomÃ©s fem clic a imatges reals) 
+    return ( 
+      <div onClick={onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined} className={onClick ? 'cursor-pointer' : ''}> 
+        <ShoppingBag className={`${className} text-gray-600`} /> 
+      </div> 
+    ); 
+  }, []); 
+
+ 
+
+  // FunciÃ³ per alternar el flip d'un element 
+  const toggleFlip = useCallback((itemId) => { 
+    setItems(prev => prev.map(item => item.id === itemId ? { ...item, isFlipped: !item.isFlipped } : item)); 
+  }, []); 
+
+ 
+
+  const handleAddItem = useCallback(async (itemData) => { 
+    if (itemData.name.trim() === '' || !db || !userId) { 
+      setFeedbackMessage("No es pot afegir: Falta el nom de l'element."); 
+      setFeedbackType('error'); 
+      return; 
+    } 
+    try { 
+      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
+      const itemsCollectionRef = collection(db, itemsPath); 
+      await addDoc(itemsCollectionRef, { 
+        ...itemData, 
+        isBought: false, 
+        isInShoppingList: false, 
+        createdAt: serverTimestamp(), 
+        orderIndex: null 
+      }); 
+      return true; 
+    } catch (error) { 
+      console.error("Error afegint element:", error); 
+      setFeedbackMessage("Error afegint element: " + error.message); 
+      setFeedbackType('error'); 
+      return false; 
+    } 
+  }, [db, userId]); 
+
+ 
+
+  const handleNewItemFormSubmit = async () => { 
+    const itemData = { 
+      name: newItemName.trim(), 
+      quantity: newItemQuantity.trim(), 
+      icon: cleanImageUrl(newItemIcon) || 'ShoppingBag', 
+      secondIcon: cleanImageUrl(newItemIcon) || '', 
+      section: newItemSection.trim() === '' ? null : newItemSection.trim(), 
+    }; 
+
+ 
+
+    const success = await handleAddItem(itemData); 
+    if (success) { 
+      setNewItemName(''); 
+      setNewItemQuantity(''); 
+      setNewItemIcon(''); 
+      setNewItemSection(''); 
+      setFeedbackMessage("Element afegit correctament!"); 
+      setFeedbackType('success'); 
+    } 
+  }; 
+
+ 
+
+  const handleFileUpload = (event) => { 
+    const file = event.target.files[0]; 
+    if (!file) return; 
+    const reader = new FileReader(); 
+    reader.onload = async (e) => { 
+      try { 
+        const data = new Uint8Array(e.target.result); 
+        const workbook = XLSX.read(data, { type: 'array' }); 
+        const sheetName = workbook.SheetNames[0]; 
+        const worksheet = workbook.Sheets[sheetName]; 
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
+        if (json.length < 2) { 
+          setFeedbackMessage("El fitxer Excel no tÃ© dades o el format Ã©s incorrecte."); 
+          setFeedbackType('error'); 
+          return; 
+        } 
+        const header = json[0].map(h => String(h).trim().toLowerCase()); 
+        const rows = json.slice(1); 
+        const nameIndex = header.findIndex(h => h.includes('nom')); 
+        const sectionIndex = header.findIndex(h => h.includes('secciÃ³') || h.includes('seccio')); 
+        const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal')); 
+        const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundÃ ria') || h.includes('secundaria'))); 
+        if (nameIndex === -1) { 
+          setFeedbackMessage("El fitxer Excel ha de contenir una columna amb 'Nom'."); 
+          setFeedbackType('error'); 
+          return; 
+        } 
+        let successfulUploads = 0; 
+        let skippedItems = 0; 
+        const batch = writeBatch(db); 
+        const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
+        const itemsCollectionRef = collection(db, itemsPath); 
+        for (const row of rows) { 
+          const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : ''; 
+          if (itemName === '') { 
+            skippedItems++; 
+            continue; 
+          } 
+          let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : ''; 
+          let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : ''; 
+          const itemData = { 
+            name: itemName, 
+            quantity: '', 
+            section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '', 
+            icon: itemIcon, 
+            secondIcon: itemSecondIcon, 
+            isBought: false, 
+            isInShoppingList: false, 
+            createdAt: serverTimestamp(), 
+            orderIndex: null 
+          }; 
+          const newDocRef = doc(itemsCollectionRef); 
+          batch.set(newDocRef, itemData); 
+          successfulUploads++; 
+        } 
+        if (successfulUploads > 0) { 
+          await batch.commit(); 
+          setFeedbackMessage(`S'han pujat ${successfulUploads} productes des de l'Excel! ${skippedItems > 0 ? `(${skippedItems} files buides saltades)` : ''}`); 
+          setFeedbackType('success'); 
+        } else { 
+          setFeedbackMessage("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte."); 
+          setFeedbackType('error'); 
+        } 
+      } catch (error) { 
+        console.error("Error processant el fitxer:", error); 
+        setFeedbackMessage("Error processant el fitxer: " + error.message); 
+        setFeedbackType('error'); 
+      } 
+    }; 
+    reader.readAsArrayBuffer(file); 
+    event.target.value = ''; 
+  }; 
+
+ 
+
+  const toggleItemInShoppingList = useCallback(async (item) => { 
+    if (!db || !userId) return; 
+    try { 
+      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`; 
+      const itemDocRef = doc(db, itemsPath, item.id); 
+      let newIsInShoppingList; 
+      let newIsBought; 
+      if (item.isInShoppingList && !item.isBought) { 
+        newIsInShoppingList = false; 
+        newIsBought = false; 
+      } else { 
+        newIsInShoppingList = true; 
+        newIsBought = false; 
+      } 
+      await updateDoc(itemDocRef, { 
+        isInShoppingList: newIsInShoppingList, 
+        isBought: newIsBought, 
+        orderIndex: null 
+      }); 
+      setFeedbackMessage(`Element ${newIsInShoppingList ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`); 
+      setFeedbackType('success'); 
+    } catch (error) { 
+      console.error("Error canviant element:", error); 
+      setFeedbackMessage("Error: " + error.message); 
+      setFeedbackType('error'); 
+    } 
+  }, [db, userId]); 
+
+ 
+
+  const toggleBought = useCallback(async (id, currentStatus) => { 
+    if (!db || !userId) return; 
+    try { 
+      const itemsPath = `artifacts/${APP_ID
