@@ -25,7 +25,6 @@ const ProductCard = ({
   opacity = 1
 }) => {
 
-  // Funció per a renderitzar icones o imatges. (La deixo com l'has creat)
   const renderItemIcon = (iconUrl, className = "w-16 h-16", onClick) => {
     if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) {
       return (
@@ -50,12 +49,12 @@ const ProductCard = ({
 
   return (
     <div className="relative w-full h-full" style={{ opacity }}>
-      {/* 1. Contenidor principal que aplica la perspectiva (via classe CSS .flip-card) */}
-      <div className="flip-card w-full h-full">
-        {/* 2. Contenidor interior que gira. S'aplica la classe 'flip-card-flipped' si item.isFlipped és true */}
+      {/* CORRECCIÓ: Tornem a afegir la perspectiva aquí per assegurar l'efecte 3D */}
+      <div className="flip-card w-full h-full" style={{ perspective: '1000px' }}> 
         <div className={`flip-card-inner w-full h-full ${item.isFlipped ? 'flip-card-flipped' : ""}`}>
 
           {/* Front de la carta */}
+          {/* CORRECCIÓ: Utilitzem item.secondIcon per a la comprovació (assumint que és el nom correcte) */}
           <div className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center
              justify-center min-h-[180px] w-full ${additionalClasses}`} onClick={onAction}>
             
@@ -71,7 +70,7 @@ const ProductCard = ({
             {/* Icona principal */}
             <div className="flex-shrink-0 mb-3">{renderItemIcon(item.icon, 'w-16 h-16')}</div>
 
-            {/* Text centrat - Més espai per a noms llargs */}
+            {/* Text centrat */}
             <div className="text-center w-full flex-grow flex flex-col justify-center">
               <span className="font-semibold text-sm block text-center mb-1 leading-tight
                 break-words">{item.name}</span>
@@ -83,6 +82,7 @@ const ProductCard = ({
           </div>
 
           {/* Back de la carta (només si té segona imatge) */}
+          {/* CORRECCIÓ: Utilitzem item.secondIcon per a la comprovació (assumint que és el nom correcte) */}
           {item.secondIcon && (
             <div className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center
               justify-center min-h-[180px] w-full ${additionalClasses}`} onClick={onAction}>
@@ -94,15 +94,17 @@ const ProductCard = ({
                 <RotateCw className="w-3 h-3" />
               </button>
 
-              {/* Segona icona (que permet fer clic per veure ampliada) */}
+              {/* Segona icona */}
               <div className="flex-shrink-0 mb-3">
+                {/* CORRECCIÓ: Utilitzem item.secondIcon consistentment */}
                 {renderItemIcon(item.secondIcon, 'w-16 h-16', () => {
-                  const url = cleanImageUrl(item.secondIcon) || item.secondIcon;
-                  if (url && onAction) onAction(); // Això hauria de cridar la funció per obrir la modal
+                  // També s'actualitza la lògica interna per consistència
+                  const url = cleanImageUrl(item.secondIcon);
+                  if (url && onAction) onAction(url); // Si la imatge ha d'obrir la modal, passem la URL
                 })}
               </div>
 
-              {/* Text centrat - Més espai per a noms llargs */}
+              {/* Text centrat */}
               <div className="text-center w-full flex-grow flex flex-col justify-center">
                 <span className="font-semibold text-sm block text-center mb-1 leading-tight
                   break-words">{item.name}</span>
@@ -116,7 +118,7 @@ const ProductCard = ({
         </div>
       </div>
 
-      {/* Botó d'edició només si és necessari */}
+      {/* Botó d'edició */}
       {showEditButton && (
         <button onClick={(e) => { e.stopPropagation(); onEdit(item); }} className="absolute
           top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-
