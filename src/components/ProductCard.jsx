@@ -46,11 +46,11 @@ const ProductCard = ({
   };
 
   return (
-    <div className="relative" style={{ opacity }}>
-      <div className="flip-card" style={{ perspective: '1000px' }}>
-        <div className={`flip-card-inner ${item.isFlipped ? 'flip-card-flipped' : ''}`}>
+    <div className="relative w-full h-full" style={{ opacity }}>
+      <div className="flip-card w-full h-full" style={{ perspective: '1000px' }}>
+        <div className={`flip-card-inner w-full h-full ${item.isFlipped ? 'flip-card-flipped' : ''}`}>
           {/* Front de la carta */}
-          <div className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] ${additionalClasses}`} onClick={onAction}>
+          <div className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses}`} onClick={onAction}>
             {/* Botó flip només si té segona imatge */}
             {item.secondIcon && (
               <button onClick={(e) => { e.stopPropagation(); onToggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Girar carta">
@@ -69,7 +69,7 @@ const ProductCard = ({
           
           {/* Back de la carta (només si té segona imatge) */}
           {item.secondIcon && (
-            <div className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] ${additionalClasses}`} onClick={onAction}>
+            <div className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses}`} onClick={onAction}>
               {/* Botó per tornar */}
               <button onClick={(e) => { e.stopPropagation(); onToggleFlip(item.id); }} className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10" aria-label="Tornar">
                 <RotateCw className="w-3 h-3" />
