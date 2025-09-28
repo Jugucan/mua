@@ -6,85 +6,85 @@
 .box-shadow-neomorphic-container {
   box-shadow: 9px 9px 16px #c5c5c5, -9px -9px 16px #fbfbfb;
 }
-
 .box-shadow-neomorphic-button {
   box-shadow: 5px 5px 10px #c5c5c5, -5px -5px 10px #fbfbfb;
 }
-
 .box-shadow-neomorphic-button:hover {
   box-shadow: 3px 3px 8px #c5c5c5, -3px -3px 8px #fbfbfb;
 }
-
 .box-shadow-neomorphic-button-inset {
   box-shadow: inset 5px 5px 10px #c5c5c5, inset -5px -5px 10px #fbfbfb;
 }
-
 .box-shadow-neomorphic-button-small {
   box-shadow: 3px 3px 6px #c5c5c5, -3px -3px 6px #fbfbfb;
 }
-
 .box-shadow-neomorphic-input {
   box-shadow: inset 3px 3px 6px #c5c5c5, inset -3px -3px 6px #fbfbfb;
 }
-
 .box-shadow-neomorphic-element {
   box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #fbfbfb;
 }
-
 .box-shadow-neomorphic-element:hover {
   box-shadow: 8px 8px 16px #c5c5c5, -8px -8px 16px #fbfbfb;
 }
-
 .box-shadow-neomorphic-element-hover {
   box-shadow: 8px 8px 16px #c5c5c5, -8px -8px 16px #fbfbfb;
 }
-
 .box-shadow-neomorphic-element-green {
   box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #fbfbfb;
   border: 2px solid #10b981;
 }
-
 .box-shadow-neomorphic-element-bought {
   box-shadow: inset 6px 6px 12px #c5c5c5, inset -6px -6px 12px #fbfbfb;
 }
 
-/* Animacions del flip de cartes */
+/* Animacions del flip de cartes CORREGIDES */
+
+/* 1. Contenidor Exterior - Estableix la Perspectiva */
+.flip-card {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  /* Aquesta línia és CLAU per al 3D */
+  perspective: 1000px;
+}
+
+/* 2. Contenidor Interior - L'element que Gira */
 .flip-card-inner {
   position: relative;
   width: 100%;
   height: 100%;
   text-align: center;
+  /* La transició fa que el gir sigui lent i animat */
   transition: transform 0.6s;
+  /* Aquesta línia és CLAU per al 3D */
   transform-style: preserve-3d;
 }
 
+/* 3. Estats de gir (Quan apliquem la classe .flip-card-flipped) */
 .flip-card-flipped {
   transform: rotateY(180deg);
 }
 
+/* 4. Cara Frontal i Posterior - Posicionament i Visibilitat */
 .flip-card-front, .flip-card-back {
   position: absolute;
   width: 100%;
   height: 100%;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
   top: 0;
   left: 0;
+  /* Aquesta línia és CLAU: amaga la cara posterior quan està girada */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
+/* 5. Cara Posterior - Comença girada 180º */
 .flip-card-back {
   transform: rotateY(180deg);
 }
 
-/* Assegurar que les targetes no es sobreposin */
-.flip-card {
-  width: 100%;
-  height: 100%;
-  min-height: 180px;
-}
-
 /* Utilitat per limitar línies */
-.line-clamp-2 {
+.line-clamp-2{
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
