@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// CORREGIT: Afegim SortAsc
+// Hem canviat SortAlphaAsc per SortAsc (ja arreglat de l'error anterior)
 import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, SortAsc } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
@@ -11,10 +11,7 @@ import ProductCard from './components/ProductCard';
 import AddProductModal from './components/AddProductModal'; 
 
 // Hook personalitzat
-// **********************************
-// CANVI CLAU AQUÍ: Importació per defecte (sense claus {})
-import useFirebase from './hooks/useFirebase'; 
-// **********************************
+import { useFirebase } from './hooks/useFirebase';
 
 // NOU: Llista de seccions per defecte, amb un ordre predefinit
 const DEFAULT_SECTION_ORDER = [
@@ -46,7 +43,7 @@ function App() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [currentListName, setCurrentListName] = useState('Llista Principal');
     // NOU: Estat per controlar l'ordenació
-    const [shoppingListSort, setShoppingListSort] = useState('default'); 
+    const [shoppingListSort, setShoppingListSort] = useState('default'); // 'default' (secció/alfabètic) o 'manual' (no implementat completament encara)
     
     // Hook de Firebase
     const {
@@ -191,11 +188,14 @@ function App() {
         }
     }, [deleteItem]);
 
-    // SENSE CANVIS, crida a useFirebase que ara gestiona la neteja de quantitat al marcar com a comprat
+    // MODIFICAT: Ara la lògica de netejar quantitat és a useFirebase.js
     const handleToggleBought = useCallback(async (item, isBought) => {
         try {
+            // Passem l'estat oposat
             const newStatus = !isBought; 
             const result = await toggleBought(item, newStatus);
+            
+            // La lògica de netejar quantitat si es desmarca (newStatus=false) es fa dins de useFirebase.js
             
             setFeedbackMessage(`Element ${result ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
             setFeedbackType('success');
@@ -253,16 +253,19 @@ function App() {
         }
     }, [handleLogout]);
 
-    // Funció per ordenar productes alfabèticament (SENSE CANVIS)
+    // NOU: Funció per ordenar productes alfabèticament
     const sortItemsAlphabetically = (itemsList) => {
         return [...itemsList].sort((a, b) => {
             return a.name.localeCompare(b.name);
         });
     };
     
-    // Funció per agrupar per secció i ordenar. (SENSE CANVIS)
+    // NOU: Funció per agrupar per secció i ordenar.
+    // L'ordenació és: 1. Segons l'ordre de DEFAULT_SECTION_ORDER. 2. Alfabèticament.
     const groupItemsBySection = (itemsList) => {
         const groups = {};
+
+        // 1. Agrupem els elements per la seva secció
         itemsList.forEach(item => {
             const sectionName = item.section || ''; 
             if (!groups[sectionName]) {
@@ -271,12 +274,14 @@ function App() {
             groups[sectionName].push(item);
         });
 
+        // 2. Ordenem els grups/seccions segons DEFAULT_SECTION_ORDER
         const sortedSections = Object.keys(groups).sort((a, b) => {
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
         });
 
+        // 3. Dins de cada grup, ordenem els elements alfabèticament
         const sortedGroups = sortedSections.map(section => ({
             section: section,
             items: sortItemsAlphabetically(groups[section])
@@ -294,25 +299,30 @@ function App() {
         );
     };
 
-    // Items
+    // A la Despensa, els items es mostren ordenats alfabèticament
     const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
+    // La Llista de Compra ara utilitza la nova lògica d'agrupació i ordenació
     const itemsFromPantryInShoppingList = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
     
+    // NOU: Agrupació de la llista de la compra per seccions
     const groupedUnboughtItems = groupItemsBySection(unboughtItems);
     const groupedBoughtItems = groupItemsBySection(boughtItems);
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista (AJUSTAT: Només ús el onDoubleClick)
+    // Funció per renderitzar elements en format llista (Ajustada per utilitzar DOBLE CLIC)
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div 
                 key={item.id} 
                 className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
-                // NOU: El clic simple no fa res, el doble clic activa l'acció
-                onClick={(e) => { e.stopPropagation(); }}
+                // NOU: Ús de onDoubleClick en ambdós casos. requireDoubleClick només controla el missatge.
+                onClick={(e) => { 
+                    if (!requireDoubleClick) handleToggleBought(item, item.isBought);
+                    // Si requereix doble clic, el clic simple no fa res
+                }}
                 onDoubleClick={(e) => { 
                     e.stopPropagation(); // Evitar clics parentals
                     handleToggleBought(item, item.isBought); 
@@ -342,8 +352,9 @@ function App() {
         ));
     };
     
-    // Funció per a un hipotètic "mantenir premut" per a la reordenació (SENSE CANVIS)
+    // Funció per a un hipotètic "mantenir premut" per a la reordenació
     const handlePressAndHold = (item) => {
+        // Aquesta funció es queda com a placeholder, ja que requereix més implementació (drag and drop)
         setFeedbackMessage(`'${item.name}' seleccionat per reordenar (funcionalitat en desenvolupament).`);
         setFeedbackType('info');
     };
@@ -438,7 +449,7 @@ function App() {
                         </div>
                     )}
                     
-                    {/* Botó per alternar l'ordenació a la Llista */}
+                    {/* NOU: Botó per alternar l'ordenació a la Llista */}
                     {currentView === 'shoppingList' && (
                         <button 
                             onClick={() => setShoppingListSort(prev => prev === 'default' ? 'manual' : 'default')}
@@ -469,7 +480,7 @@ function App() {
             {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
-                    {/* Elements a la despensa */}
+                    {/* Elements a la despensa (ja venen ordenats alfabèticament a 'pantryItems') */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Elements a la despensa ({pantryItems.length})
@@ -500,7 +511,7 @@ function App() {
                         )}
                     </div>
 
-                    {/* Elements a la llista de la compra des de la despensa (SENSE CANVIS)*/}
+                    {/* Elements a la llista de la compra des de la despensa */}
                     {itemsFromPantryInShoppingList.length > 0 && (
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
@@ -533,7 +544,7 @@ function App() {
 
             {currentView === 'shoppingList' && (
                 <div className="space-y-6">
-                    {/* Seccions per comprar (DOBLE CLIC REQUERIT) */}
+                    {/* NOU: Seccions per comprar (Agrupats i Ordenats) */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                         <h2 className="text-xl font-bold text-gray-700">
                             Productes per comprar ({unboughtItems.length})
@@ -555,12 +566,14 @@ function App() {
                                                 item={item}
                                                 onEdit={null}
                                                 onAction={() => handleToggleBought(item, item.isBought)}
+                                                // CANVI CLAU: Ara requereix doble clic per marcar com a comprat
                                                 actionLabel={`Doble clic per marcar ${item.name} com comprat`}
                                                 additionalClasses="box-shadow-neomorphic-element-red"
                                                 showEditButton={false}
-                                                requireDoubleClick={true} // CLAU: Requereix doble clic
-                                                onPressAndHold={shoppingListSort === 'manual' ? handlePressAndHold : null}
-                                                isDraggable={shoppingListSort === 'manual'}
+                                                requireDoubleClick={true} 
+                                                // Desactivem el press and hold per evitar conflicte amb doble clic
+                                                onPressAndHold={null} 
+                                                isDraggable={false} 
                                             />
                                         ))}
                                     </div>
@@ -573,7 +586,7 @@ function App() {
                         ))}
                     </div>
 
-                    {/* Seccions per comprats (DOBLE CLIC REQUERIT) */}
+                    {/* NOU: Seccions per comprats (Agrupats i Ordenats) AMB DOBLE CLIC PER DESMARCAR */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                         <h2 className="text-xl font-bold text-gray-700">
                             Productes comprats ({boughtItems.length})
@@ -598,7 +611,7 @@ function App() {
                                                 actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
                                                 additionalClasses="box-shadow-neomorphic-element-bought"
                                                 showEditButton={false}
-                                                requireDoubleClick={true} // CLAU: Requereix doble clic
+                                                requireDoubleClick={true} // Manté el doble clic per desmarcar
                                                 opacity={0.75}
                                             />
                                         ))}
@@ -614,7 +627,7 @@ function App() {
                 </div>
             )}
 
-            {/* Botó flotant per afegir productes (SENSE CANVIS) */}
+            {/* Botó flotant per afegir productes (només a la despensa) (SENSE CANVIS) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={() => setShowAddModal(true)}
