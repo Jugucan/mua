@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { RotateCw, Pencil } from 'lucide-react';
-import { ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react'; // NOU: Importem useRef
+import { RotateCw, Pencil, Menu } from 'lucide-react'; // NOU: Importem Menu per a 'drag'
 
 const cleanImageUrl = (url) => {
   if (!url || typeof url !== 'string') return "";
@@ -22,25 +21,67 @@ const ProductCard = ({
   showEditButton = true,
   requireDoubleClick = false,
   additionalClasses = "",
-  opacity = 1
+  opacity = 1,
+  onPressAndHold = null, // NOU: Funció per a mantenir premut (reordenació)
+  isDraggable = false // NOU: Indica si el producte es pot arrossegar
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [clickTimer, setClickTimer] = useState(null);
+  
+  // NOU: Estats i refs per a la lògica de "mantenir premut"
+  const pressTimerRef = useRef(null);
+  const isPressingRef = useRef(false);
+  const PRESS_DURATION = 500; // 500ms per detectar "mantenir premut"
 
   const handleToggleFlip = () => {
     setIsFlipped(!isFlipped);
   };
 
-  // Gestió del doble clic
-  const handleCardClick = () => {
+  // NOU: Inicia la detecció de "mantenir premut"
+  const handlePressStart = (e) => {
+    // Evita conflictes amb la selecció de text en mòbils
+    e.preventDefault(); 
+    
+    isPressingRef.current = true;
+    pressTimerRef.current = setTimeout(() => {
+        if (isPressingRef.current && onPressAndHold) {
+            // "Mantenir premut" detectat
+            onPressAndHold(item);
+            // Si detectem mantenir premut, evitem el clic o doble clic.
+            setClickCount(0); 
+            if (clickTimer) clearTimeout(clickTimer);
+            isPressingRef.current = false;
+        }
+    }, PRESS_DURATION);
+  };
+  
+  // NOU: Finalitza la detecció de "mantenir premut"
+  const handlePressEnd = () => {
+      clearTimeout(pressTimerRef.current);
+      isPressingRef.current = false;
+  };
+  
+  // NOU: Funció general de clic (tap)
+  const handleCardClick = (e) => {
+    e.preventDefault(); // Evita problemes amb drag i doble clic
+
+    // Si detectem que s'ha mantingut premut, sortim sense fer res.
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      if (isPressingRef.current) {
+          isPressingRef.current = false;
+          return;
+      }
+    }
+    
     if (!requireDoubleClick) {
-      // Clic simple normal
+      // Clic simple normal (per afegir/treure de la llista, o marcar com comprat)
       if (onAction) onAction();
       return;
     }
 
-    // Lògica de doble clic
+    // Lògica de doble clic (només per la llista de COMPRATS)
     setClickCount(prev => prev + 1);
 
     if (clickTimer) {
@@ -58,11 +99,14 @@ const ProductCard = ({
     setClickTimer(timer);
   };
 
-  // Neteja del timer
+  // Neteja del timer de clic i del timer de "mantenir premut"
   useEffect(() => {
     return () => {
       if (clickTimer) {
         clearTimeout(clickTimer);
+      }
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
       }
     };
   }, [clickTimer]);
@@ -84,7 +128,16 @@ const ProductCard = ({
   };
 
   return (
-    <div className="relative w-full h-full" style={{ opacity }}>
+    <div 
+      className="relative w-full h-full" 
+      style={{ opacity }}
+      // Afegim els handlers per al "mantenir premut"
+      onMouseDown={onPressAndHold ? handlePressStart : null}
+      onMouseUp={onPressAndHold ? handlePressEnd : null}
+      onMouseLeave={onPressAndHold ? handlePressEnd : null} // Netejar si el ratolí surt
+      onTouchStart={onPressAndHold ? handlePressStart : null}
+      onTouchEnd={onPressAndHold ? handlePressEnd : null}
+    >
       <div className="flip-card w-full h-full">
         <div className={`flip-card-inner w-full h-full ${isFlipped ? 'flip-card-flipped' : ""}`}>
 
@@ -156,8 +209,8 @@ const ProductCard = ({
         </div>
       </div>
 
-      {/* Botó d'edició amb icona de LLAPIS */}
-      {showEditButton && onEdit && (
+      {/* Botó d'edició amb icona de LLAPIS (S'oculta si és reordenació) */}
+      {showEditButton && onEdit && !isDraggable && (
         <button 
           onClick={(e) => { 
             e.stopPropagation(); 
@@ -168,6 +221,16 @@ const ProductCard = ({
         >
           <Pencil className="w-4 h-4" />
         </button>
+      )}
+      
+      {/* NOU: Botó per a reordenació (Drag handle) */}
+      {isDraggable && (
+          <div 
+              className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small z-10 cursor-grab"
+              // Els handlers de drag and drop es gestionarien aquí
+          >
+              <Menu className="w-4 h-4" />
+          </div>
       )}
     </div>
   );
