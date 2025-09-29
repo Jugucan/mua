@@ -7,14 +7,16 @@ import * as XLSX from 'xlsx';
 function AddProductModal({
     onClose,
     availableSections,
-    onAddItem, // Aquesta és la funció per afegir un nou producte (handleNewItemFormSubmit)
-    onFileUpload, // Aquesta és la funció per pujar des d'Excel (handleFileUpload)
-    cleanImageUrl // Funció per netejar la URL de la imatge
+    onAddItem, 
+    onFileUpload, 
+    cleanImageUrl 
 }) {
-    // Estats locals per al formulari, extrets de App.jsx
+    // Estats locals per al formulari
     const [newItemName, setNewItemName] = useState("");
     const [newItemQuantity, setNewItemQuantity] = useState("");
     const [newItemIcon, setNewItemIcon] = useState("");
+    // NOU: Estat per la imatge secundària
+    const [newItemSecondIcon, setNewItemSecondIcon] = useState(""); 
     const [newItemSection, setNewItemSection] = useState("");
 
     // Funció que es crida en enviar el formulari
@@ -25,22 +27,23 @@ function AddProductModal({
             quantity: newItemQuantity.trim(),
             // Utilitzem la funció cleanImageUrl que ens arriba per props
             icon: cleanImageUrl(newItemIcon) || 'ShoppingBag', 
-            secondIcon: cleanImageUrl(newItemIcon) || '',
+            // NOU: Afegim la segona icona
+            secondIcon: cleanImageUrl(newItemSecondIcon) || '', 
             section: newItemSection.trim() === "" ? null : newItemSection.trim(),
         };
 
         try {
-            // Cridem la funció onAddItem (que és handleNewItemFormSubmit)
             await onAddItem(itemData);
             
             // Si l'afegit és correcte, netegem els camps i tanquem el modal
             setNewItemName("");
             setNewItemQuantity("");
             setNewItemIcon("");
+            // NOU: Neteja de la segona icona
+            setNewItemSecondIcon(""); 
             setNewItemSection("");
             onClose(); // Tanquem el modal
         } catch (error) {
-            // El feedback d'error es gestionarà a App.jsx (veure pas 2)
             console.error("Error afegint element:", error);
         }
     };
@@ -70,7 +73,7 @@ function AddProductModal({
 
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Afegeix Nou Producte</h2>
 
-                {/* Formulari (Codi extret de les línies 236-257 de App.jsx) */}
+                {/* Formulari */}
                 <div className="flex flex-col gap-3">
                     <input type="text" placeholder="Nom de l'element" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" 
                         value={newItemName}
@@ -82,11 +85,19 @@ function AddProductModal({
                         onChange={(e) => setNewItemQuantity(e.target.value)}
                         onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }}
                     />
-                    <input type="text" placeholder="URL de la imatge (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" 
+                    <input type="text" placeholder="URL de la imatge principal (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" 
                         value={newItemIcon}
                         onChange={(e) => setNewItemIcon(e.target.value)} 
                         onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }} 
                     />
+                    
+                    {/* NOU: Input per la imatge secundària */}
+                    <input type="text" placeholder="URL de la imatge secundària (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" 
+                        value={newItemSecondIcon}
+                        onChange={(e) => setNewItemSecondIcon(e.target.value)} 
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }} 
+                    />
+                    
                     <input type="text" list="sections-datalist" placeholder="Secció (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
                         value={newItemSection} 
                         onChange={(e) => setNewItemSection(e.target.value)}
