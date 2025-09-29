@@ -252,8 +252,8 @@ function App() {
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista
-    const renderListItems = (itemsList, showEditButton = true, requireDoubleClick = false, isRed = false) => {
+    // Funció per renderitzar elements en format llista (SENSE botó d'edició)
+    const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div key={item.id} className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}>
                 <div className="list-item-icon">
@@ -274,17 +274,6 @@ function App() {
                     <div className="font-semibold text-gray-800">{item.name}</div>
                     {item.quantity && <div className="text-sm text-gray-500">{item.quantity}</div>}
                     {item.section && <div className="text-xs text-gray-400">{item.section}</div>}
-                </div>
-                <div className="list-item-actions">
-                    {showEditButton && (
-                        <button 
-                            onClick={() => { setEditingItem(item); setShowEditModal(true); }}
-                            className="p-2 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small transition-all-smooth hover:scale-110"
-                            aria-label={`Edita ${item.name}`}
-                        >
-                            <Edit3 className="w-4 h-4" />
-                        </button>
-                    )}
                 </div>
             </div>
         ));
@@ -413,12 +402,14 @@ function App() {
                                         onAction={() => afegirDeDespensaALlista(item)}
                                         actionLabel={`Clica per afegir ${item.name} a la llista`}
                                         additionalClasses="box-shadow-neomorphic-element cursor-pointer hover:box-shadow-neomorphic-element-hover"
+                                        showEditButton={true}
+                                        requireDoubleClick={false}
                                     />
                                 ))}
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {renderListItems(pantryItems, true, false, false)}
+                                {renderListItems(pantryItems, false, false)}
                             </div>
                         )}
                     </div>
@@ -439,12 +430,14 @@ function App() {
                                             onAction={() => afegirDeDespensaALlista(item)}
                                             actionLabel={`Clica per treure ${item.name} de la llista`}
                                             additionalClasses="box-shadow-neomorphic-element-green cursor-pointer"
+                                            showEditButton={true}
+                                            requireDoubleClick={false}
                                         />
                                     ))}
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {renderListItems(itemsFromPantryInShoppingList, true, false, false)}
+                                    {renderListItems(itemsFromPantryInShoppingList, false, false)}
                                 </div>
                             )}
                         </div>
@@ -454,7 +447,7 @@ function App() {
 
             {currentView === 'shoppingList' && (
                 <div className="space-y-6">
-                    {/* Elements per comprar */}
+                    {/* Elements per comprar AMB ESTIL VERMELL */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes per comprar ({unboughtItems.length})
@@ -471,21 +464,21 @@ function App() {
                                         item={item}
                                         onEdit={null}
                                         onAction={() => handleToggleBought(item.id, item.isBought, item)}
-                                        actionLabel={`Doble clic per marcar ${item.name} com comprat`}
+                                        actionLabel={`Clica per marcar ${item.name} com comprat`}
                                         additionalClasses="box-shadow-neomorphic-element-red"
                                         showEditButton={false}
-                                        requireDoubleClick={true}
+                                        requireDoubleClick={false}
                                     />
                                 ))}
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {renderListItems(unboughtItems, false, true, true)}
+                                {renderListItems(unboughtItems, true, false)}
                             </div>
                         )}
                     </div>
 
-                    {/* Elements comprats */}
+                    {/* Elements comprats AMB DOBLE CLIC */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Productes comprats ({boughtItems.length})
@@ -512,7 +505,7 @@ function App() {
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {renderListItems(boughtItems, false, true, false)}
+                                {renderListItems(boughtItems, false, true)}
                             </div>
                         )}
                     </div>
