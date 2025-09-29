@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'; // NOU: Importem useRef
-import { RotateCw, Pencil, Menu } from 'lucide-react'; // NOU: Importem Menu per a 'drag'
+import React, { useState, useEffect, useRef } from 'react'; 
+// Importem ShoppingBag que s'utilitzava a la funció renderItemIcon (calia afegir-lo)
+import { RotateCw, Pencil, Menu, ShoppingBag } from 'lucide-react'; 
 
 const cleanImageUrl = (url) => {
   if (!url || typeof url !== 'string') return "";
@@ -22,14 +23,14 @@ const ProductCard = ({
   requireDoubleClick = false,
   additionalClasses = "",
   opacity = 1,
-  onPressAndHold = null, // NOU: Funció per a mantenir premut (reordenació)
-  isDraggable = false // NOU: Indica si el producte es pot arrossegar
+  onPressAndHold = null, 
+  isDraggable = false 
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [clickTimer, setClickTimer] = useState(null);
   
-  // NOU: Estats i refs per a la lògica de "mantenir premut"
+  // Estats i refs per a la lògica de "mantenir premut" (Manté la definició per si es reactiva)
   const pressTimerRef = useRef(null);
   const isPressingRef = useRef(false);
   const PRESS_DURATION = 500; // 500ms per detectar "mantenir premut"
@@ -38,14 +39,16 @@ const ProductCard = ({
     setIsFlipped(!isFlipped);
   };
 
-  // NOU: Inicia la detecció de "mantenir premut"
+  // Inicia la detecció de "mantenir premut"
   const handlePressStart = (e) => {
     // Evita conflictes amb la selecció de text en mòbils
     e.preventDefault(); 
     
+    if (!onPressAndHold) return;
+
     isPressingRef.current = true;
     pressTimerRef.current = setTimeout(() => {
-        if (isPressingRef.current && onPressAndHold) {
+        if (isPressingRef.current) {
             // "Mantenir premut" detectat
             onPressAndHold(item);
             // Si detectem mantenir premut, evitem el clic o doble clic.
@@ -56,7 +59,7 @@ const ProductCard = ({
     }, PRESS_DURATION);
   };
   
-  // NOU: Finalitza la detecció de "mantenir premut"
+  // Finalitza la detecció de "mantenir premut"
   const handlePressEnd = () => {
       clearTimeout(pressTimerRef.current);
       isPressingRef.current = false;
@@ -64,24 +67,26 @@ const ProductCard = ({
   
   // NOU: Funció general de clic (tap)
   const handleCardClick = (e) => {
-    e.preventDefault(); // Evita problemes amb drag i doble clic
+    e.preventDefault(); 
+    e.stopPropagation(); // MOLT IMPORTANT: Assegurem que el clic no es propagui
 
-    // Si detectem que s'ha mantingut premut, sortim sense fer res.
+    // Netejar el timer de press&hold si existia
     if (pressTimerRef.current) {
       clearTimeout(pressTimerRef.current);
       if (isPressingRef.current) {
           isPressingRef.current = false;
-          return;
+          // Si es va detectar press & hold, sortim
+          return; 
       }
     }
     
     if (!requireDoubleClick) {
-      // Clic simple normal (per afegir/treure de la llista, o marcar com comprat)
+      // Clic simple normal (per afegir/treure de la llista)
       if (onAction) onAction();
       return;
     }
 
-    // Lògica de doble clic (només per la llista de COMPRATS)
+    // Lògica de doble clic (per marcar/desmarcar com comprat)
     setClickCount(prev => prev + 1);
 
     if (clickTimer) {
@@ -94,7 +99,7 @@ const ProductCard = ({
         if (onAction) onAction();
       }
       setClickCount(0);
-    }, 300);
+    }, 300); // 300ms és el temps típic per un doble clic
 
     setClickTimer(timer);
   };
@@ -124,6 +129,7 @@ const ProductCard = ({
         />
       );
     }
+    // Si no hi ha URL vàlida, mostrem la icona predeterminada
     return <ShoppingBag className={`${className} text-gray-600`} />;
   };
 
@@ -134,7 +140,7 @@ const ProductCard = ({
       // Afegim els handlers per al "mantenir premut"
       onMouseDown={onPressAndHold ? handlePressStart : null}
       onMouseUp={onPressAndHold ? handlePressEnd : null}
-      onMouseLeave={onPressAndHold ? handlePressEnd : null} // Netejar si el ratolí surt
+      onMouseLeave={onPressAndHold ? handlePressEnd : null} 
       onTouchStart={onPressAndHold ? handlePressStart : null}
       onTouchEnd={onPressAndHold ? handlePressEnd : null}
     >
@@ -143,7 +149,8 @@ const ProductCard = ({
 
           {/* Front de la carta */}
           <div 
-            className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} ${!requireDoubleClick ? 'cursor-pointer' : 'cursor-pointer select-none'}`} 
+            // IMPORTANT: Utilitzem el nostre handleCardClick per gestionar el clic/doble clic
+            className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`} 
             onClick={handleCardClick}
             title={actionLabel}
           >
@@ -176,7 +183,8 @@ const ProductCard = ({
           {/* Back de la carta (només si té segona imatge) */}
           {item.secondIcon && (
             <div 
-              className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} ${!requireDoubleClick ? 'cursor-pointer' : 'cursor-pointer select-none'}`} 
+              // IMPORTANT: Utilitzem el nostre handleCardClick per gestionar el clic/doble clic
+              className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`} 
               onClick={handleCardClick}
               title={actionLabel}
             >
