@@ -1,170 +1,116 @@
-import React, { useState } from 'react';
-import { RotateCw, CreditCard as Edit3 } from 'lucide-react';
-import { ShoppingBag } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Plus, X, FileUp } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
-const cleanImageUrl = (url) => {
-  if (!url || typeof url !== 'string') return "";
-  const cleanedUrl = url.trim();
-  if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
-    return cleanedUrl;
-  }
-  if (cleanedUrl.includes('.') && !cleanedUrl.includes(' ')) {
-    return 'https://' + cleanedUrl;
-  }
-  return "";
-};
+// Aquest component rep les funcions i estats que necessita del component App.jsx
+// per gestionar el formulari i la càrrega d'Excel.
+function AddProductModal({
+    onClose,
+    availableSections,
+    onAddItem, // Aquesta és la funció per afegir un nou producte (handleNewItemFormSubmit)
+    onFileUpload, // Aquesta és la funció per pujar des d'Excel (handleFileUpload)
+    cleanImageUrl // Funció per netejar la URL de la imatge
+}) {
+    // Estats locals per al formulari, extrets de App.jsx
+    const [newItemName, setNewItemName] = useState("");
+    const [newItemQuantity, setNewItemQuantity] = useState("");
+    const [newItemIcon, setNewItemIcon] = useState("");
+    const [newItemSection, setNewItemSection] = useState("");
 
-const ProductCard = ({
-  item,
-  onEdit,
-  onAction,
-  actionLabel,
-  showEditButton = true,
-  additionalClasses = "",
-  opacity = 1,
-  requireDoubleClick = false
-}) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
+    // Funció que es crida en enviar el formulari
+    const handleFormSubmit = async () => {
+        // Preparem les dades com feia App.jsx
+        const itemData = {
+            name: newItemName.trim(),
+            quantity: newItemQuantity.trim(),
+            // Utilitzem la funció cleanImageUrl que ens arriba per props
+            icon: cleanImageUrl(newItemIcon) || 'ShoppingBag', 
+            secondIcon: cleanImageUrl(newItemIcon) || '',
+            section: newItemSection.trim() === "" ? null : newItemSection.trim(),
+        };
 
-  const handleToggleFlip = () => {
-    setIsFlipped(!isFlipped);
-  };
-
-  const handleAction = () => {
-    if (requireDoubleClick) {
-      setClickCount(prev => prev + 1);
-      setTimeout(() => {
-        if (clickCount === 0) { // Primer clic
-          // No fer res en el primer clic
-        } else if (clickCount === 1) { // Segon clic
-          onAction();
-          setClickCount(0);
-        }
-      }, 300);
-      
-      // Reset després de 500ms si no hi ha segon clic
-      setTimeout(() => {
-        setClickCount(0);
-      }, 500);
-    } else {
-      onAction();
-    }
-  };
-
-  const renderItemIcon = (iconUrl, className = "w-16 h-16") => {
-    if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://'))) {
-      return (
-        <img
-          src={iconUrl}
-          alt="icona personalitzada"
-          className={`${className} product-image rounded`}
-          onError={(e) => {
-            e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
-          }}
-        />
-      );
-    }
-    return <ShoppingBag className={`${className} text-gray-600`} />;
-  };
-
-  return (
-    <div className="relative w-full h-full transition-all-smooth" style={{ opacity }}>
-      <div className="flip-card w-full h-full" style={{ perspective: '1000px' }}> 
-        <div className={`flip-card-inner w-full h-full ${isFlipped ? 'flip-card-flipped' : ""}`}>
-
-          {/* Front de la carta */}
-          <div className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center
-             justify-center min-h-[180px] w-full ${additionalClasses} transition-all-smooth`} 
-             onClick={handleAction}>
+        try {
+            // Cridem la funció onAddItem (que és handleNewItemFormSubmit)
+            await onAddItem(itemData);
             
-            {/* Botó flip només si té segona imatge */}
-            {item.secondIcon && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleToggleFlip(); }}
-                className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110" 
-                aria-label="Girar carta"
-              >
-                <RotateCw className="w-3 h-3" />
-              </button>
-            )}
+            // Si l'afegit és correcte, netegem els camps i tanquem el modal
+            setNewItemName("");
+            setNewItemQuantity("");
+            setNewItemIcon("");
+            setNewItemSection("");
+            onClose(); // Tanquem el modal
+        } catch (error) {
+            // El feedback d'error es gestionarà a App.jsx (veure pas 2)
+            console.error("Error afegint element:", error);
+        }
+    };
+    
+    // Funció per a la pujada d'Excel (la deixem aquí, ja que té l'input de fitxer)
+    const handleExcelUpload = (event) => {
+        // Cridem la funció que ve de App.jsx per gestionar la pujada
+        onFileUpload(event);
+        // Després de pujar, tanquem el modal
+        onClose();
+    };
 
-            {/* Icona principal */}
-            <div className="flex-shrink-0 mb-3 flex items-center justify-center">
-              {renderItemIcon(item.icon, 'w-16 h-16')}
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            {/* Contenidor del Modal - important aturar la propagació del clic */}
+            <div className="bg-[#f0f3f5] p-6 rounded-xl box-shadow-neomorphic-container w-full max-w-lg relative" onClick={(e) => e.stopPropagation()}>
+                
+                {/* Botó per tancar */}
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-4 right-4 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors"
+                    aria-label="Tancar modal"
+                >
+                    <X className="w-5 h-5 text-gray-700" />
+                </button>
+
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Afegeix Nou Producte</h2>
+
+                {/* Formulari (Codi extret de les línies 236-257 de App.jsx) */}
+                <div className="flex flex-col gap-3">
+                    <input type="text" placeholder="Nom de l'element" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" 
+                        value={newItemName}
+                        onChange={(e) => setNewItemName(e.target.value)} 
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }} 
+                    />
+                    <input type="text" placeholder="Quantitat (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
+                        value={newItemQuantity} 
+                        onChange={(e) => setNewItemQuantity(e.target.value)}
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }}
+                    />
+                    <input type="text" placeholder="URL de la imatge (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input" 
+                        value={newItemIcon}
+                        onChange={(e) => setNewItemIcon(e.target.value)} 
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }} 
+                    />
+                    <input type="text" list="sections-datalist" placeholder="Secció (opcional)" className="w-full p-3 rounded-md focus:outline-none box-shadow-neomorphic-input"
+                        value={newItemSection} 
+                        onChange={(e) => setNewItemSection(e.target.value)}
+                        onKeyPress={(e) => { if (e.key === 'Enter') handleFormSubmit(); }}
+                    />
+                    
+                    <datalist id="sections-datalist">
+                        {availableSections.map((section, index) => (<option key={index} value={section} />))}
+                    </datalist>
+
+                    <button onClick={handleFormSubmit} className="mt-4 bg-[#f0f3f5] text-green-500 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2">
+                        <Plus className="w-5 h-5" /> Afegeix element
+                    </button>
+                    
+                    <label htmlFor="file-upload" className="w-full text-center bg-[#f0f3f5] text-gray-700 font-bold py-3 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                        <FileUp className="w-5 h-5" /> Puja des d'Excel
+                    </label>
+                    
+                    {/* Utilitzem la funció local handleExcelUpload, que crida onFileUpload */}
+                    <input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleExcelUpload} className="hidden" />
+                </div>
             </div>
-
-            {/* Text centrat */}
-            <div className="text-center w-full flex-grow flex flex-col justify-center">
-              <span className="font-semibold text-sm block text-center mb-1 leading-tight break-words">
-                {item.name}
-              </span>
-              {item.quantity && (
-                <span className="text-xs text-gray-500 block text-center mb-1">
-                  {item.quantity}
-                </span>
-              )}
-              {item.section && (
-                <span className="text-xs text-gray-400 block text-center">
-                  {item.section}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Back de la carta (només si té segona imatge) */}
-          {item.secondIcon && (
-            <div className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center
-              justify-center min-h-[180px] w-full ${additionalClasses} transition-all-smooth`} 
-              onClick={handleAction}>
-
-              {/* Botó per tornar */}
-              <button 
-                onClick={(e) => { e.stopPropagation(); handleToggleFlip(); }}
-                className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110" 
-                aria-label="Tornar"
-              >
-                <RotateCw className="w-3 h-3" />
-              </button>
-
-              {/* Segona icona */}
-              <div className="flex-shrink-0 mb-3 flex items-center justify-center">
-                {renderItemIcon(item.secondIcon, 'w-16 h-16')}
-              </div>
-
-              {/* Text centrat */}
-              <div className="text-center w-full flex-grow flex flex-col justify-center">
-                <span className="font-semibold text-sm block text-center mb-1 leading-tight break-words">
-                  {item.name}
-                </span>
-                {item.quantity && (
-                  <span className="text-xs text-gray-500 block text-center mb-1">
-                    {item.quantity}
-                  </span>
-                )}
-                {item.section && (
-                  <span className="text-xs text-gray-400 block text-center">
-                    {item.section}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+    );
+}
 
-      {/* Botó d'edició amb icona de llapis */}
-      {showEditButton && (
-        <button 
-          onClick={(e) => { e.stopPropagation(); onEdit(item); }} 
-          className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110" 
-          aria-label={`Edita ${item.name}`}
-        >
-          <Edit3 className="w-4 h-4" />
-        </button>
-      )}
-    </div>
-  );
-};
-
-export default ProductCard;
+export default AddProductModal;
