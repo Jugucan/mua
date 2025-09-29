@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown } from 'lucide-react';
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, SortAlphaAsc } from 'lucide-react'; // NOU: SortAlphaAsc
 import * as XLSX from 'xlsx';
 
 // Components
@@ -11,6 +11,21 @@ import AddProductModal from './components/AddProductModal';
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
+
+// NOU: Llista de seccions per defecte, amb un ordre predefinit
+const DEFAULT_SECTION_ORDER = [
+    'Fruita i Verdura', 
+    'Carn i Peix',
+    'Làctics', 
+    'Pa i Pastisseria',
+    'Begudes', 
+    'Neteja', 
+    'Higiene Personal', 
+    'Altres',
+    '' // Secció sense nom al final
+];
+const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) => [section, index]));
+
 
 function App() {
     // Estats locals
@@ -26,7 +41,9 @@ function App() {
     const [expandedImage, setExpandedImage] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [currentListName, setCurrentListName] = useState('Llista Principal');
-
+    // NOU: Estat per controlar l'ordenació
+    const [shoppingListSort, setShoppingListSort] = useState('default'); // 'default' (secció/alfabètic) o 'manual' (no implementat completament encara)
+    
     // Hook de Firebase
     const {
         userId,
@@ -39,6 +56,7 @@ function App() {
         toggleItemInShoppingList,
         toggleBought,
         uploadFromExcel,
+        // updateItemOrder, // La deixem comentada fins a implementar drag and drop
         handleLogin,
         handleRegister,
         handlePasswordReset,
@@ -46,12 +64,9 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
-    // Seccions disponibles
+    // Seccions disponibles (Usades a modals)
     const availableSections = useMemo(() => {
-        const sections = new Set([
-            'Fruita i Verdura', 'Làctics', 'Carn i Peix', 'Pa i Pastisseria',
-            'Begudes', 'Neteja', 'Higiene Personal', 'Altres'
-        ]);
+        const sections = new Set(DEFAULT_SECTION_ORDER.filter(s => s !== ''));
         items.forEach(item => {
             if (item.section) {
                 sections.add(item.section);
@@ -76,9 +91,11 @@ function App() {
             await addItem(itemData);
             setFeedbackMessage("Element afegit correctament!");
             setFeedbackType('success');
+            return true;
         } catch (error) {
             setFeedbackMessage(error.message);
             setFeedbackType('error');
+            return false;
         }
     };
     
@@ -106,7 +123,7 @@ function App() {
         reader.readAsArrayBuffer(file);
     };
 
-    // Funció per exportar a Excel
+    // Funció per exportar a Excel (SENSE CANVIS)
     const handleExportToExcel = () => {
         try {
             const exportData = items.map(item => ({
@@ -170,14 +187,14 @@ function App() {
         }
     }, [deleteItem]);
 
-    const handleToggleBought = useCallback(async (id, currentStatus, item) => {
+    // MODIFICAT: Ara la lògica de netejar quantitat és a useFirebase.js
+    const handleToggleBought = useCallback(async (item, isBought) => {
         try {
-            const result = await toggleBought(id, currentStatus);
+            // Passem l'estat oposat
+            const newStatus = !isBought; 
+            const result = await toggleBought(item, newStatus);
             
-            // Si el producte es marca com a comprat i té quantitat, l'eliminem
-            if (result && item.quantity) {
-                await updateItem(id, { ...item, quantity: '' });
-            }
+            // La lògica de netejar quantitat si es desmarca (newStatus=false) es fa dins de useFirebase.js
             
             setFeedbackMessage(`Element ${result ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
             setFeedbackType('success');
@@ -185,9 +202,9 @@ function App() {
             setFeedbackMessage(error.message);
             setFeedbackType('error');
         }
-    }, [toggleBought, updateItem]);
+    }, [toggleBought]);
 
-    // Funcions d'autenticació amb feedback
+    // Funcions d'autenticació amb feedback (SENSE CANVIS)
     const onLogin = useCallback(async (email, password) => {
         setAuthErrorMessage("");
         try {
@@ -235,7 +252,44 @@ function App() {
         }
     }, [handleLogout]);
 
-    // Filtres per als elements amb cerca
+    // NOU: Funció per ordenar productes alfabèticament
+    const sortItemsAlphabetically = (itemsList) => {
+        return [...itemsList].sort((a, b) => {
+            return a.name.localeCompare(b.name);
+        });
+    };
+    
+    // NOU: Funció per agrupar per secció i ordenar.
+    // L'ordenació és: 1. Segons l'ordre de DEFAULT_SECTION_ORDER. 2. Alfabèticament.
+    const groupItemsBySection = (itemsList) => {
+        const groups = {};
+
+        // 1. Agrupem els elements per la seva secció
+        itemsList.forEach(item => {
+            const sectionName = item.section || ''; 
+            if (!groups[sectionName]) {
+                groups[sectionName] = [];
+            }
+            groups[sectionName].push(item);
+        });
+
+        // 2. Ordenem els grups/seccions segons DEFAULT_SECTION_ORDER
+        const sortedSections = Object.keys(groups).sort((a, b) => {
+            const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
+            const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
+            return indexA - indexB;
+        });
+
+        // 3. Dins de cada grup, ordenem els elements alfabèticament
+        const sortedGroups = sortedSections.map(section => ({
+            section: section,
+            items: sortItemsAlphabetically(groups[section])
+        }));
+
+        return sortedGroups;
+    };
+
+    // Filtres per als elements amb cerca (SENSE CANVIS)
     const filterItems = (itemsList) => {
         if (!searchTerm) return itemsList;
         return itemsList.filter(item => 
@@ -244,18 +298,29 @@ function App() {
         );
     };
 
-    const pantryItems = filterItems(items.filter(item => !item.isInShoppingList || item.isBought));
-    const shoppingListItems = filterItems(items.filter(item => item.isInShoppingList));
+    // A la Despensa, els items es mostren ordenats alfabèticament
+    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
+    // La Llista de Compra ara utilitza la nova lògica d'agrupació i ordenació
     const itemsFromPantryInShoppingList = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
-    const unboughtItems = filterItems(shoppingListItems.filter(item => !item.isBought));
-    const boughtItems = filterItems(shoppingListItems.filter(item => item.isBought));
+    const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
+    const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
+    
+    // NOU: Agrupació de la llista de la compra per seccions
+    const groupedUnboughtItems = groupItemsBySection(unboughtItems);
+    const groupedBoughtItems = groupItemsBySection(boughtItems);
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista (SENSE botó d'edició)
+    // Funció per renderitzar elements en format llista (SENSE CANVIS SIGNIFICATIUS)
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
-            <div key={item.id} className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}>
+            <div 
+                key={item.id} 
+                className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
+                onClick={() => { if (!requireDoubleClick) handleToggleBought(item, item.isBought); }}
+                onDoubleClick={() => { if (requireDoubleClick) handleToggleBought(item, item.isBought); }}
+                title={requireDoubleClick ? `Doble clic per desmarcar ${item.name}` : `Clic per marcar ${item.name} com comprat`}
+            >
                 <div className="list-item-icon">
                     {item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://')) ? (
                         <img
@@ -277,6 +342,14 @@ function App() {
                 </div>
             </div>
         ));
+    };
+    
+    // Funció per a un hipotètic "mantenir premut" per a la reordenació
+    const handlePressAndHold = (item) => {
+        // En un futur, aquesta funció establiria l'element com a "element arrossegant"
+        // i permetria al sistema de drag and drop fer la reordenació.
+        setFeedbackMessage(`'${item.name}' seleccionat per reordenar (funcionalitat en desenvolupament).`);
+        setFeedbackType('info');
     };
 
     return (
@@ -324,7 +397,7 @@ function App() {
                                 : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
                         }`}
                     >
-                        Llista ({shoppingListItems.length})
+                        Llista ({unboughtItems.length + boughtItems.length})
                     </button>
                 </div>
 
@@ -368,6 +441,23 @@ function App() {
                             />
                         </div>
                     )}
+                    
+                    {/* NOU: Botó per alternar l'ordenació a la Llista */}
+                    {currentView === 'shoppingList' && (
+                        <button 
+                            onClick={() => setShoppingListSort(prev => prev === 'default' ? 'manual' : 'default')}
+                            className={`p-2 rounded-md transition-all-smooth ${
+                                shoppingListSort === 'default' 
+                                    ? 'box-shadow-neomorphic-button text-gray-700 hover:scale-105' 
+                                    : 'box-shadow-neomorphic-button-inset text-green-500'
+                            }`}
+                            aria-label="Alternar ordre de la llista"
+                            title={shoppingListSort === 'default' ? "Ordenació per Secció i Alfabètica" : "Ordenació Manual (Drag & Drop)"}
+                        >
+                            <SortAlphaAsc className="w-5 h-5" />
+                        </button>
+                    )}
+
 
                     {/* Botó d'exportació */}
                     <button 
@@ -383,7 +473,7 @@ function App() {
             {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
-                    {/* Elements a la despensa */}
+                    {/* Elements a la despensa (ja venen ordenats alfabèticament a 'pantryItems') */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Elements a la despensa ({pantryItems.length})
@@ -415,6 +505,7 @@ function App() {
                     </div>
 
                     {/* Elements a la llista de la compra des de la despensa */}
+                    {/* Aquesta secció pot ser redundant, però la mantenim si és important per la teva interfície */}
                     {itemsFromPantryInShoppingList.length > 0 && (
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
@@ -447,72 +538,88 @@ function App() {
 
             {currentView === 'shoppingList' && (
                 <div className="space-y-6">
-                    {/* Elements per comprar AMB ESTIL VERMELL */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                        <h2 className="text-xl font-bold mb-4 text-gray-700">
+                    {/* NOU: Seccions per comprar (Agrupats i Ordenats) */}
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
+                        <h2 className="text-xl font-bold text-gray-700">
                             Productes per comprar ({unboughtItems.length})
                         </h2>
                         {unboughtItems.length === 0 ? (
                             <p className="text-gray-600 text-center py-4">
                                 No hi ha productes pendents a la teva llista de la compra.
                             </p>
-                        ) : displayMode === 'grid' ? (
-                            <div className={`${gridClasses} gap-4`}>
-                                {unboughtItems.map(item => (
-                                    <ProductCard
-                                        key={item.id}
-                                        item={item}
-                                        onEdit={null}
-                                        onAction={() => handleToggleBought(item.id, item.isBought, item)}
-                                        actionLabel={`Clica per marcar ${item.name} com comprat`}
-                                        additionalClasses="box-shadow-neomorphic-element-red"
-                                        showEditButton={false}
-                                        requireDoubleClick={false}
-                                    />
-                                ))}
+                        ) : groupedUnboughtItems.map((group) => (
+                            <div key={group.section} className="border-t border-gray-300 pt-4">
+                                <h3 className="text-lg font-semibold mb-3 text-red-500">
+                                    {group.section || 'Sense Secció'} ({group.items.length})
+                                </h3>
+                                {displayMode === 'grid' ? (
+                                    <div className={`${gridClasses} gap-4`}>
+                                        {group.items.map(item => (
+                                            <ProductCard
+                                                key={item.id}
+                                                item={item}
+                                                onEdit={null}
+                                                onAction={() => handleToggleBought(item, item.isBought)}
+                                                actionLabel={`Clica per marcar ${item.name} com comprat`}
+                                                additionalClasses="box-shadow-neomorphic-element-red"
+                                                showEditButton={false}
+                                                requireDoubleClick={false}
+                                                onPressAndHold={shoppingListSort === 'manual' ? handlePressAndHold : null}
+                                                isDraggable={shoppingListSort === 'manual'}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {renderListItems(group.items, true, false)}
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {renderListItems(unboughtItems, true, false)}
-                            </div>
-                        )}
+                        ))}
                     </div>
 
-                    {/* Elements comprats AMB DOBLE CLIC */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                        <h2 className="text-xl font-bold mb-4 text-gray-700">
+                    {/* NOU: Seccions per comprats (Agrupats i Ordenats) AMB DOBLE CLIC */}
+                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
+                        <h2 className="text-xl font-bold text-gray-700">
                             Productes comprats ({boughtItems.length})
                         </h2>
                         {boughtItems.length === 0 ? (
                             <p className="text-gray-600 text-center py-4">
                                 Encara no hi ha productes comprats.
                             </p>
-                        ) : displayMode === 'grid' ? (
-                            <div className={`${gridClasses} gap-4`}>
-                                {boughtItems.map(item => (
-                                    <ProductCard
-                                        key={item.id}
-                                        item={item}
-                                        onEdit={null}
-                                        onAction={() => handleToggleBought(item.id, item.isBought, item)}
-                                        actionLabel={`Doble clic per desmarcar ${item.name} com comprat`}
-                                        additionalClasses="box-shadow-neomorphic-element-bought"
-                                        showEditButton={false}
-                                        requireDoubleClick={true}
-                                        opacity={0.75}
-                                    />
-                                ))}
+                        ) : groupedBoughtItems.map((group) => (
+                            <div key={group.section} className="border-t border-gray-300 pt-4">
+                                <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                                    {group.section || 'Sense Secció'} ({group.items.length})
+                                </h3>
+                                {displayMode === 'grid' ? (
+                                    <div className={`${gridClasses} gap-4`}>
+                                        {group.items.map(item => (
+                                            <ProductCard
+                                                key={item.id}
+                                                item={item}
+                                                onEdit={null}
+                                                onAction={() => handleToggleBought(item, item.isBought)}
+                                                actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
+                                                additionalClasses="box-shadow-neomorphic-element-bought"
+                                                showEditButton={false}
+                                                requireDoubleClick={true}
+                                                opacity={0.75}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {renderListItems(group.items, false, true)}
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {renderListItems(boughtItems, false, true)}
-                            </div>
-                        )}
+                        ))}
                     </div>
                 </div>
             )}
 
-            {/* Botó flotant per afegir productes (només a la despensa) */}
+            {/* Botó flotant per afegir productes (només a la despensa) (SENSE CANVIS) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={() => setShowAddModal(true)}
@@ -525,7 +632,7 @@ function App() {
                 </button>
             )}
 
-            {/* Modals */}
+            {/* Modals (SENSE CANVIS) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
