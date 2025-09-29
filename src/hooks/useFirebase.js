@@ -20,7 +20,7 @@ import {
   query,
   serverTimestamp,
   writeBatch,
-  orderBy // <-- NOU: Importem orderBy
+  orderBy
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -55,7 +55,7 @@ export const useFirebase = () => {
   const [items, setItems] = useState([]);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // Configuració de l'autenticació
+  // Configuració autenticació
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -73,7 +73,6 @@ export const useFirebase = () => {
           setUserEmail(null);
         } catch (error) {
           console.error("Error durant l'inici de sessió anònim:", error);
-          // Si falla l'anonim, generem un ID local per poder seguir usant l'app
           setUserId(crypto.randomUUID()); 
           setUserEmail(null);
         }
@@ -83,14 +82,11 @@ export const useFirebase = () => {
     return () => unsubscribe();
   }, []);
 
-  // Carrega els elements de la base de dades
+  // Carrega elements
   useEffect(() => {
     if (db && userId && isAuthReady) {
       const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
       const itemsCollectionRef = collection(db, itemsPath);
-      
-      // ORDENACIÓ: Per defecte ordenem per 'name' de forma ascendent.
-      // Dins App.jsx farem l'ordenació més complexa (per llista/despensa i secció)
       const q = query(itemsCollectionRef, orderBy('name', 'asc')); 
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -100,10 +96,8 @@ export const useFirebase = () => {
         }));
         const processedItems = itemsData.map(item => ({
           ...item,
-          // S'assegura que els booleans existeixen
           isInShoppingList: !!item.isInShoppingList,
           isBought: !!item.isBought,
-          // S'assegura que la secció existeix
           section: item.section || '', 
           isFlipped: false
         }));
@@ -118,7 +112,7 @@ export const useFirebase = () => {
     }
   }, [db, userId, isAuthReady]);
 
-  // Funcions de base de dades
+  // Afegir element
   const addItem = useCallback(async (itemData) => {
     if (itemData.name.trim() === '' || !db || !userId) {
       throw new Error("No es pot afegir: Falta el nom de l'element.");
@@ -130,8 +124,7 @@ export const useFirebase = () => {
         ...itemData,
         isBought: false,
         isInShoppingList: false,
-        createdAt: serverTimestamp(),
-        // orderIndex: null // Ja no el necessitem si ordenem per 'name'
+        createdAt: serverTimestamp()
       });
       return true;
     } catch (error) {
@@ -140,6 +133,7 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
+  // Actualitzar element
   const updateItem = useCallback(async (id, updatedData) => {
     if (!db || !userId) return;
     try {
@@ -155,21 +149,21 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
-  // NOVA FUNCIÓ: Per gestionar la reordenació manual (si cal)
+  // Reordenar manual
   const updateItemOrder = useCallback(async (id, newOrderIndex) => {
-      if (!db || !userId) return;
-      try {
-          const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-          const itemDocRef = doc(db, itemsPath, id);
-          await updateDoc(itemDocRef, { orderIndex: newOrderIndex });
-          return true;
-      } catch (error) {
-          console.error("Error actualitzant l'ordre de l'element:", error);
-          throw error;
-      }
+    if (!db || !userId) return;
+    try {
+      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+      const itemDocRef = doc(db, itemsPath, id);
+      await updateDoc(itemDocRef, { orderIndex: newOrderIndex });
+      return true;
+    } catch (error) {
+      console.error("Error actualitzant l'ordre de l'element:", error);
+      throw error;
+    }
   }, [db, userId]);
 
-
+  // Eliminar element
   const deleteItem = useCallback(async (item) => {
     if (!db || !userId) return;
     try {
@@ -183,6 +177,7 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
+  // Afegir/treure de la llista
   const toggleItemInShoppingList = useCallback(async (item) => {
     if (!db || !userId) return;
     try {
@@ -209,7 +204,7 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
-  // MODIFICAT: Ara rep l'item complet i gestiona la neteja de quantitat
+  // Marcar/desmarcar com a comprat (amb neteja de quantitat)
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!db || !userId) return;
     try {
@@ -218,10 +213,9 @@ export const useFirebase = () => {
       
       const updatePayload = { isBought: newStatus };
       
-      // Si es desmarca com a comprat (newStatus és false), i té quantitat, la netegem.
-      // D'aquesta manera, el doble clic a 'comprats' desmarca i neteja quantitat.
-      if (!newStatus && item.quantity && item.quantity.trim() !== '') {
-          updatePayload.quantity = '';
+      // 🔧 Quan es marca com a comprat, netegem quantitat si existeix
+      if (newStatus && item.quantity && item.quantity.trim() !== '') {
+        updatePayload.quantity = '';
       }
       
       await updateDoc(itemDocRef, updatePayload);
@@ -232,17 +226,16 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
+  // Importar des d’Excel
   const uploadFromExcel = useCallback(async (jsonData) => {
     if (!db || !userId) return;
-    
     if (jsonData.length < 2) {
       throw new Error("El fitxer Excel no té dades o el format és incorrecte.");
     }
-    
     const header = jsonData[0].map(h => String(h).trim().toLowerCase());
     const rows = jsonData.slice(1);
     const nameIndex = header.findIndex(h => h.includes('nom'));
-    const quantityIndex = header.findIndex(h => h.includes('quantitat')); // NOU: Index de quantitat
+    const quantityIndex = header.findIndex(h => h.includes('quantitat'));
     const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
     const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
     const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
@@ -263,13 +256,12 @@ export const useFirebase = () => {
         skippedItems++;
         continue;
       }
-      // NOU: Llegeix la quantitat si existeix
       const itemQuantity = quantityIndex !== -1 && row[quantityIndex] ? String(row[quantityIndex]).trim() : ''; 
       let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
       let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
       const itemData = {
         name: itemName,
-        quantity: itemQuantity, // NOU: Guarda la quantitat
+        quantity: itemQuantity,
         section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
         icon: itemIcon,
         secondIcon: itemSecondIcon,
@@ -291,7 +283,7 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
-  // Funcions d'autenticació
+  // Autenticació
   const handleLogin = useCallback(async (email, password) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -343,7 +335,7 @@ export const useFirebase = () => {
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
-    updateItemOrder, // <-- NOVA FUNCIÓ
+    updateItemOrder,
     uploadFromExcel,
     handleLogin,
     handleRegister,
