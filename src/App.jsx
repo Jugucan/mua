@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, SortAlphaAsc } from 'lucide-react'; // NOU: SortAlphaAsc
+// CANVI: Hem reemplaçat 'SortAlphaAsc' per 'SortAsc'
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, SortAsc } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
@@ -454,7 +455,8 @@ function App() {
                             aria-label="Alternar ordre de la llista"
                             title={shoppingListSort === 'default' ? "Ordenació per Secció i Alfabètica" : "Ordenació Manual (Drag & Drop)"}
                         >
-                            <SortAlphaAsc className="w-5 h-5" />
+                            {/* CANVI: Utilitzem 'SortAsc' */}
+                            <SortAsc className="w-5 h-5" /> 
                         </button>
                     )}
 
