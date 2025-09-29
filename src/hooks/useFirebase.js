@@ -19,7 +19,8 @@ import {
   onSnapshot,
   query,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  orderBy // <-- NOU: Importem orderBy
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -72,7 +73,8 @@ export const useFirebase = () => {
           setUserEmail(null);
         } catch (error) {
           console.error("Error durant l'inici de sessió anònim:", error);
-          setUserId(crypto.randomUUID());
+          // Si falla l'anonim, generem un ID local per poder seguir usant l'app
+          setUserId(crypto.randomUUID()); 
           setUserEmail(null);
         }
       }
@@ -86,7 +88,10 @@ export const useFirebase = () => {
     if (db && userId && isAuthReady) {
       const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
       const itemsCollectionRef = collection(db, itemsPath);
-      const q = query(itemsCollectionRef);
+      
+      // ORDENACIÓ: Per defecte ordenem per 'name' de forma ascendent.
+      // Dins App.jsx farem l'ordenació més complexa (per llista/despensa i secció)
+      const q = query(itemsCollectionRef, orderBy('name', 'asc')); 
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const itemsData = snapshot.docs.map(doc => ({
@@ -95,9 +100,11 @@ export const useFirebase = () => {
         }));
         const processedItems = itemsData.map(item => ({
           ...item,
+          // S'assegura que els booleans existeixen
           isInShoppingList: !!item.isInShoppingList,
           isBought: !!item.isBought,
-          section: item.section || '',
+          // S'assegura que la secció existeix
+          section: item.section || '', 
           isFlipped: false
         }));
 
@@ -124,7 +131,7 @@ export const useFirebase = () => {
         isBought: false,
         isInShoppingList: false,
         createdAt: serverTimestamp(),
-        orderIndex: null
+        // orderIndex: null // Ja no el necessitem si ordenem per 'name'
       });
       return true;
     } catch (error) {
@@ -147,6 +154,21 @@ export const useFirebase = () => {
       throw error;
     }
   }, [db, userId]);
+
+  // NOVA FUNCIÓ: Per gestionar la reordenació manual (si cal)
+  const updateItemOrder = useCallback(async (id, newOrderIndex) => {
+      if (!db || !userId) return;
+      try {
+          const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
+          const itemDocRef = doc(db, itemsPath, id);
+          await updateDoc(itemDocRef, { orderIndex: newOrderIndex });
+          return true;
+      } catch (error) {
+          console.error("Error actualitzant l'ordre de l'element:", error);
+          throw error;
+      }
+  }, [db, userId]);
+
 
   const deleteItem = useCallback(async (item) => {
     if (!db || !userId) return;
@@ -187,13 +209,23 @@ export const useFirebase = () => {
     }
   }, [db, userId]);
 
-  const toggleBought = useCallback(async (id, currentStatus) => {
+  // MODIFICAT: Ara rep l'item complet i gestiona la neteja de quantitat
+  const toggleBought = useCallback(async (item, newStatus) => {
     if (!db || !userId) return;
     try {
       const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemDocRef = doc(db, itemsPath, id);
-      await updateDoc(itemDocRef, { isBought: !currentStatus });
-      return !currentStatus;
+      const itemDocRef = doc(db, itemsPath, item.id);
+      
+      const updatePayload = { isBought: newStatus };
+      
+      // Si es desmarca com a comprat (newStatus és false), i té quantitat, la netegem.
+      // D'aquesta manera, el doble clic a 'comprats' desmarca i neteja quantitat.
+      if (!newStatus && item.quantity && item.quantity.trim() !== '') {
+          updatePayload.quantity = '';
+      }
+      
+      await updateDoc(itemDocRef, updatePayload);
+      return newStatus;
     } catch (error) {
       console.error("Error alternant estat:", error);
       throw error;
@@ -210,6 +242,7 @@ export const useFirebase = () => {
     const header = jsonData[0].map(h => String(h).trim().toLowerCase());
     const rows = jsonData.slice(1);
     const nameIndex = header.findIndex(h => h.includes('nom'));
+    const quantityIndex = header.findIndex(h => h.includes('quantitat')); // NOU: Index de quantitat
     const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
     const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
     const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
@@ -230,11 +263,13 @@ export const useFirebase = () => {
         skippedItems++;
         continue;
       }
+      // NOU: Llegeix la quantitat si existeix
+      const itemQuantity = quantityIndex !== -1 && row[quantityIndex] ? String(row[quantityIndex]).trim() : ''; 
       let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
       let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
       const itemData = {
         name: itemName,
-        quantity: '',
+        quantity: itemQuantity, // NOU: Guarda la quantitat
         section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
         icon: itemIcon,
         secondIcon: itemSecondIcon,
@@ -308,6 +343,7 @@ export const useFirebase = () => {
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
+    updateItemOrder, // <-- NOVA FUNCIÓ
     uploadFromExcel,
     handleLogin,
     handleRegister,
