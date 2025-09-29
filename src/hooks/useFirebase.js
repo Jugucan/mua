@@ -19,8 +19,7 @@ import {
   onSnapshot,
   query,
   serverTimestamp,
-  writeBatch,
-  orderBy // <-- NOU: Importem orderBy
+  writeBatch
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -35,7 +34,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const APP_ID = 'mua-app-da319';
+const APP_ID = 'mua-app-da319'; // Pot ser que aquest ID no es necessiti aquí, però el mantenim
 
 const cleanImageUrl = (url) => {
   if (!url || typeof url !== 'string') return "";
@@ -49,245 +48,255 @@ const cleanImageUrl = (url) => {
   return "";
 };
 
-export const useFirebase = () => {
+const useFirebase = () => {
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [items, setItems] = useState([]);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // Configuració de l'autenticació
+  // Autenticació
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        if (!user.isAnonymous) {
-          setUserId(user.uid);
-          setUserEmail(user.email);
-        } else {
-          setUserId(user.uid);
-          setUserEmail(null);
-        }
+        setUserId(user.uid);
+        setUserEmail(user.email);
       } else {
-        try {
-          const anonUserCredential = await signInAnonymously(auth);
-          setUserId(anonUserCredential.user.uid);
-          setUserEmail(null);
-        } catch (error) {
-          console.error("Error durant l'inici de sessió anònim:", error);
-          // Si falla l'anonim, generem un ID local per poder seguir usant l'app
-          setUserId(crypto.randomUUID()); 
-          setUserEmail(null);
-        }
+        setUserId(null);
+        setUserEmail(null);
       }
       setIsAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
 
-  // Carrega els elements de la base de dades
+  // Anar a buscar dades (onSnapshot)
   useEffect(() => {
-    if (db && userId && isAuthReady) {
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemsCollectionRef = collection(db, itemsPath);
-      
-      // ORDENACIÓ: Per defecte ordenem per 'name' de forma ascendent.
-      // Dins App.jsx farem l'ordenació més complexa (per llista/despensa i secció)
-      const q = query(itemsCollectionRef, orderBy('name', 'asc')); 
+    let unsubscribe = () => {};
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const itemsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        const processedItems = itemsData.map(item => ({
-          ...item,
-          // S'assegura que els booleans existeixen
-          isInShoppingList: !!item.isInShoppingList,
-          isBought: !!item.isBought,
-          // S'assegura que la secció existeix
-          section: item.section || '', 
-          isFlipped: false
-        }));
+    if (userId) {
+      const itemsColRef = collection(db, `users/${userId}/items`);
+      const q = query(itemsColRef);
 
-        setItems(processedItems);
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const itemsList = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id
+        }));
+        setItems(itemsList);
       }, (error) => {
-        console.error("Error carregant elements:", error);
+        console.error("Error escoltant els items:", error);
+      });
+    } else {
         setItems([]);
-      });
-
-      return () => unsubscribe();
     }
-  }, [db, userId, isAuthReady]);
 
-  // Funcions de base de dades
+    return () => unsubscribe();
+  }, [db, userId]);
+
+  // CRUD OPERATIONS
+  
   const addItem = useCallback(async (itemData) => {
-    if (itemData.name.trim() === '' || !db || !userId) {
-      throw new Error("No es pot afegir: Falta el nom de l'element.");
+    if (!userId) {
+      throw new Error("No estàs autenticat.");
     }
-    try {
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemsCollectionRef = collection(db, itemsPath);
-      await addDoc(itemsCollectionRef, {
+    
+    // Assegura que isInShoppingList és false per defecte quan s'afegeix des de la despensa
+    const newItem = {
         ...itemData,
-        isBought: false,
-        isInShoppingList: false,
-        createdAt: serverTimestamp(),
-        // orderIndex: null // Ja no el necessitem si ordenem per 'name'
-      });
-      return true;
+        isInShoppingList: false, 
+        isBought: false, 
+        createdAt: serverTimestamp()
+    };
+    
+    // Netejar icones si són buides
+    if (newItem.icon === 'ShoppingBag') {
+        newItem.icon = null;
+    }
+    if (newItem.secondIcon === '') {
+        newItem.secondIcon = null;
+    }
+
+    try {
+      await addDoc(collection(db, `users/${userId}/items`), newItem);
     } catch (error) {
       console.error("Error afegint element:", error);
-      throw error;
+      throw new Error("Error afegint l'element a la base de dades.");
     }
   }, [db, userId]);
 
   const updateItem = useCallback(async (id, updatedData) => {
-    if (!db || !userId) return;
+    if (!userId) {
+      throw new Error("No estàs autenticat.");
+    }
     try {
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemDocRef = doc(db, itemsPath, id);
-      if (updatedData.icon) { updatedData.icon = cleanImageUrl(updatedData.icon); }
-      if (updatedData.secondIcon) { updatedData.secondIcon = cleanImageUrl(updatedData.secondIcon); }
+      const itemDocRef = doc(db, `users/${userId}/items`, id);
       await updateDoc(itemDocRef, updatedData);
-      return true;
     } catch (error) {
       console.error("Error actualitzant element:", error);
-      throw error;
+      throw new Error("Error actualitzant l'element a la base de dades.");
     }
   }, [db, userId]);
 
-  // NOVA FUNCIÓ: Per gestionar la reordenació manual (si cal)
-  const updateItemOrder = useCallback(async (id, newOrderIndex) => {
-      if (!db || !userId) return;
-      try {
-          const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-          const itemDocRef = doc(db, itemsPath, id);
-          await updateDoc(itemDocRef, { orderIndex: newOrderIndex });
-          return true;
-      } catch (error) {
-          console.error("Error actualitzant l'ordre de l'element:", error);
-          throw error;
-      }
-  }, [db, userId]);
-
-
   const deleteItem = useCallback(async (item) => {
-    if (!db || !userId) return;
+    if (!userId) {
+      throw new Error("No estàs autenticat.");
+    }
     try {
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemDocRef = doc(db, itemsPath, item.id);
+      const itemDocRef = doc(db, `users/${userId}/items`, item.id);
       await deleteDoc(itemDocRef);
-      return true;
     } catch (error) {
       console.error("Error eliminant element:", error);
-      throw error;
+      throw new Error("Error eliminant l'element de la base de dades.");
     }
   }, [db, userId]);
 
   const toggleItemInShoppingList = useCallback(async (item) => {
-    if (!db || !userId) return;
-    try {
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemDocRef = doc(db, itemsPath, item.id);
-      let newIsInShoppingList;
-      let newIsBought;
-      if (item.isInShoppingList && !item.isBought) {
-        newIsInShoppingList = false;
-        newIsBought = false;
-      } else {
-        newIsInShoppingList = true;
-        newIsBought = false;
-      }
-      await updateDoc(itemDocRef, {
-        isInShoppingList: newIsInShoppingList,
-        isBought: newIsBought,
-        orderIndex: null
-      });
-      return newIsInShoppingList;
-    } catch (error) {
-      console.error("Error canviant element:", error);
-      throw error;
+    if (!userId) {
+      throw new Error("No estàs autenticat.");
     }
-  }, [db, userId]);
 
-  // MODIFICAT: Ara rep l'item complet i gestiona la neteja de quantitat
-  const toggleBought = useCallback(async (item, newStatus) => {
-    if (!db || !userId) return;
+    const itemDocRef = doc(db, `users/${userId}/items`, item.id);
+    const newStatus = !item.isInShoppingList;
+
+    const updatePayload = { 
+        isInShoppingList: newStatus,
+        isBought: false // Si el treiem o l'afegim, sempre passa a no comprat
+    };
+
     try {
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-      const itemDocRef = doc(db, itemsPath, item.id);
-      
-      const updatePayload = { isBought: newStatus };
-      
-      // Si es desmarca com a comprat (newStatus és false), i té quantitat, la netegem.
-      // D'aquesta manera, el doble clic a 'comprats' desmarca i neteja quantitat.
-      if (!newStatus && item.quantity && item.quantity.trim() !== '') {
-          updatePayload.quantity = '';
-      }
-      
       await updateDoc(itemDocRef, updatePayload);
       return newStatus;
     } catch (error) {
-      console.error("Error alternant estat:", error);
-      throw error;
+      console.error("Error al toggleItemInShoppingList:", error);
+      throw new Error("Error actualitzant l'estat de la llista de la compra.");
     }
   }, [db, userId]);
+  
+  
+  // MODIFICACIÓ CLAU AQUÍ
+  const toggleBought = useCallback(async (item, newStatus) => {
+    if (!userId) {
+      throw new Error("No estàs autenticat.");
+    }
 
-  const uploadFromExcel = useCallback(async (jsonData) => {
-    if (!db || !userId) return;
+    const itemDocRef = doc(db, `users/${userId}/items`, item.id);
+
+    const updatePayload = { isBought: newStatus };
     
-    if (jsonData.length < 2) {
-      throw new Error("El fitxer Excel no té dades o el format és incorrecte.");
+    // LÒGICA CLAU: Si el producte es MARCA com a comprat (newStatus=true), 
+    // netegem la quantitat, ja que ja no en queden per comprar.
+    if (newStatus === true) {
+        updatePayload.quantity = ''; 
     }
     
-    const header = jsonData[0].map(h => String(h).trim().toLowerCase());
-    const rows = jsonData.slice(1);
-    const nameIndex = header.findIndex(h => h.includes('nom'));
-    const quantityIndex = header.findIndex(h => h.includes('quantitat')); // NOU: Index de quantitat
-    const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
-    const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
-    const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
-    
-    if (nameIndex === -1) {
-      throw new Error("El fitxer Excel ha de contenir una columna amb 'Nom'.");
+    // Neteja de la llista (la lògica de toggleItemInShoppingList ho faria)
+    // Deixem l'estat isBought i isInShoppingList perquè funcionin junts.
+    // L'usuari ha de tenir isInShoppingList = true per estar a la llista.
+
+    try {
+      await updateDoc(itemDocRef, updatePayload);
+      return newStatus;
+    } catch (error) {
+      console.error("Error al toggleBought:", error);
+      throw new Error("Error actualitzant l'estat de compra de l'element.");
+    }
+  }, [db, userId]);
+  
+  // Funció per pujar productes des d'un Excel
+  const uploadFromExcel = useCallback(async (json) => {
+    if (!userId) {
+        throw new Error("No estàs autenticat per pujar dades.");
     }
     
+    if (!Array.isArray(json) || json.length < 2) {
+        throw new Error("El fitxer Excel està buit o té un format incorrecte.");
+    }
+
+    const batch = writeBatch(db);
+    const itemsColRef = collection(db, `users/${userId}/items`);
+    const headerRow = json[0];
     let successfulUploads = 0;
     let skippedItems = 0;
-    const batch = writeBatch(db);
-    const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/mainShoppingList/items`;
-    const itemsCollectionRef = collection(db, itemsPath);
-    
-    for (const row of rows) {
-      const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
-      if (itemName === '') {
-        skippedItems++;
-        continue;
-      }
-      // NOU: Llegeix la quantitat si existeix
-      const itemQuantity = quantityIndex !== -1 && row[quantityIndex] ? String(row[quantityIndex]).trim() : ''; 
-      let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
-      let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
-      const itemData = {
-        name: itemName,
-        quantity: itemQuantity, // NOU: Guarda la quantitat
-        section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
-        icon: itemIcon,
-        secondIcon: itemSecondIcon,
-        isBought: false,
-        isInShoppingList: false,
-        createdAt: serverTimestamp(),
-        orderIndex: null
-      };
-      const newDocRef = doc(itemsCollectionRef);
-      batch.set(newDocRef, itemData);
-      successfulUploads++;
+
+    // Mapping per ser tolerant a minúscules/majúscules i accents
+    const getHeaderIndex = (name) => {
+        const normalizedName = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const mapping = {
+            'nom': 0,
+            'quantitat': 1,
+            'seccio': 2,
+            'icona principal': 3,
+            'icona secundaria': 4,
+            'a la llista': 5,
+            'comprat': 6
+        };
+        // Busca al mapping
+        for (const [key, index] of Object.entries(mapping)) {
+            if (headerRow[index] && headerRow[index].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === key) {
+                return {
+                    nameIndex: mapping['nom'],
+                    quantityIndex: mapping['quantitat'],
+                    sectionIndex: mapping['seccio'],
+                    iconIndex: mapping['icona principal'],
+                    secondIconIndex: mapping['icona secundaria'],
+                    isInListIndex: mapping['a la llista'],
+                    isBoughtIndex: mapping['comprat'],
+                };
+            }
+        }
+        // Si no es troben capçaleres, intentem per posició predeterminada
+        return {
+            nameIndex: 0,
+            quantityIndex: 1,
+            sectionIndex: 2,
+            iconIndex: 3,
+            secondIconIndex: 4,
+            isInListIndex: 5,
+            isBoughtIndex: 6,
+        };
+    };
+
+    const indices = getHeaderIndex('Nom'); // Cerca amb el nom "Nom" per inicialitzar els índexs
+
+    // Iterem sobre les files de dades (saltant la capçalera)
+    for (let i = 1; i < json.length; i++) {
+        const row = json[i];
+        const name = (row[indices.nameIndex] || '').toString().trim();
+
+        if (!name) {
+            skippedItems++;
+            continue; // Saltar files sense nom de producte
+        }
+        
+        const rawIsInList = (row[indices.isInListIndex] || '').toString().toLowerCase().trim();
+        const rawIsBought = (row[indices.isBoughtIndex] || '').toString().toLowerCase().trim();
+
+        const newItem = {
+            name: name,
+            quantity: (row[indices.quantityIndex] || '').toString().trim(),
+            section: (row[indices.sectionIndex] || '').toString().trim() || null,
+            icon: cleanImageUrl((row[indices.iconIndex] || '').toString()) || null,
+            secondIcon: cleanImageUrl((row[indices.secondIconIndex] || '').toString()) || null,
+            isInShoppingList: rawIsInList === 'si' || rawIsInList === 'sí' || rawIsInList === 'true',
+            isBought: rawIsBought === 'si' || rawIsBought === 'sí' || rawIsBought === 'true',
+            createdAt: serverTimestamp()
+        };
+        
+        // Assegurar que un producte a la llista però marcat com comprat no tingui quantitat
+        if (newItem.isBought) {
+            newItem.quantity = '';
+        }
+
+        const newDocRef = doc(itemsColRef);
+        batch.set(newDocRef, newItem);
+        successfulUploads++;
     }
-    
+
     if (successfulUploads > 0) {
-      await batch.commit();
-      return { successfulUploads, skippedItems };
+        await batch.commit();
+        return { successfulUploads, skippedItems };
     } else {
-      throw new Error("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
+        throw new Error("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
     }
   }, [db, userId]);
 
@@ -343,7 +352,6 @@ export const useFirebase = () => {
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
-    updateItemOrder, // <-- NOVA FUNCIÓ
     uploadFromExcel,
     handleLogin,
     handleRegister,
@@ -352,3 +360,5 @@ export const useFirebase = () => {
     cleanImageUrl
   };
 };
+
+export default useFirebase;
