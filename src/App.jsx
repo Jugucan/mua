@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // Hem canviat SortAlphaAsc per SortAsc (ja arreglat de l'error anterior)
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, SortAsc } from 'lucide-react'; 
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, Import as SortAsc } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
@@ -344,7 +344,7 @@ function App() {
                     )}
                 </div>
                 <div className="list-item-content">
-                    <div className="font-semibold text-gray-800">{item.name}</div>
+                    <div className={`font-semibold ${isRed ? 'product-name-pending' : 'text-gray-800'}`}>{item.name}</div>
                     {item.quantity && <div className="text-sm text-gray-500">{item.quantity}</div>}
                     {item.section && <div className="text-xs text-gray-400">{item.section}</div>}
                 </div>
@@ -467,13 +467,16 @@ function App() {
 
 
                     {/* Botó d'exportació */}
-                    <button 
-                        onClick={handleExportToExcel}
-                        className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
-                        aria-label="Exportar a Excel"
-                    >
-                        <FileDown className="w-5 h-5" />
-                    </button>
+                    {/* Botó d'exportació només a la despensa */}
+                    {currentView === 'pantry' && (
+                        <button 
+                            onClick={handleExportToExcel}
+                            className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
+                            aria-label="Exportar a Excel"
+                        >
+                            <FileDown className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -527,6 +530,7 @@ function App() {
                                             onAction={() => afegirDeDespensaALlista(item)}
                                             actionLabel={`Clica per treure ${item.name} de la llista`}
                                             additionalClasses="box-shadow-neomorphic-element-green cursor-pointer"
+                                           additionalClasses="box-shadow-neomorphic-element-red cursor-pointer"
                                             showEditButton={true}
                                             requireDoubleClick={false} // Clic simple per treure de llista
                                         />
