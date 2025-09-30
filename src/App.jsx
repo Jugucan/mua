@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// Hem canviat SortAlphaAsc per SortAsc (ja arreglat de l'error anterior)
 import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, SortAsc } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
@@ -9,11 +8,12 @@ import EditItemModal from './components/EditItemModal';
 import ImageModal from './components/ImageModal';
 import ProductCard from './components/ProductCard';
 import AddProductModal from './components/AddProductModal'; 
+import ProductList from './components/ProductList'; // 🔥 Nou component amb drag & drop
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
 
-// NOU: Llista de seccions per defecte, amb un ordre predefinit
+// Seccions per defecte
 const DEFAULT_SECTION_ORDER = [
     'Fruita i Verdura', 
     'Carn i Peix',
@@ -23,10 +23,9 @@ const DEFAULT_SECTION_ORDER = [
     'Neteja', 
     'Higiene Personal', 
     'Altres',
-    '' // Secció sense nom al final
+    '' 
 ];
 const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) => [section, index]));
-
 
 function App() {
     // Estats locals
@@ -42,10 +41,9 @@ function App() {
     const [expandedImage, setExpandedImage] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [currentListName, setCurrentListName] = useState('Llista Principal');
-    // NOU: Estat per controlar l'ordenació
-    const [shoppingListSort, setShoppingListSort] = useState('default'); // 'default' (secció/alfabètic) o 'manual' (no implementat completament encara)
+    const [shoppingListSort, setShoppingListSort] = useState('default'); // 'default' o 'manual'
     
-    // Hook de Firebase
+    // Hook Firebase
     const {
         userId,
         userEmail,
@@ -57,7 +55,7 @@ function App() {
         toggleItemInShoppingList,
         toggleBought,
         uploadFromExcel,
-        // updateItemOrder, // La deixem comentada fins a implementar drag and drop
+        updateItemOrder, // 🔥 Ara sí que el fem servir
         handleLogin,
         handleRegister,
         handlePasswordReset,
@@ -65,7 +63,7 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
-    // Seccions disponibles (Usades a modals)
+    // Seccions disponibles
     const availableSections = useMemo(() => {
         const sections = new Set(DEFAULT_SECTION_ORDER.filter(s => s !== ''));
         items.forEach(item => {
@@ -86,7 +84,7 @@ function App() {
         }
     }, [feedbackMessage]);
 
-    // Funció per afegir un element
+    // Afegir element
     const handleAddItem = async (itemData) => {
         try {
             await addItem(itemData);
@@ -100,7 +98,7 @@ function App() {
         }
     };
     
-    // Funció per pujar arxiu
+    // Importar Excel
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -124,7 +122,7 @@ function App() {
         reader.readAsArrayBuffer(file);
     };
 
-    // Funció per exportar a Excel (SENSE CANVIS)
+    // Exportar Excel
     const handleExportToExcel = () => {
         try {
             const exportData = items.map(item => ({
@@ -152,6 +150,7 @@ function App() {
         }
     };
 
+    // Afegir de la despensa a la llista
     const afegirDeDespensaALlista = useCallback(async (item) => {
         try {
             const result = await toggleItemInShoppingList(item);
@@ -163,6 +162,7 @@ function App() {
         }
     }, [toggleItemInShoppingList]);
 
+    // Update, delete i toggle
     const handleUpdateItem = useCallback(async (id, updatedData) => {
         try {
             await updateItem(id, updatedData);
@@ -188,15 +188,10 @@ function App() {
         }
     }, [deleteItem]);
 
-    // MODIFICAT: Ara la lògica de netejar quantitat és a useFirebase.js
     const handleToggleBought = useCallback(async (item, isBought) => {
         try {
-            // Passem l'estat oposat
             const newStatus = !isBought; 
             const result = await toggleBought(item, newStatus);
-            
-            // La lògica de netejar quantitat si es desmarca (newStatus=false) es fa dins de useFirebase.js
-            
             setFeedbackMessage(`Element ${result ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
             setFeedbackType('success');
         } catch (error) {
@@ -205,7 +200,7 @@ function App() {
         }
     }, [toggleBought]);
 
-    // Funcions d'autenticació amb feedback (SENSE CANVIS)
+    // Autenticació
     const onLogin = useCallback(async (email, password) => {
         setAuthErrorMessage("");
         try {
@@ -253,44 +248,31 @@ function App() {
         }
     }, [handleLogout]);
 
-    // NOU: Funció per ordenar productes alfabèticament
+    // Ordenació
     const sortItemsAlphabetically = (itemsList) => {
-        return [...itemsList].sort((a, b) => {
-            return a.name.localeCompare(b.name);
-        });
+        return [...itemsList].sort((a, b) => a.name.localeCompare(b.name));
     };
-    
-    // NOU: Funció per agrupar per secció i ordenar.
-    // L'ordenació és: 1. Segons l'ordre de DEFAULT_SECTION_ORDER. 2. Alfabèticament.
+
     const groupItemsBySection = (itemsList) => {
         const groups = {};
-
-        // 1. Agrupem els elements per la seva secció
         itemsList.forEach(item => {
             const sectionName = item.section || ''; 
-            if (!groups[sectionName]) {
-                groups[sectionName] = [];
-            }
+            if (!groups[sectionName]) groups[sectionName] = [];
             groups[sectionName].push(item);
         });
 
-        // 2. Ordenem els grups/seccions segons DEFAULT_SECTION_ORDER
         const sortedSections = Object.keys(groups).sort((a, b) => {
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
         });
 
-        // 3. Dins de cada grup, ordenem els elements alfabèticament
-        const sortedGroups = sortedSections.map(section => ({
-            section: section,
+        return sortedSections.map(section => ({
+            section,
             items: sortItemsAlphabetically(groups[section])
         }));
-
-        return sortedGroups;
     };
 
-    // Filtres per als elements amb cerca (SENSE CANVIS)
     const filterItems = (itemsList) => {
         if (!searchTerm) return itemsList;
         return itemsList.filter(item => 
@@ -299,64 +281,23 @@ function App() {
         );
     };
 
-    // A la Despensa, els items es mostren ordenats alfabèticament
     const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
-    // La Llista de Compra ara utilitza la nova lògica d'agrupació i ordenació
     const itemsFromPantryInShoppingList = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
-    
-    // NOU: Agrupació de la llista de la compra per seccions
+
     const groupedUnboughtItems = groupItemsBySection(unboughtItems);
     const groupedBoughtItems = groupItemsBySection(boughtItems);
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista (Ajustada per utilitzar DOBLE CLIC)
-    const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
-        return itemsList.map(item => (
-            <div 
-                key={item.id} 
-                className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
-                // NOU: Ús de onDoubleClick en ambdós casos. requireDoubleClick només controla el missatge.
-                onClick={(e) => { 
-                    if (!requireDoubleClick) handleToggleBought(item, item.isBought);
-                    // Si requereix doble clic, el clic simple no fa res
-                }}
-                onDoubleClick={(e) => { 
-                    e.stopPropagation(); // Evitar clics parentals
-                    handleToggleBought(item, item.isBought); 
-                }}
-                title={`Doble clic per ${item.isBought ? 'desmarcar i netejar quantitat' : 'marcar com comprat'} ${item.name}`}
-            >
-                <div className="list-item-icon">
-                    {item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://')) ? (
-                        <img
-                            src={item.icon}
-                            alt="icona"
-                            className="w-12 h-12 product-image rounded"
-                            onError={(e) => {
-                                e.target.src = 'https://placehold.co/48x48/cccccc/000000?text=Error';
-                            }}
-                        />
-                    ) : (
-                        <ShoppingBag className="w-12 h-12 text-gray-600" />
-                    )}
-                </div>
-                <div className="list-item-content">
-                    <div className="font-semibold text-gray-800">{item.name}</div>
-                    {item.quantity && <div className="text-sm text-gray-500">{item.quantity}</div>}
-                    {item.section && <div className="text-xs text-gray-400">{item.section}</div>}
-                </div>
-            </div>
-        ));
-    };
-    
-    // Funció per a un hipotètic "mantenir premut" per a la reordenació
-    const handlePressAndHold = (item) => {
-        // Aquesta funció es queda com a placeholder, ja que requereix més implementació (drag and drop)
-        setFeedbackMessage(`'${item.name}' seleccionat per reordenar (funcionalitat en desenvolupament).`);
-        setFeedbackType('info');
+    // Quan reordenem un producte
+    const handleReorder = async (id, newIndex) => {
+        try {
+            await updateItemOrder(id, newIndex);
+        } catch (error) {
+            console.error("Error reordenant producte:", error);
+        }
     };
 
     return (
@@ -408,7 +349,7 @@ function App() {
                     </button>
                 </div>
 
-                {/* Botons de vista i cerca */}
+                {/* Controls de vista */}
                 <div className="flex justify-center items-center gap-4 flex-wrap">
                     <div className="flex gap-2">
                         <button 
@@ -418,7 +359,6 @@ function App() {
                                     ? 'box-shadow-neomorphic-button-inset text-green-500' 
                                     : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
                             }`}
-                            aria-label="Vista quadrícula"
                         >
                             <Grid3X3 className="w-5 h-5" />
                         </button>
@@ -429,13 +369,11 @@ function App() {
                                     ? 'box-shadow-neomorphic-button-inset text-green-500' 
                                     : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
                             }`}
-                            aria-label="Vista llista"
                         >
                             <List className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {/* Barra de cerca només a la despensa */}
                     {currentView === 'pantry' && (
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -448,8 +386,8 @@ function App() {
                             />
                         </div>
                     )}
-                    
-                    {/* NOU: Botó per alternar l'ordenació a la Llista */}
+
+                    {/* 🔥 Botó per alternar ordre de la llista */}
                     {currentView === 'shoppingList' && (
                         <button 
                             onClick={() => setShoppingListSort(prev => prev === 'default' ? 'manual' : 'default')}
@@ -458,36 +396,31 @@ function App() {
                                     ? 'box-shadow-neomorphic-button text-gray-700 hover:scale-105' 
                                     : 'box-shadow-neomorphic-button-inset text-green-500'
                             }`}
-                            aria-label="Alternar ordre de la llista"
-                            title={shoppingListSort === 'default' ? "Ordenació per Secció i Alfabètica" : "Ordenació Manual (Drag & Drop)"}
+                            title={shoppingListSort === 'default' ? "Ordenació per secció/alfabètica" : "Ordenació manual (drag & drop)"}
                         >
                             <SortAsc className="w-5 h-5" /> 
                         </button>
                     )}
 
-
-                    {/* Botó d'exportació */}
                     <button 
                         onClick={handleExportToExcel}
                         className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
-                        aria-label="Exportar a Excel"
                     >
                         <FileDown className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
-            {/* Vistes principals */}
+            {/* Vista Despensa */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
-                    {/* Elements a la despensa (ja venen ordenats alfabèticament a 'pantryItems') */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Elements a la despensa ({pantryItems.length})
                         </h2>
                         {pantryItems.length === 0 ? (
                             <p className="text-gray-600 text-center py-4">
-                                {searchTerm ? 'No s\'han trobat elements amb aquest criteri de cerca.' : 'No hi ha elements. Afegeix-ne alguns per començar!'}
+                                {searchTerm ? 'No s\'han trobat elements.' : 'No hi ha elements.'}
                             </p>
                         ) : displayMode === 'grid' ? (
                             <div className={`${gridClasses} gap-4`}>
@@ -497,150 +430,64 @@ function App() {
                                         item={item}
                                         onEdit={(item) => { setEditingItem(item); setShowEditModal(true); }}
                                         onAction={() => afegirDeDespensaALlista(item)}
-                                        actionLabel={`Clica per afegir ${item.name} a la llista`}
+                                        actionLabel={`Afegir ${item.name} a la llista`}
                                         additionalClasses="box-shadow-neomorphic-element cursor-pointer hover:box-shadow-neomorphic-element-hover"
                                         showEditButton={true}
-                                        requireDoubleClick={false} // Clic simple per afegir a llista
                                     />
                                 ))}
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {renderListItems(pantryItems, false, false)}
+                                {pantryItems.map(item => (
+                                    <div key={item.id}>{item.name}</div>
+                                ))}
                             </div>
                         )}
                     </div>
-
-                    {/* Elements a la llista de la compra des de la despensa */}
-                    {itemsFromPantryInShoppingList.length > 0 && (
-                        <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                            <h2 className="text-xl font-bold mb-4 text-gray-700">
-                                Elements a la llista de la compra des de la despensa ({itemsFromPantryInShoppingList.length})
-                            </h2>
-                            {displayMode === 'grid' ? (
-                                <div className={`${gridClasses} gap-4`}>
-                                    {itemsFromPantryInShoppingList.map(item => (
-                                        <ProductCard
-                                            key={item.id}
-                                            item={item}
-                                            onEdit={(item) => { setEditingItem(item); setShowEditModal(true); }}
-                                            onAction={() => afegirDeDespensaALlista(item)}
-                                            actionLabel={`Clica per treure ${item.name} de la llista`}
-                                            additionalClasses="box-shadow-neomorphic-element-green cursor-pointer"
-                                            showEditButton={true}
-                                            requireDoubleClick={false} // Clic simple per treure de llista
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {renderListItems(itemsFromPantryInShoppingList, false, false)}
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             )}
 
+            {/* Vista Llista de la compra */}
             {currentView === 'shoppingList' && (
-                <div className="space-y-6">
-                    {/* NOU: Seccions per comprar (Agrupats i Ordenats) */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
-                        <h2 className="text-xl font-bold text-gray-700">
-                            Productes per comprar ({unboughtItems.length})
-                        </h2>
-                        {unboughtItems.length === 0 ? (
-                            <p className="text-gray-600 text-center py-4">
-                                No hi ha productes pendents a la teva llista de la compra.
-                            </p>
-                        ) : groupedUnboughtItems.map((group) => (
-                            <div key={group.section} className="border-t border-gray-300 pt-4">
-                                <h3 className="text-lg font-semibold mb-3 text-red-500">
-                                    {group.section || 'Sense Secció'} ({group.items.length})
-                                </h3>
-                                {displayMode === 'grid' ? (
+                shoppingListSort === 'manual' ? (
+                    <ProductList items={unboughtItems} onReorder={handleReorder} />
+                ) : (
+                    <div className="space-y-6">
+                        <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
+                            <h2 className="text-xl font-bold text-gray-700">
+                                Productes per comprar ({unboughtItems.length})
+                            </h2>
+                            {groupedUnboughtItems.map(group => (
+                                <div key={group.section}>
+                                    <h3 className="text-lg font-semibold mb-3 text-red-500">
+                                        {group.section || 'Sense Secció'}
+                                    </h3>
                                     <div className={`${gridClasses} gap-4`}>
                                         {group.items.map(item => (
                                             <ProductCard
                                                 key={item.id}
                                                 item={item}
-                                                onEdit={null}
                                                 onAction={() => handleToggleBought(item, item.isBought)}
-                                                // CANVI CLAU: Ara requereix doble clic per marcar com a comprat
-                                                actionLabel={`Doble clic per marcar ${item.name} com comprat`}
-                                                additionalClasses="box-shadow-neomorphic-element-red"
-                                                showEditButton={false}
-                                                requireDoubleClick={true} 
-                                                // Desactivem el press and hold per evitar conflicte amb doble clic
-                                                onPressAndHold={null} 
-                                                isDraggable={false} 
+                                                requireDoubleClick={true}
                                             />
                                         ))}
                                     </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {renderListItems(group.items, true, true)} 
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-
-                    {/* NOU: Seccions per comprats (Agrupats i Ordenats) AMB DOBLE CLIC PER DESMARCAR */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
-                        <h2 className="text-xl font-bold text-gray-700">
-                            Productes comprats ({boughtItems.length})
-                        </h2>
-                        {boughtItems.length === 0 ? (
-                            <p className="text-gray-600 text-center py-4">
-                                Encara no hi ha productes comprats.
-                            </p>
-                        ) : groupedBoughtItems.map((group) => (
-                            <div key={group.section} className="border-t border-gray-300 pt-4">
-                                <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                                    {group.section || 'Sense Secció'} ({group.items.length})
-                                </h3>
-                                {displayMode === 'grid' ? (
-                                    <div className={`${gridClasses} gap-4`}>
-                                        {group.items.map(item => (
-                                            <ProductCard
-                                                key={item.id}
-                                                item={item}
-                                                onEdit={null}
-                                                onAction={() => handleToggleBought(item, item.isBought)}
-                                                actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
-                                                additionalClasses="box-shadow-neomorphic-element-bought"
-                                                showEditButton={false}
-                                                requireDoubleClick={true} // Manté el doble clic per desmarcar
-                                                opacity={0.75}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {renderListItems(group.items, false, true)}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                )
             )}
 
-            {/* Botó flotant per afegir productes (només a la despensa) (SENSE CANVIS) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
-                        box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
-                        shadow-xl flex items-center justify-center transform hover:scale-105"
-                    aria-label="Afegir nou producte"
+                    className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white"
                 >
                     <Plus className="w-8 h-8" />
                 </button>
             )}
 
-            {/* Modals (SENSE CANVIS) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
@@ -650,7 +497,6 @@ function App() {
                     availableSections={availableSections} 
                 />
             )}
-
             {showAuthModal && (
                 <AuthModal 
                     onLogin={onLogin} 
@@ -660,15 +506,11 @@ function App() {
                     errorMessage={authErrorMessage} 
                     onClose={() => setShowAuthModal(false)} 
                     onForgotPassword={onPasswordReset} 
-                    displayMode={displayMode} 
-                    setDisplayMode={setDisplayMode} 
                 />
             )}
-
             {expandedImage && (
                 <ImageModal src={expandedImage} onClose={() => setExpandedImage(null)} />
             )}
-            
             {showAddModal && (
                 <AddProductModal 
                     onClose={() => setShowAddModal(false)}
