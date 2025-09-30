@@ -261,7 +261,7 @@ function App() {
     };
     
     // NOU: Funció per agrupar per secció i ordenar.
-    // L'ordenació és: 1. Segons l'ordre de DEFAULT_SECTION_ORDER. 2. Alfabèticament.
+    // L'ordenació és: 1. Segons l'ordre personalitzat guardat. 2. Segons DEFAULT_SECTION_ORDER. 3. Alfabèticament.
     const groupItemsBySection = (itemsList) => {
         const groups = {};
 
@@ -274,17 +274,37 @@ function App() {
             groups[sectionName].push(item);
         });
 
-        // 2. Ordenem els grups/seccions segons DEFAULT_SECTION_ORDER
+        // 2. Ordenem els grups/seccions segons l'ordre personalitzat, després DEFAULT_SECTION_ORDER
         const sortedSections = Object.keys(groups).sort((a, b) => {
+            // Primer mirem si tenen ordre personalitzat
+            const customOrderA = sectionOrder[a];
+            const customOrderB = sectionOrder[b];
+            
+            if (customOrderA !== undefined && customOrderB !== undefined) {
+                return customOrderA - customOrderB;
+            }
+            if (customOrderA !== undefined) return -1;
+            if (customOrderB !== undefined) return 1;
+            
+            // Si no tenen ordre personalitzat, usem l'ordre per defecte
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
         });
 
-        // 3. Dins de cada grup, ordenem els elements alfabèticament
+        // 3. Dins de cada grup, ordenem els elements per orderIndex o alfabèticament
         const sortedGroups = sortedSections.map(section => ({
             section: section,
-            items: sortItemsAlphabetically(groups[section])
+            items: groups[section].sort((a, b) => {
+                // Si tenen orderIndex, ordenem per això
+                if (a.orderIndex !== undefined && b.orderIndex !== undefined) {
+                    return a.orderIndex - b.orderIndex;
+                }
+                if (a.orderIndex !== undefined) return -1;
+                if (b.orderIndex !== undefined) return 1;
+                // Si no, ordenem alfabèticament
+                return a.name.localeCompare(b.name);
+            })
         }));
 
         return sortedGroups;
@@ -353,10 +373,66 @@ function App() {
     };
     
     // Funció per a un hipotètic "mantenir premut" per a la reordenació
-    const handlePressAndHold = (item) => {
-        // Aquesta funció es queda com a placeholder, ja que requereix més implementació (drag and drop)
-        setFeedbackMessage(`'${item.name}' seleccionat per reordenar (funcionalitat en desenvolupament).`);
+    const handleItemPressAndHold = (item) => {
+        setFeedbackMessage(`Mantén premut i arrossega '${item.name}' per reordenar-lo dins la seva secció.`);
         setFeedbackType('info');
+        setIsReorderMode(true);
+    };
+    
+    const handleSectionPressAndHold = (sectionName) => {
+        setFeedbackMessage(`Mantén premut i arrossega la secció '${sectionName || 'Sense Secció'}' per reordenar-la.`);
+        setFeedbackType('info');
+        setIsReorderMode(true);
+    };
+    
+    // Funció per reordenar elements dins d'una secció
+    const handleItemReorder = async (itemId, newIndex, sectionItems) => {
+        try {
+            // Actualitzem l'orderIndex de l'element arrossegat
+            await updateItemOrder(itemId, newIndex);
+            
+            // Actualitzem els orderIndex dels altres elements de la secció
+            const promises = sectionItems.map((item, index) => {
+                if (item.id !== itemId) {
+                    const adjustedIndex = index >= newIndex ? index + 1 : index;
+                    return updateItemOrder(item.id, adjustedIndex);
+                }
+                return Promise.resolve();
+            });
+            
+            await Promise.all(promises);
+            setFeedbackMessage("Ordre actualitzat correctament!");
+            setFeedbackType('success');
+        } catch (error) {
+            setFeedbackMessage("Error actualitzant l'ordre: " + error.message);
+            setFeedbackType('error');
+        }
+        setIsReorderMode(false);
+    };
+    
+    // Funció per reordenar seccions
+    const handleSectionReorder = async (sectionName, newIndex, allSections) => {
+        try {
+            // Actualitzem l'orderIndex de la secció arrossegada
+            await updateSectionOrder(sectionName, newIndex);
+            
+            // Actualitzem els orderIndex de les altres seccions
+            const promises = allSections.map((section, index) => {
+                if (section !== sectionName) {
+                    const adjustedIndex = index >= newIndex ? index + 1 : index;
+                    return updateSectionOrder(section, adjustedIndex);
+                }
+                return Promise.resolve();
+            });
+            
+            await Promise.all(promises);
+            setFeedbackMessage("Ordre de seccions actualitzat correctament!");
+            setFeedbackType('success');
+        } catch (error) {
+            setFeedbackMessage("Error actualitzant l'ordre de seccions: " + error.message);
+            setFeedbackType('error');
+        }
+        setIsReorderMode(false);
     };
 
     return (
@@ -449,24 +525,9 @@ function App() {
                         </div>
                     )}
                     
-                    {/* NOU: Botó per alternar l'ordenació a la Llista */}
-                    {currentView === 'shoppingList' && (
-                        <button 
-                            onClick={() => setShoppingListSort(prev => prev === 'default' ? 'manual' : 'default')}
-                            className={`p-2 rounded-md transition-all-smooth ${
-                                shoppingListSort === 'default' 
-                                    ? 'box-shadow-neomorphic-button text-gray-700 hover:scale-105' 
-                                    : 'box-shadow-neomorphic-button-inset text-green-500'
-                            }`}
-                            aria-label="Alternar ordre de la llista"
-                            title={shoppingListSort === 'default' ? "Ordenació per Secció i Alfabètica" : "Ordenació Manual (Drag & Drop)"}
-                        >
-                            <SortAsc className="w-5 h-5" /> 
-                        </button>
-                    )}
-
-
                     {/* Botó d'exportació */}
+                    {/* Botó d'exportació només a la despensa */}
+                    {currentView === 'pantry' && (
                     {/* Botó d'exportació només a la despensa */}
                     {currentView === 'pantry' && (
                         <button 
@@ -476,6 +537,7 @@ function App() {
                         >
                             <FileDown className="w-5 h-5" />
                         </button>
+                    )}
                     )}
                 </div>
             </div>
@@ -558,7 +620,12 @@ function App() {
                                 No hi ha productes pendents a la teva llista de la compra.
                             </p>
                         ) : groupedUnboughtItems.map((group) => (
-                            <div key={group.section} className="border-t border-gray-300 pt-4">
+                            <div 
+                                key={group.section} 
+                                className="border-t border-gray-300 pt-4"
+                                onTouchStart={() => handleSectionPressAndHold(group.section)}
+                                onMouseDown={() => handleSectionPressAndHold(group.section)}
+                            >
                                 <h3 className="text-lg font-semibold mb-3 text-red-500">
                                     {group.section || 'Sense Secció'} ({group.items.length})
                                 </h3>
@@ -570,14 +637,12 @@ function App() {
                                                 item={item}
                                                 onEdit={null}
                                                 onAction={() => handleToggleBought(item, item.isBought)}
-                                                // CANVI CLAU: Ara requereix doble clic per marcar com a comprat
                                                 actionLabel={`Doble clic per marcar ${item.name} com comprat`}
                                                 additionalClasses="box-shadow-neomorphic-element-red"
                                                 showEditButton={false}
-                                                requireDoubleClick={true} 
-                                                // Desactivem el press and hold per evitar conflicte amb doble clic
-                                                onPressAndHold={null} 
-                                                isDraggable={false} 
+                                                requireDoubleClick={true}
+                                                onPressAndHold={() => handleItemPressAndHold(item)}
+                                                isDraggable={isReorderMode}
                                             />
                                         ))}
                                     </div>
@@ -600,7 +665,12 @@ function App() {
                                 Encara no hi ha productes comprats.
                             </p>
                         ) : groupedBoughtItems.map((group) => (
-                            <div key={group.section} className="border-t border-gray-300 pt-4">
+                            <div 
+                                key={group.section} 
+                                className="border-t border-gray-300 pt-4"
+                                onTouchStart={() => handleSectionPressAndHold(group.section)}
+                                onMouseDown={() => handleSectionPressAndHold(group.section)}
+                            >
                                 <h3 className="text-lg font-semibold mb-3 text-gray-700">
                                     {group.section || 'Sense Secció'} ({group.items.length})
                                 </h3>
@@ -615,7 +685,9 @@ function App() {
                                                 actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
                                                 additionalClasses="box-shadow-neomorphic-element-bought"
                                                 showEditButton={false}
-                                                requireDoubleClick={true} // Manté el doble clic per desmarcar
+                                                requireDoubleClick={true}
+                                                onPressAndHold={() => handleItemPressAndHold(item)}
+                                                isDraggable={isReorderMode}
                                                 opacity={0.75}
                                             />
                                         ))}
