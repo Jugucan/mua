@@ -30,9 +30,11 @@
 .box-shadow-neomorphic-element-hover {
   box-shadow: 8px 8px 16px #c5c5c5, -8px -8px 16px #fbfbfb;
 }
+
+/* CANVI: Contorn vermell en lloc de verd per elements a la llista des de la despensa */
 .box-shadow-neomorphic-element-green {
   box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #fbfbfb;
-  border: 2px solid #10b981;
+  border: 2px solid #ef4444;
 }
 
 /* ESTIL NEOMÒRFIC AMB CONTORN VERMELL per productes per comprar */
@@ -47,6 +49,49 @@
 
 .box-shadow-neomorphic-element-bought {
   box-shadow: inset 6px 6px 12px #c5c5c5, inset -6px -6px 12px #fbfbfb;
+}
+
+/* NOU: Estils per la vista llista amb fons blanc i cantonades arrodonides */
+.list-item {
+  background-color: white;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.list-item:hover {
+  transform: translateY(-2px);
+}
+
+.list-item-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list-item-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.list-item-content {
+  flex-grow: 1;
+  text-align: left;
+}
+
+/* NOU: Estils per noms de productes pendents en negreta i vermell */
+.product-name-pending {
+  font-weight: bold;
+  color: #dc2626;
 }
 
 /* Animacions del flip de cartes ARREGLADES */
@@ -95,4 +140,11 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* NOU: Millores per les icones - que es vegin senceres */
+.product-image {
+  object-fit: contain !important;
+  width: 100% !important;
+  height: 100% !important;
 }
