@@ -185,6 +185,12 @@ const ProductCard = ({
 
               <div className="text-center w-full flex-grow flex flex-col justify-center">
                 <span className="font-semibold text-sm block text-center mb-1 leading-tight break-words">{item.name}</span>
+                <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${
+                  additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : ''
+                }`}>{item.name}</span>
+                <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${
+                  additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : ''
+                }`}>{item.name}</span>
                 {item.quantity && (<span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>)}
                 {item.section && (<span className="text-xs text-gray-400 block text-center">{item.section}</span>)}
               </div>
