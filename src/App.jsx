@@ -50,6 +50,7 @@ function App() {
         userId,
         userEmail,
         items,
+        sectionOrder,
         isAuthReady,
         addItem,
         updateItem,
@@ -57,7 +58,8 @@ function App() {
         toggleItemInShoppingList,
         toggleBought,
         uploadFromExcel,
-        // updateItemOrder, // La deixem comentada fins a implementar drag and drop
+        updateItemOrder,
+        updateSectionOrder,
         handleLogin,
         handleRegister,
         handlePasswordReset,
@@ -591,7 +593,6 @@ function App() {
                                             onEdit={(item) => { setEditingItem(item); setShowEditModal(true); }}
                                             onAction={() => afegirDeDespensaALlista(item)}
                                             actionLabel={`Clica per treure ${item.name} de la llista`}
-                                            additionalClasses="box-shadow-neomorphic-element-green cursor-pointer"
                                            additionalClasses="box-shadow-neomorphic-element-red cursor-pointer"
                                             showEditButton={true}
                                             requireDoubleClick={false} // Clic simple per treure de llista
