@@ -17,7 +17,6 @@ const ListManagerModal = ({
     const activeList = lists.find(l => l.id === activeListId) || { name: 'Carregant...' };
 
     useEffect(() => {
-        // Inicialitzar el camp d'edició amb el nom de la llista activa al muntar-se.
         if (activeList.name) {
             setNewName(activeList.name);
         }
@@ -52,20 +51,31 @@ const ListManagerModal = ({
     };
 
     const handleDeleteList = async (listId, listName) => {
-        if (listId === 'mainShoppingList') {
-            setFeedback("La Llista Principal no es pot eliminar.", 'error');
-            return;
-        }
-        const confirmDelete = window.confirm(`Estàs segur que vols eliminar la llista "${listName}"? Aquesta acció esborrarà tots els seus productes!`);
+        const confirmMsg = (listId === activeListId && lists.length === 1) 
+            ? `ATENCIÓ: És la teva única llista. Si continues, es buidarà i es canviarà el nom a "Llista Principal". Estàs segur?`
+            : `Estàs segur que vols eliminar la llista "${listName}"? Aquesta acció esborrarà tots els seus productes!`;
+            
+        const confirmDelete = window.confirm(confirmMsg);
         if (!confirmDelete) return;
 
         try {
-            await onDeleteList(listId);
-            setFeedback(`Llista '${listName}' eliminada.`, 'success');
-            onClose(); // Tancar modal després d'eliminar
+            const result = await onDeleteList(listId);
+
+            if (result.action === 'deleted') {
+                setFeedback(`Llista '${listName}' eliminada.`, 'success');
+            } else if (result.action === 'renamed') {
+                setFeedback(`Última llista buidada i reanomenada a '${result.newName}'.`, 'info');
+            }
+
+            onClose(); // Tancar modal després de l'operació
         } catch (error) {
             setFeedback(error.message, 'error');
         }
+    };
+
+    const handleListClick = (listId) => {
+        setActiveListId(listId);
+        onClose();
     };
 
     return (
@@ -107,6 +117,7 @@ const ListManagerModal = ({
                     ) : (
                         <div className="flex justify-between items-center">
                             <span className="font-medium text-xl text-green-600">{activeList.name}</span>
+                            {/* Botó per editar la llista activa */}
                             <button 
                                 onClick={() => setEditingListId(activeListId)}
                                 className="p-2 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button hover:scale-105"
@@ -116,6 +127,13 @@ const ListManagerModal = ({
                             </button>
                         </div>
                     )}
+                    {/* Botó d'eliminació de la llista activa (ara sempre visible) */}
+                    <button 
+                        onClick={() => handleDeleteList(activeListId, activeList.name)}
+                        className="mt-3 w-full py-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
+                    >
+                        {lists.length === 1 ? 'Buidar Llista Principal' : 'Eliminar aquesta Llista'}
+                    </button>
                 </div>
 
                 {/* Afegir nova llista */}
@@ -139,27 +157,31 @@ const ListManagerModal = ({
                     </div>
                 </div>
 
-                {/* Selecció d'altres llistes */}
+                {/* Selecció d'altres llistes (AMB CLIC AL CONTENIDOR) */}
                 <div className="p-4 rounded-lg box-shadow-neomorphic-element max-h-48 overflow-y-auto">
                     <h3 className="text-lg font-semibold mb-3 text-gray-700">Altres Llistes:</h3>
                     <div className="space-y-2">
                         {lists.filter(l => l.id !== activeListId).map(list => (
-                            <div key={list.id} className="flex justify-between items-center p-2 rounded-md bg-[#f0f3f5] box-shadow-neomorphic-element-small">
-                                <span 
-                                    className="font-medium cursor-pointer text-gray-700 hover:text-blue-500 transition-colors"
-                                    onClick={() => { setActiveListId(list.id); onClose(); }}
-                                >
+                            <div 
+                                key={list.id} 
+                                // ⭐ Canvi 1: Afegim un wrapper clicable 
+                                onClick={() => handleListClick(list.id)}
+                                className="flex justify-between items-center p-3 rounded-md bg-[#f0f3f5] box-shadow-neomorphic-element-small cursor-pointer transition-shadow hover:shadow-inner"
+                            >
+                                <span className="font-medium text-gray-700">
                                     {list.name}
                                 </span>
-                                {list.id !== 'mainShoppingList' && (
-                                    <button 
-                                        onClick={() => handleDeleteList(list.id, list.name)}
-                                        className="p-1 rounded-full bg-red-500 text-white box-shadow-neomorphic-button hover:scale-105"
-                                        aria-label={`Eliminar llista ${list.name}`}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                )}
+                                {/* ⭐ Canvi 2: Ara el botó d'eliminar és l'únic element interactiu intern */}
+                                <button 
+                                    onClick={(e) => { 
+                                        e.stopPropagation(); // Evitar que el clic es propagui al canvi de llista
+                                        handleDeleteList(list.id, list.name);
+                                    }}
+                                    className="p-1 rounded-full bg-red-500 text-white box-shadow-neomorphic-button hover:scale-105"
+                                    aria-label={`Eliminar llista ${list.name}`}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                             </div>
                         ))}
                         {lists.length <= 1 && (
