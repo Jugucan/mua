@@ -530,8 +530,6 @@ function App() {
                     {/* Botó d'exportació */}
                     {/* Botó d'exportació només a la despensa */}
                     {currentView === 'pantry' && (
-                    {/* Botó d'exportació només a la despensa */}
-                    {currentView === 'pantry' && (
                         <button 
                             onClick={handleExportToExcel}
                             className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
@@ -539,7 +537,6 @@ function App() {
                         >
                             <FileDown className="w-5 h-5" />
                         </button>
-                    )}
                     )}
                 </div>
             </div>
