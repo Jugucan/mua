@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, Menu, Trash2 } from 'lucide-react'; 
+// Hem eliminat RotateCcw que no s'utilitzava i afegit Menu i Trash2
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, Menu, Trash2 } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
@@ -68,20 +69,21 @@ function App() {
         handlePasswordReset, 
         handleLogout, 
         cleanImageUrl,
-        // ⭐ LLISTES I NOVES FUNCIONS
+        // LLISTES I NOVES FUNCIONS
         lists,
         activeListId,
         setActiveListId,
         addList,
         updateListName,
         deleteList,
-        deleteBoughtItems // ⭐ AFegit
+        deleteBoughtItems // Funció per esborrat massiu
     } = useFirebase();
     
-    // ⭐ NOU: Calcular el nom de la llista activa
+    // ⭐ Càlcul del nom de la llista activa (sense canvis, correcte)
     const activeListName = useMemo(() => {
         const activeList = lists.find(l => l.id === activeListId);
-        return activeList ? activeList.name : 'Carregant Llista...';
+        // Utilitzem un nom per defecte mentre carrega
+        return activeList ? activeList.name : 'Carregant Llista...'; 
     }, [lists, activeListId]);
 
 
@@ -163,7 +165,7 @@ function App() {
         }
     }, [addItem]);
 
-    // ⭐ NOU: Funció per eliminar productes comprats massivament
+    // Funció per eliminar productes comprats massivament (sense canvis, correcte)
     const handleDeleteBoughtItems = useCallback(async () => {
         const confirmDelete = window.confirm("Estàs segur que vols eliminar permanentment tots els productes marcats com comprats (a la secció inferior)?");
         if (!confirmDelete) return;
@@ -179,7 +181,7 @@ function App() {
             setFeedback(error.message || "Error al eliminar productes comprats.", 'error');
         }
     }, [deleteBoughtItems, setFeedback]);
-    // FI NOU
+
 
     // =================================================================
     // GESTIÓ D'ARXIUS I EXCEL
@@ -214,6 +216,7 @@ function App() {
     // =================================================================
     // GESTIÓ DRAG & DROP
     // =================================================================
+    // (Sense canvis, es manté la lògica de darrera versió)
 
     const onDragEnd = useCallback((result) => {
         const { source, destination, type } = result;
@@ -287,6 +290,7 @@ function App() {
     // =================================================================
     // GESTIÓ D'AUTENTICACIÓ
     // =================================================================
+    // (Sense canvis)
 
     const onLogin = useCallback(async (email, password) => {
         try {
@@ -345,11 +349,11 @@ function App() {
 
                 {/* Títol principal de l'aplicació */}
                 <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
-                    {/* ⭐ CANVI AQUÍ: Títol dinàmic amb el nom de la llista activa */}
+                    {/* ⭐ Títol Dinàmic (SENSE CANVIS, CORRECTE) */}
                     {activeListName}
                 </h1>
 
-                {/* Barra d'Eines Superior */}
+                {/* Barra d'Eines Superior (RESTAURADA) */}
                 <div className="flex justify-between items-center mb-6 p-3 rounded-xl box-shadow-neomorphic-container">
                     
                     {/* Botó de Vistes (Pantry/Shopping) */}
@@ -368,19 +372,16 @@ function App() {
                         </button>
                     </div>
 
-                    {/* Llista Activa i Gestió */}
-                    <div className="flex items-center gap-2">
+                    {/* Botons dreta (List Manager / Add / Auth) */}
+                    <div className="flex space-x-2">
+                        {/* ⭐ NOU: Botó de Gestió de Llistes (Menu) - restaurat a la dreta */}
                         <button 
                             onClick={() => setShowListManagerModal(true)}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button hover:bg-[#e0e3e5] transition-all-smooth"
+                            className="p-2 rounded-lg bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button hover:bg-[#e0e3e5]"
+                            aria-label="Gestió de Llistes"
                         >
                             <Menu className="w-5 h-5" />
-                            <span className="text-sm font-medium hidden sm:inline">{activeListName.substring(0, 15)}...</span>
                         </button>
-                    </div>
-
-                    {/* Botons dreta (Add/Auth) */}
-                    <div className="flex space-x-2">
                          <button
                             onClick={() => setShowAddModal(true)}
                             className="p-2 rounded-lg bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
@@ -494,7 +495,7 @@ function App() {
                                 )}
                             </Droppable>
 
-                            {/* ⭐ NOU BOTÓ: ELIMINAR COMPRATS (visible si hi ha items comprats) */}
+                            {/* ⭐ Botó: ELIMINAR COMPRATS */}
                             {boughtItems.length > 0 && (
                                 <div className="mt-8 mb-6 p-4 bg-white rounded-xl shadow-md flex justify-center box-shadow-neomorphic-container">
                                     <button
@@ -545,7 +546,7 @@ function App() {
                 />
             )}
             
-            {/* Modal de Gestió de Llistes (Nou) */}
+            {/* Modal de Gestió de Llistes */}
             {showListManagerModal && (
                 <ListManagerModal
                     lists={lists}
