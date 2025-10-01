@@ -256,14 +256,14 @@ function App() {
         }
     }, [handleLogout]);
 
-    // NOU: Funció per ordenar productes alfabèticament
+    // Funció per ordenar productes alfabèticament
     const sortItemsAlphabetically = (itemsList) => {
         return [...itemsList].sort((a, b) => {
             return a.name.localeCompare(b.name);
         });
     };
     
-    // NOU: Funció per agrupar per secció i ordenar.
+    // Funció per agrupar per secció i ordenar.
     // L'ordenació és: 1. Segons l'ordre personalitzat guardat. 2. Segons DEFAULT_SECTION_ORDER. 3. Alfabèticament.
     const groupItemsBySection = (itemsList) => {
         const groups = {};
@@ -313,7 +313,7 @@ function App() {
         return sortedGroups;
     };
 
-    // Filtres per als elements amb cerca (SENSE CANVIS)
+    // Filtres per als elements amb cerca
     const filterItems = (itemsList) => {
         if (!searchTerm) return itemsList;
         return itemsList.filter(item => 
@@ -329,7 +329,7 @@ function App() {
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
     
-    // NOU: Agrupació de la llista de la compra per seccions
+    // Agrupació de la llista de la compra per seccions
     const groupedUnboughtItems = groupItemsBySection(unboughtItems);
     const groupedBoughtItems = groupItemsBySection(boughtItems);
 
@@ -341,7 +341,6 @@ function App() {
             <div 
                 key={item.id} 
                 className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
-                // NOU: Ús de onDoubleClick en ambdós casos. requireDoubleClick només controla el missatge.
                 onClick={(e) => { 
                     if (!requireDoubleClick) handleToggleBought(item, item.isBought);
                     // Si requereix doble clic, el clic simple no fa res
@@ -375,67 +374,71 @@ function App() {
         ));
     };
     
-    // Funció per a un hipotètic "mantenir premut" per a la reordenació
-    const handleItemPressAndHold = (item) => {
-        setFeedbackMessage(`Mantén premut i arrossega '${item.name}' per reordenar-lo dins la seva secció.`);
+    // Activar/desactivar mode reordenació
+    const toggleReorderMode = () => {
+        setIsReorderMode(!isReorderMode);
+        setFeedbackMessage(
+            !isReorderMode 
+                ? "Mode reordenació activat! Ara pots arrossegar seccions i productes."
+                : "Mode reordenació desactivat."
+        );
         setFeedbackType('info');
-        setIsReorderMode(true);
     };
     
-    const handleSectionPressAndHold = (sectionName) => {
-        setFeedbackMessage(`Mantén premut i arrossega la secció '${sectionName || 'Sense Secció'}' per reordenar-la.`);
-        setFeedbackType('info');
-        setIsReorderMode(true);
-    };
-    
-    // Funció per reordenar elements dins d'una secció
-    const handleItemReorder = async (itemId, newIndex, sectionItems) => {
-        try {
-            // Actualitzem l'orderIndex de l'element arrossegat
-            await updateItemOrder(itemId, newIndex);
-            
-            // Actualitzem els orderIndex dels altres elements de la secció
-            const promises = sectionItems.map((item, index) => {
-                if (item.id !== itemId) {
-                    const adjustedIndex = index >= newIndex ? index + 1 : index;
-                    return updateItemOrder(item.id, adjustedIndex);
+    // Gestionar drag & drop
+    const handleDragEnd = async (result) => {
+        if (!result.destination) return;
+
+        const { source, destination, type } = result;
+
+        if (type === 'SECTION') {
+            // Reordenar seccions
+            try {
+                const sections = currentView === 'shoppingList' 
+                    ? [...groupedUnboughtItems.map(g => g.section)]
+                    : [];
+                
+                const [movedSection] = sections.splice(source.index, 1);
+                sections.splice(destination.index, 0, movedSection);
+                
+                // Actualitzar ordre de seccions
+                const promises = sections.map((section, index) => 
+                    updateSectionOrder(section, index)
+                );
+                await Promise.all(promises);
+                
+                setFeedbackMessage("Ordre de seccions actualitzat!");
+                setFeedbackType('success');
+            } catch (error) {
+                setFeedbackMessage("Error reordenant seccions: " + error.message);
+                setFeedbackType('error');
+            }
+        } else if (type === 'ITEM') {
+            // Reordenar productes dins d'una secció
+            if (source.droppableId === destination.droppableId) {
+                try {
+                    const sectionName = source.droppableId.replace('section-items-', '');
+                    const sectionItems = currentView === 'shoppingList'
+                        ? groupedUnboughtItems.find(g => g.section === sectionName)?.items || []
+                        : [];
+                    
+                    const [movedItem] = sectionItems.splice(source.index, 1);
+                    sectionItems.splice(destination.index, 0, movedItem);
+                    
+                    // Actualitzar orderIndex dels productes
+                    const promises = sectionItems.map((item, index) => 
+                        updateItemOrder(item.id, index)
+                    );
+                    await Promise.all(promises);
+                    
+                    setFeedbackMessage("Ordre de productes actualitzat!");
+                    setFeedbackType('success');
+                } catch (error) {
+                    setFeedbackMessage("Error reordenant productes: " + error.message);
+                    setFeedbackType('error');
                 }
-                return Promise.resolve();
-            });
-            
-            await Promise.all(promises);
-            setFeedbackMessage("Ordre actualitzat correctament!");
-            setFeedbackType('success');
-        } catch (error) {
-            setFeedbackMessage("Error actualitzant l'ordre: " + error.message);
-            setFeedbackType('error');
+            }
         }
-        setIsReorderMode(false);
-    };
-    
-    // Funció per reordenar seccions
-    const handleSectionReorder = async (sectionName, newIndex, allSections) => {
-        try {
-            // Actualitzem l'orderIndex de la secció arrossegada
-            await updateSectionOrder(sectionName, newIndex);
-            
-            // Actualitzem els orderIndex de les altres seccions
-            const promises = allSections.map((section, index) => {
-                if (section !== sectionName) {
-                    const adjustedIndex = index >= newIndex ? index + 1 : index;
-                    return updateSectionOrder(section, adjustedIndex);
-                }
-                return Promise.resolve();
-            });
-            
-            await Promise.all(promises);
-            setFeedbackMessage("Ordre de seccions actualitzat correctament!");
-            setFeedbackType('success');
-        } catch (error) {
-            setFeedbackMessage("Error actualitzant l'ordre de seccions: " + error.message);
-            setFeedbackType('error');
-        }
-        setIsReorderMode(false);
     };
 
     return (
@@ -528,7 +531,6 @@ function App() {
                         </div>
                     )}
                     
-                    {/* Botó d'exportació */}
                     {/* Botó d'exportació només a la despensa */}
                     {currentView === 'pantry' && (
                         <button 
@@ -537,6 +539,19 @@ function App() {
                             aria-label="Exportar a Excel"
                         >
                             <FileDown className="w-5 h-5" />
+                        </button>
+                    )}
+                    
+                    {/* Botó per activar mode reordenació només a la llista */}
+                    {currentView === 'shoppingList' && (
+                        <button 
+                            onClick={toggleReorderMode}
+                            className={`p-2 rounded-md transition-all-smooth ${
+                                isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-500' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
+                            }`}
+                            aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació"}
+                        >
+                            <RotateCcw className="w-5 h-5" />
                         </button>
                     )}
                 </div>
@@ -608,98 +623,95 @@ function App() {
             )}
 
             {currentView === 'shoppingList' && (
-                <div className="space-y-6">
-                    {/* NOU: Seccions per comprar (Agrupats i Ordenats) */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
-                        <h2 className="text-xl font-bold text-gray-700">
-                            Productes per comprar ({unboughtItems.length})
-                        </h2>
-                        {unboughtItems.length === 0 ? (
-                            <p className="text-gray-600 text-center py-4">
-                                No hi ha productes pendents a la teva llista de la compra.
-                            </p>
-                        ) : groupedUnboughtItems.map((group) => (
-                            <div 
-                                key={group.section} 
-                                className="border-t border-gray-300 pt-4"
-                                onTouchStart={() => handleSectionPressAndHold(group.section)}
-                                onMouseDown={() => handleSectionPressAndHold(group.section)}
-                            >
-                                <h3 className="text-lg font-semibold mb-3 text-red-500">
-                                    {group.section || 'Sense Secció'} ({group.items.length})
-                                </h3>
-                                {displayMode === 'grid' ? (
-                                    <div className={`${gridClasses} gap-4`}>
-                                        {group.items.map(item => (
-                                            <ProductCard
-                                                key={item.id}
-                                                item={item}
-                                                onEdit={null}
-                                                onAction={() => handleToggleBought(item, item.isBought)}
-                                                actionLabel={`Doble clic per marcar ${item.name} com comprat`}
-                                                additionalClasses="box-shadow-neomorphic-element-red"
-                                                showEditButton={false}
-                                                requireDoubleClick={true}
-                                                onPressAndHold={() => handleItemPressAndHold(item)}
-                                                isDraggable={isReorderMode}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {renderListItems(group.items, true, true)} 
-                                    </div>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <div className="space-y-6">
+                        {/* Seccions per comprar */}
+                        <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-xl font-bold text-gray-700">
+                                    Productes per comprar ({unboughtItems.length})
+                                </h2>
+                                {isReorderMode && (
+                                    <span className="text-sm text-blue-600 font-medium">
+                                        Mode reordenació actiu
+                                    </span>
                                 )}
                             </div>
-                        ))}
-                    </div>
+                            {unboughtItems.length === 0 ? (
+                                <p className="text-gray-600 text-center py-4">
+                                    No hi ha productes pendents a la teva llista de la compra.
+                                </p>
+                            ) : (
+                                <Droppable droppableId="unbought-sections" type="SECTION">
+                                    {(provided) => (
+                                        <div
+                                            ref={provided.innerRef}
+                                            {...provided.droppableProps}
+                                            className="space-y-4"
+                                        >
+                                            {groupedUnboughtItems.map((group, index) => (
+                                                <DraggableSection
+                                                    key={group.section}
+                                                    section={group.section}
+                                                    items={group.items}
+                                                    sectionIndex={index}
+                                                    displayMode={displayMode}
+                                                    gridClasses={gridClasses}
+                                                    handleToggleBought={handleToggleBought}
+                                                    renderListItems={renderListItems}
+                                                    isReorderMode={isReorderMode}
+                                                />
+                                            ))}
+                                            {provided.placeholder}
+                                        </div>
+                                    )}
+                                </Droppable>
+                            )}
+                        </div>
 
-                    {/* NOU: Seccions per comprats (Agrupats i Ordenats) AMB DOBLE CLIC PER DESMARCAR */}
-                    <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
-                        <h2 className="text-xl font-bold text-gray-700">
-                            Productes comprats ({boughtItems.length})
-                        </h2>
-                        {boughtItems.length === 0 ? (
-                            <p className="text-gray-600 text-center py-4">
-                                Encara no hi ha productes comprats.
-                            </p>
-                        ) : groupedBoughtItems.map((group) => (
-                            <div 
-                                key={group.section} 
-                                className="border-t border-gray-300 pt-4"
-                                onTouchStart={() => handleSectionPressAndHold(group.section)}
-                                onMouseDown={() => handleSectionPressAndHold(group.section)}
-                            >
-                                <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                                    {group.section || 'Sense Secció'} ({group.items.length})
-                                </h3>
-                                {displayMode === 'grid' ? (
-                                    <div className={`${gridClasses} gap-4`}>
-                                        {group.items.map(item => (
-                                            <ProductCard
-                                                key={item.id}
-                                                item={item}
-                                                onEdit={null}
-                                                onAction={() => handleToggleBought(item, item.isBought)}
-                                                actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
-                                                additionalClasses="box-shadow-neomorphic-element-bought"
-                                                showEditButton={false}
-                                                requireDoubleClick={true}
-                                                onPressAndHold={() => handleItemPressAndHold(item)}
-                                                isDraggable={isReorderMode}
-                                                opacity={0.75}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {renderListItems(group.items, false, true)}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                        {/* Seccions per comprats */}
+                        <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
+                            <h2 className="text-xl font-bold text-gray-700">
+                                Productes comprats ({boughtItems.length})
+                            </h2>
+                            {boughtItems.length === 0 ? (
+                                <p className="text-gray-600 text-center py-4">
+                                    Encara no hi ha productes comprats.
+                                </p>
+                            ) : groupedBoughtItems.map((group) => (
+                                <div 
+                                    key={group.section} 
+                                    className="border-t border-gray-300 pt-4"
+                                >
+                                    <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                                        {group.section || 'Sense Secció'} ({group.items.length})
+                                    </h3>
+                                    {displayMode === 'grid' ? (
+                                        <div className={`${gridClasses} gap-4`}>
+                                            {group.items.map(item => (
+                                                <ProductCard
+                                                    key={item.id}
+                                                    item={item}
+                                                    onEdit={null}
+                                                    onAction={() => handleToggleBought(item, item.isBought)}
+                                                    actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
+                                                    additionalClasses="box-shadow-neomorphic-element-bought"
+                                                    showEditButton={false}
+                                                    requireDoubleClick={true}
+                                                    opacity={0.75}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {renderListItems(group.items, false, true)}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                </DragDropContext>
             )}
 
             {/* Botó flotant per afegir productes (només a la despensa) (SENSE CANVIS) */}
