@@ -23,7 +23,7 @@ import {
   orderBy,
   getDoc,
   setDoc,
-  getDocs 
+  where
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -276,6 +276,7 @@ export const useFirebase = () => {
         console.error("Error eliminant/netejanr llista:", error);
         throw error;
     }
+    // IMPORTANT: Actualitzem les dependències per a la nova lògica
   }, [db, userId, lists, getListsPath, getItemsPath, setActiveListId]); 
 
   // =========================================================================
@@ -313,7 +314,7 @@ export const useFirebase = () => {
         setSectionOrder({});
       }
     }, (error) => {
-      console.error("Error carregant ordre de seccions:", error); // <-- Aquest és l'error de permisos
+      console.error("Error carregant ordre de seccions:", error);
     });
 
     return () => {
@@ -420,39 +421,6 @@ export const useFirebase = () => {
     }
   }, [db, userId, activeListId, getItemsPath]);
   
-  // NOU: Eliminar tots els productes marcats com comprats (isBought: true)
-  const deleteBoughtItems = useCallback(async () => {
-    if (!db || !userId || !activeListId) {
-      throw new Error("No es pot eliminar: Falten dades d'usuari o llista activa.");
-    }
-
-    try {
-      const itemsCollectionRef = collection(db, getItemsPath(activeListId));
-      
-      // La millor manera de fer-ho eficientment és a través de la llista d'ítems local
-      const itemsToDelete = items.filter(item => item.isBought === true);
-
-      if (itemsToDelete.length === 0) {
-        return 0;
-      }
-      
-      const batch = writeBatch(db);
-
-      itemsToDelete.forEach(item => {
-        const itemDocRef = doc(itemsCollectionRef, item.id);
-        batch.delete(itemDocRef);
-      });
-
-      await batch.commit();
-      return itemsToDelete.length;
-
-    } catch (error) {
-      console.error("Error eliminant productes comprats:", error);
-      throw error;
-    }
-  }, [db, userId, activeListId, getItemsPath, items]); 
-
-
   // =========================================================================
   // 5. GESTIÓ D'ORDRE I EXCEL
   // =========================================================================
@@ -638,7 +606,6 @@ export const useFirebase = () => {
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
-    deleteBoughtItems, 
     updateItemOrder,
     updateSectionOrder,
     uploadFromExcel,
