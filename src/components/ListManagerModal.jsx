@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Edit, Trash2 } from 'lucide-react';
+// IMPORTACIÓ: Afegim Check
+import { X, Plus, Edit, Trash2, Check } from 'lucide-react'; 
 
 const ListManagerModal = ({ 
     lists, 
@@ -51,7 +52,10 @@ const ListManagerModal = ({
     };
 
     const handleDeleteList = async (listId, listName) => {
-        const confirmMsg = (listId === activeListId && lists.length === 1) 
+        // Logica per a l'última llista vs. altres llistes
+        const isLastList = lists.length === 1 && listId === activeListId;
+
+        const confirmMsg = isLastList
             ? `ATENCIÓ: És la teva única llista. Si continues, es buidarà i es canviarà el nom a "Llista Principal". Estàs segur?`
             : `Estàs segur que vols eliminar la llista "${listName}"? Aquesta acció esborrarà tots els seus productes!`;
             
@@ -101,11 +105,12 @@ const ListManagerModal = ({
                                 onChange={(e) => setNewName(e.target.value)}
                                 className="flex-grow px-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none text-gray-700"
                             />
+                            {/* ⭐ CANVI D'ICONA: Utilitzem Check per a Guardar */}
                             <button 
                                 onClick={() => handleUpdateName(activeListId)}
                                 className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
                             >
-                                <Plus className="w-5 h-5 transform rotate-45" /> 
+                                <Check className="w-5 h-5" /> 
                             </button>
                             <button 
                                 onClick={() => setEditingListId(null)}
@@ -117,23 +122,30 @@ const ListManagerModal = ({
                     ) : (
                         <div className="flex justify-between items-center">
                             <span className="font-medium text-xl text-green-600">{activeList.name}</span>
-                            {/* Botó per editar la llista activa */}
-                            <button 
-                                onClick={() => setEditingListId(activeListId)}
-                                className="p-2 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button hover:scale-105"
-                                aria-label="Editar nom de llista"
-                            >
-                                <Edit className="w-4 h-4" />
-                            </button>
+                            <div className="flex gap-2">
+                                {/* ⭐ CANVI D'UBICACIÓ: Botó d'eliminació de la llista activa */}
+                                <button 
+                                    onClick={() => handleDeleteList(activeListId, activeList.name)}
+                                    className="p-2 rounded-full bg-[#f0f3f5] text-red-500 box-shadow-neomorphic-button hover:scale-105"
+                                    aria-label={lists.length === 1 ? 'Buidar llista principal' : 'Eliminar aquesta llista'}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                                {/* Botó per editar la llista activa */}
+                                <button 
+                                    onClick={() => {
+                                        setEditingListId(activeListId);
+                                        setNewName(activeList.name); // Assegura que el camp d'input tingui el nom actual
+                                    }}
+                                    className="p-2 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button hover:scale-105"
+                                    aria-label="Editar nom de llista"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                     )}
-                    {/* Botó d'eliminació de la llista activa (ara sempre visible) */}
-                    <button 
-                        onClick={() => handleDeleteList(activeListId, activeList.name)}
-                        className="mt-3 w-full py-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
-                    >
-                        {lists.length === 1 ? 'Buidar Llista Principal' : 'Eliminar aquesta Llista'}
-                    </button>
+                    
                 </div>
 
                 {/* Afegir nova llista */}
@@ -157,31 +169,44 @@ const ListManagerModal = ({
                     </div>
                 </div>
 
-                {/* Selecció d'altres llistes (AMB CLIC AL CONTENIDOR) */}
+                {/* Selecció d'altres llistes */}
                 <div className="p-4 rounded-lg box-shadow-neomorphic-element max-h-48 overflow-y-auto">
                     <h3 className="text-lg font-semibold mb-3 text-gray-700">Altres Llistes:</h3>
                     <div className="space-y-2">
                         {lists.filter(l => l.id !== activeListId).map(list => (
                             <div 
                                 key={list.id} 
-                                // ⭐ Canvi 1: Afegim un wrapper clicable 
                                 onClick={() => handleListClick(list.id)}
                                 className="flex justify-between items-center p-3 rounded-md bg-[#f0f3f5] box-shadow-neomorphic-element-small cursor-pointer transition-shadow hover:shadow-inner"
                             >
                                 <span className="font-medium text-gray-700">
                                     {list.name}
                                 </span>
-                                {/* ⭐ Canvi 2: Ara el botó d'eliminar és l'únic element interactiu intern */}
-                                <button 
-                                    onClick={(e) => { 
-                                        e.stopPropagation(); // Evitar que el clic es propagui al canvi de llista
-                                        handleDeleteList(list.id, list.name);
-                                    }}
-                                    className="p-1 rounded-full bg-red-500 text-white box-shadow-neomorphic-button hover:scale-105"
-                                    aria-label={`Eliminar llista ${list.name}`}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex gap-2">
+                                    {/* Botó per editar la llista NO activa */}
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Evitar canvi de llista
+                                            setEditingListId(list.id);
+                                            setNewName(list.name);
+                                        }}
+                                        className="p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small hover:scale-105"
+                                        aria-label="Editar nom de llista"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                    {/* Botó d'eliminar de la llista NO activa */}
+                                    <button 
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); // Evitar que el clic es propagui al canvi de llista
+                                            handleDeleteList(list.id, list.name);
+                                        }}
+                                        className="p-1 rounded-full bg-red-500 text-white box-shadow-neomorphic-button-small hover:scale-105"
+                                        aria-label={`Eliminar llista ${list.name}`}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                         {lists.length <= 1 && (
@@ -189,6 +214,36 @@ const ListManagerModal = ({
                         )}
                     </div>
                 </div>
+
+                {/* Mode Edició per llistes NO actives */}
+                {editingListId && editingListId !== activeListId && (
+                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4">
+                        <div className="bg-[#f0f3f5] rounded-xl p-6 shadow-2xl w-full max-w-sm">
+                            <h3 className="text-lg font-semibold mb-4">Edita '{lists.find(l => l.id === editingListId)?.name}'</h3>
+                            <div className="flex gap-2 items-center">
+                                <input
+                                    type="text"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    className="flex-grow px-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none text-gray-700"
+                                />
+                                {/* ⭐ CANVI D'ICONES: Utilitzem Check per a Guardar */}
+                                <button 
+                                    onClick={() => handleUpdateName(editingListId)}
+                                    className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
+                                >
+                                    <Check className="w-5 h-5" /> 
+                                </button>
+                                <button 
+                                    onClick={() => setEditingListId(null)}
+                                    className="p-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
+                                >
+                                    <X className="w-5 h-5" /> 
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </div>
