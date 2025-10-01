@@ -105,7 +105,8 @@ const ProductCard = ({
         <img
           src={iconUrl}
           alt="icona personalitzada"
-          className={`${className} object-cover rounded ${clickable ? 'cursor-zoom-in' : ''}`}
+          // AQUÍ ÉS ON HEM FET EL CANVI: object-cover a object-contain
+          className={`${className} object-contain rounded ${clickable ? 'cursor-zoom-in' : ''}`}
           onError={(e) => {
             e.target.src = 'https://placehold.co/64x64/cccccc/000000?text=Error';
           }}
