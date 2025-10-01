@@ -21,8 +21,9 @@ import {
   serverTimestamp,
   writeBatch,
   orderBy,
-  setDoc, // Nou import
-  getDoc, // Nou import
+  getDoc,
+  setDoc,
+  where
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -39,7 +40,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const APP_ID = 'mua-app-da319';
 
-const cleanImageUrl = (url) => {
+export const cleanImageUrl = (url) => {
   if (!url || typeof url !== 'string') return "";
   const cleanedUrl = url.trim();
   if (cleanedUrl.startsWith('http://') || cleanedUrl.startsWith('https://')) {
@@ -51,378 +52,500 @@ const cleanImageUrl = (url) => {
   return "";
 };
 
+// =========================================================================
+// HOOK PRINCIPAL
+// =========================================================================
+
 export const useFirebase = () => {
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [items, setItems] = useState([]);
-  const [sectionOrder, setSectionOrder] = useState({});
   const [isAuthReady, setIsAuthReady] = useState(false);
-  
-  // NOU ESTAT PER A LLISTES
-  const [lists, setLists] = useState([]);
-  const [activeListId, setActiveListId] = useState('mainShoppingList'); // ID de llista activa per defecte
+  const [sectionOrder, setSectionOrder] = useState({});
 
-  // Configuració autenticació
+  // NOUS ESTATS PER A LLISTES
+  const [lists, setLists] = useState([]);
+  const [activeListId, setActiveListId] = useState(() => localStorage.getItem('activeListId') || null);
+
+  // Funcions utilitàries per generar rutes
+  const getItemsPath = useCallback((listId) => {
+    if (!userId || !listId) return null;
+    return `artifacts/${APP_ID}/users/${userId}/shoppingLists/${listId}/items`;
+  }, [userId]);
+
+  const getSectionOrderPath = useCallback(() => {
+    if (!userId) return null;
+    return `artifacts/${APP_ID}/users/${userId}/sectionOrder/config`;
+  }, [userId]);
+  
+  const getListsPath = useCallback(() => {
+    if (!userId) return null;
+    return `artifacts/${APP_ID}/users/${userId}/shoppingLists`;
+  }, [userId]);
+
+  // Sincronitzar l'activeListId a localStorage
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      let currentUserId = null;
+    if (activeListId) {
+      localStorage.setItem('activeListId', activeListId);
+    }
+  }, [activeListId]);
+
+  // =========================================================================
+  // 1. AUTENTICACIÓ I INICIALITZACIÓ
+  // =========================================================================
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        currentUserId = user.uid;
-        if (!user.isAnonymous) {
-          setUserId(user.uid);
-          setUserEmail(user.email);
-        } else {
-          setUserId(user.uid);
-          setUserEmail(null);
-        }
+        setUserId(user.uid);
+        setUserEmail(user.email);
       } else {
+        // Intentar iniciar sessió de forma anònima si no hi ha usuari
         try {
           const anonUserCredential = await signInAnonymously(auth);
-          currentUserId = anonUserCredential.user.uid;
-          setUserId(currentUserId);
+          setUserId(anonUserCredential.user.uid);
           setUserEmail(null);
         } catch (error) {
-          console.error("Error durant l'inici de sessió anònim:", error);
-          // Utilitzem una ID anònima local en cas d'error
-          currentUserId = crypto.randomUUID(); 
-          setUserId(currentUserId);
-          setUserEmail(null);
+          console.error("Error iniciant sessió anònima:", error);
+          setUserId(null);
         }
       }
       setIsAuthReady(true);
-      
-      // Intentar llegir l'ID de la llista activa guardada localment per aquest usuari
-      if (currentUserId) {
-        const savedListId = localStorage.getItem(`activeListId_${currentUserId}`);
-        if (savedListId) {
-          setActiveListId(savedListId);
-        }
-      }
     });
-    return () => unsubscribe();
+
+    return () => unsubscribeAuth();
   }, []);
 
-  // Guarda l'ID de la llista activa a l'emmagatzematge local quan canvia
-  useEffect(() => {
-    if (userId && activeListId) {
-      localStorage.setItem(`activeListId_${userId}`, activeListId);
-    }
-  }, [userId, activeListId]);
+  // =========================================================================
+  // 2. GESTIÓ DE LLISTES (NOU)
+  // =========================================================================
+  
+  // Funció per assegurar l'existència d'una llista per defecte
+  const ensureDefaultList = useCallback(async (uid) => {
+    const listPath = `artifacts/${APP_ID}/users/${uid}/shoppingLists`;
+    const defaultListRef = doc(db, listPath, 'mainShoppingList');
 
-
-  // Carrega Llistes de la compra (NOU useEffect)
-  useEffect(() => {
-    if (db && userId && isAuthReady) {
-      const listsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists`;
-      const listsCollectionRef = collection(db, listsPath);
-
-      // Crear la llista per defecte si no existeix (Només una vegada)
-      const ensureDefaultList = async () => {
-        const defaultListRef = doc(db, listsPath, 'mainShoppingList');
-        const defaultListSnap = await getDoc(defaultListRef);
-        if (!defaultListSnap.exists()) {
-          await setDoc(defaultListRef, {
-            name: "Llista Principal",
-            createdAt: serverTimestamp(),
-            default: true,
-          });
-        }
-      };
-      
-      ensureDefaultList();
-
-      const q = query(listsCollectionRef, orderBy('createdAt', 'asc')); 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const listsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setLists(listsData);
-
-        // Si la llista activa no existeix (per exemple, si s'ha eliminat), tornem a la principal
-        if (activeListId && !listsData.some(l => l.id === activeListId)) {
-            setActiveListId('mainShoppingList');
-        }
-
-      }, (error) => {
-        console.error("Error carregant llistes:", error);
-        setLists([]);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [db, userId, isAuthReady, activeListId]); // activeListId afegit per comprovar si l'actual existeix
-
-  // Carrega elements (MODIFICAT per dependre de activeListId)
-  useEffect(() => {
-    if (db && userId && isAuthReady && activeListId) {
-      // ATENCIÓ: ARA LA RUTA ES CONSTRUEIX AMB activeListId
-      const itemsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists/${activeListId}/items`;
-      const itemsCollectionRef = collection(db, itemsPath);
-      const q = query(itemsCollectionRef, orderBy('name', 'asc')); 
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const itemsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        const processedItems = itemsData.map(item => ({
-          ...item,
-          isInShoppingList: !!item.isInShoppingList,
-          isBought: !!item.isBought,
-          section: item.section || '', 
-          isFlipped: false
-        }));
-
-        setItems(processedItems);
-      }, (error) => {
-        console.error("Error carregant elements:", error);
-        setItems([]);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [db, userId, isAuthReady, activeListId]); // activeListId afegit com a dependència
-
-  // Carregar ordre de seccions
-  useEffect(() => {
-    // Mantenim la mateixa lògica per ara, ja que no depèn de la llista
-    if (db && userId && isAuthReady) {
-      setSectionOrder({});
-    }
-  }, [db, userId, isAuthReady]);
-
-  // Afegir Llista (NOVA FUNCIÓ)
-  const addList = useCallback(async (listName) => {
-    if (listName.trim() === '' || !db || !userId) {
-      throw new Error("No es pot afegir: Falta el nom de la llista.");
-    }
     try {
-      const listsPath = `artifacts/${APP_ID}/users/${userId}/shoppingLists`;
-      const listsCollectionRef = collection(db, listsPath);
-      const docRef = await addDoc(listsCollectionRef, {
+      const docSnap = await getDoc(defaultListRef);
+      if (!docSnap.exists()) {
+        await setDoc(defaultListRef, {
+          name: "Llista Principal",
+          createdAt: serverTimestamp()
+        });
+      }
+      return 'mainShoppingList';
+    } catch (error) {
+      console.error("Error assegurant llista per defecte:", error);
+      throw error;
+    }
+  }, []);
+
+  // Carregar Llistes disponibles i gestionar l'activa
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadAndSetLists = async () => {
+      try {
+        const defaultListId = await ensureDefaultList(userId);
+        
+        const listsCollectionRef = collection(db, getListsPath());
+        const q = query(listsCollectionRef, orderBy('createdAt', 'asc'));
+
+        const unsubscribeLists = onSnapshot(q, (snapshot) => {
+          const loadedLists = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          setLists(loadedLists);
+
+          // Si no hi ha cap llista activa o l'activa ha estat esborrada
+          if (!activeListId || !loadedLists.some(l => l.id === activeListId)) {
+             // Prioritzem la llista principal, si existeix
+            const mainList = loadedLists.find(l => l.id === 'mainShoppingList');
+            if (mainList) {
+                setActiveListId('mainShoppingList');
+            } else if (loadedLists.length > 0) {
+              setActiveListId(loadedLists[0].id);
+            } else {
+                // Aquest cas no hauria de passar gràcies a ensureDefaultList
+                setActiveListId(defaultListId);
+            }
+          }
+        }, (error) => {
+          console.error("Error carregant llistes:", error.message);
+        });
+
+        return () => unsubscribeLists();
+      } catch (error) {
+        console.error("Error durant la inicialització de llistes:", error);
+      }
+    };
+
+    loadAndSetLists();
+  }, [userId, db, activeListId, ensureDefaultList, getListsPath]);
+
+
+  // Afegir Nova Llista
+  const addList = useCallback(async (listName) => {
+    if (!db || !userId) {
+      throw new Error("No es pot crear la llista: Falten dades d'usuari.");
+    }
+
+    try {
+      const listsCollectionRef = collection(db, getListsPath());
+      const newDocRef = await addDoc(listsCollectionRef, {
         name: listName,
-        createdAt: serverTimestamp(),
+        createdAt: serverTimestamp()
       });
-      setActiveListId(docRef.id); // Activem la nova llista
-      return docRef.id;
+      setActiveListId(newDocRef.id);
     } catch (error) {
       console.error("Error afegint llista:", error);
       throw error;
     }
-  }, [db, userId]);
+  }, [db, userId, getListsPath]);
 
-  // Actualitzar nom de Llista (NOVA FUNCIÓ)
+  // Actualitzar Nom de Llista
   const updateListName = useCallback(async (listId, newName) => {
-    if (newName.trim() === '' || !db || !userId) {
-      throw new Error("No es pot actualitzar: Falta el nom de la llista.");
+    if (!db || !userId) {
+      throw new Error("No es pot actualitzar: Falten dades d'usuari.");
     }
+    
     try {
-      const listDocRef = doc(db, `artifacts/${APP_ID}/users/${userId}/shoppingLists`, listId);
+      const listDocRef = doc(db, getListsPath(), listId);
       await updateDoc(listDocRef, { name: newName });
-      return true;
     } catch (error) {
       console.error("Error actualitzant nom de llista:", error);
       throw error;
     }
-  }, [db, userId]);
-  
-  // Eliminar Llista (NOVA FUNCIÓ)
+  }, [db, userId, getListsPath]);
+
+  // Eliminar Llista (MODIFICADA per permetre eliminar la principal si no en queden d'altres)
   const deleteList = useCallback(async (listId) => {
-    if (!db || !userId || listId === 'mainShoppingList') {
-      throw new Error("No es pot eliminar la llista principal.");
+    if (!db || !userId) {
+      throw new Error("No es pot eliminar: Falten dades d'usuari.");
     }
+
     try {
-      const listDocRef = doc(db, `artifacts/${APP_ID}/users/${userId}/shoppingLists`, listId);
-      await deleteDoc(listDocRef);
-      // Després d'eliminar, tornem a la llista principal.
-      setActiveListId('mainShoppingList');
-      return true;
+        const listsPath = getListsPath();
+        const currentLists = lists.filter(l => l.id !== listId);
+        
+        // Si és l'última llista, la buidem i la renombren a "Llista Principal"
+        if (currentLists.length === 0) {
+            const listDocRef = doc(db, listsPath, listId);
+            
+            // 1. Renombrar la llista
+            await updateDoc(listDocRef, { name: "Llista Principal" });
+            
+            // 2. Buidar els seus ítems (eliminem tota la subcol·lecció)
+            const itemsCollectionRef = collection(db, getItemsPath(listId));
+            const itemsSnapshot = await getDocs(query(itemsCollectionRef));
+            
+            const batch = writeBatch(db);
+
+            itemsSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            setActiveListId(listId); // Mantenim-nos-hi
+            return { action: 'renamed', newName: 'Llista Principal' };
+        } 
+        
+        // Si no és l'última, l'eliminem
+        else {
+            // 1. Eliminem els ítems de la llista (no cal buidar la subcol·lecció)
+            const itemsCollectionRef = collection(db, getItemsPath(listId));
+            const itemsSnapshot = await getDocs(query(itemsCollectionRef));
+            
+            const batch = writeBatch(db);
+            itemsSnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+
+            // 2. Eliminem el document de la llista
+            const listDocRef = doc(db, listsPath, listId);
+            await deleteDoc(listDocRef);
+            
+            // 3. Seleccionem la primera llista que queda.
+            setActiveListId(currentLists[0].id);
+            return { action: 'deleted' };
+        }
     } catch (error) {
-      console.error("Error eliminant llista:", error);
-      throw error;
+        console.error("Error eliminant/netejanr llista:", error);
+        throw error;
     }
-  }, [db, userId]);
+    // IMPORTANT: Actualitzem les dependències per a la nova lògica
+  }, [db, userId, lists, getListsPath, getItemsPath, setActiveListId]); 
+
+  // =========================================================================
+  // 3. CARREGA DE DADES DE LA LLISTA ACTIVA
+  // =========================================================================
+
+  // Carregar Elements i Ordre de Seccions de la Llista Activa
+  useEffect(() => {
+    if (!userId || !activeListId) {
+      setItems([]);
+      setSectionOrder({});
+      return;
+    }
+
+    // A. Carregar ítems
+    const itemsCollectionRef = collection(db, getItemsPath(activeListId));
+    const itemsQuery = query(itemsCollectionRef, orderBy('createdAt', 'asc'));
+
+    const unsubscribeItems = onSnapshot(itemsQuery, (snapshot) => {
+      const loadedItems = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setItems(loadedItems);
+    }, (error) => {
+      console.error("Error carregant ítems:", error);
+    });
+
+    // B. Carregar ordre de seccions
+    const sectionDocRef = doc(db, getSectionOrderPath());
+    const unsubscribeSectionOrder = onSnapshot(sectionDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSectionOrder(docSnap.data().orderMap || {});
+      } else {
+        setSectionOrder({});
+      }
+    }, (error) => {
+      console.error("Error carregant ordre de seccions:", error);
+    });
+
+    return () => {
+      unsubscribeItems();
+      unsubscribeSectionOrder();
+    };
+  }, [userId, db, activeListId, getItemsPath, getSectionOrderPath]);
 
 
-  // Funcions d'elements (TOTS ELS PATHS MODIFICATS per usar activeListId)
-
-  // Funció auxiliar per obtenir la ruta de la col·lecció d'ítems de la llista activa
-  const getItemsPath = (listId) => `artifacts/${APP_ID}/users/${userId}/shoppingLists/${listId}/items`;
+  // =========================================================================
+  // 4. GESTIÓ D'ELEMENTS
+  // =========================================================================
 
   // Afegir element
   const addItem = useCallback(async (itemData) => {
-    if (itemData.name.trim() === '' || !db || !userId || !activeListId) {
-      throw new Error("No es pot afegir: Falten dades essencials.");
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot afegir l'element: Falten dades d'usuari o llista activa.");
     }
+
     try {
       const itemsCollectionRef = collection(db, getItemsPath(activeListId));
       await addDoc(itemsCollectionRef, {
         ...itemData,
-        isBought: false,
-        isInShoppingList: false,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        orderIndex: Date.now() // Per ordre inicial quan s'afegeix
       });
-      return true;
     } catch (error) {
       console.error("Error afegint element:", error);
       throw error;
     }
-  }, [db, userId, activeListId]);
+  }, [db, userId, activeListId, getItemsPath]);
 
   // Actualitzar element
-  const updateItem = useCallback(async (id, updatedData) => {
-    if (!db || !userId || !activeListId) return;
+  const updateItem = useCallback(async (itemId, updatedData) => {
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot actualitzar l'element: Falten dades.");
+    }
+
     try {
-      const itemDocRef = doc(db, getItemsPath(activeListId), id);
-      if (updatedData.icon) { updatedData.icon = cleanImageUrl(updatedData.icon); }
-      if (updatedData.secondIcon) { updatedData.secondIcon = cleanImageUrl(updatedData.secondIcon); }
+      const itemDocRef = doc(db, getItemsPath(activeListId), itemId);
       await updateDoc(itemDocRef, updatedData);
-      return true;
     } catch (error) {
       console.error("Error actualitzant element:", error);
       throw error;
     }
-  }, [db, userId, activeListId]);
-
-  // Reordenar manual
-  const updateItemOrder = useCallback(async (id, newOrderIndex) => {
-    if (!db || !userId || !activeListId) return;
-    try {
-      const itemDocRef = doc(db, getItemsPath(activeListId), id);
-      await updateDoc(itemDocRef, { orderIndex: newOrderIndex });
-      return true;
-    } catch (error) {
-      console.error("Error actualitzant l'ordre de l'element:", error);
-      throw error;
-    }
-  }, [db, userId, activeListId]);
-
-  // Actualitzar ordre de secció (es manté igual, no depèn de la llista)
-  const updateSectionOrder = useCallback(async (sectionName, newOrderIndex) => {
-    setSectionOrder(prev => ({
-      ...prev,
-      [sectionName]: newOrderIndex
-    }));
-    return true;
-  }, []);
+  }, [db, userId, activeListId, getItemsPath]);
 
   // Eliminar element
   const deleteItem = useCallback(async (item) => {
-    if (!db || !userId || !activeListId) return;
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot eliminar l'element: Falten dades.");
+    }
+    
     try {
       const itemDocRef = doc(db, getItemsPath(activeListId), item.id);
       await deleteDoc(itemDocRef);
-      return true;
     } catch (error) {
       console.error("Error eliminant element:", error);
       throw error;
     }
-  }, [db, userId, activeListId]);
+  }, [db, userId, activeListId, getItemsPath]);
 
-  // Afegir/treure de la llista
+  // Moure element a/de Llista de la compra
   const toggleItemInShoppingList = useCallback(async (item) => {
-    if (!db || !userId || !activeListId) return;
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot moure l'element: Falten dades.");
+    }
+
     try {
       const itemDocRef = doc(db, getItemsPath(activeListId), item.id);
-      let newIsInShoppingList;
-      let newIsBought;
-      if (item.isInShoppingList && !item.isBought) {
-        newIsInShoppingList = false;
-        newIsBought = false;
-      } else {
-        newIsInShoppingList = true;
-        newIsBought = false;
-      }
-      await updateDoc(itemDocRef, {
-        isInShoppingList: newIsInShoppingList,
-        isBought: newIsBought,
-        orderIndex: null
+      const isInShoppingList = !item.isInShoppingList;
+      
+      await updateDoc(itemDocRef, { 
+        isInShoppingList: isInShoppingList,
+        isBought: false, // Sempre resetegem l'estat de comprat
+        orderIndex: isInShoppingList ? Date.now() : null // Reiniciem l'ordre si l'afegim
       });
-      return newIsInShoppingList;
+      return isInShoppingList;
     } catch (error) {
-      console.error("Error canviant element:", error);
+      console.error("Error movent element:", error);
       throw error;
     }
-  }, [db, userId, activeListId]);
+  }, [db, userId, activeListId, getItemsPath]);
 
-  // Marcar/desmarcar com a comprat (amb neteja de quantitat)
+  // Marcar com comprat/descomprat
   const toggleBought = useCallback(async (item, newStatus) => {
-    if (!db || !userId || !activeListId) return;
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot actualitzar l'estat de comprat: Falten dades.");
+    }
+    
+    // Si l'estat és true (marcat com a comprat), netegem la quantitat.
+    const updateData = { 
+        isBought: newStatus,
+        quantity: newStatus ? '' : item.quantity // Netejar quantitat si es marca com comprat
+    };
+
     try {
       const itemDocRef = doc(db, getItemsPath(activeListId), item.id);
-      
-      const updatePayload = { isBought: newStatus };
-      
-      if (newStatus && item.quantity && item.quantity.trim() !== '') {
-        updatePayload.quantity = '';
-      }
-      
-      await updateDoc(itemDocRef, updatePayload);
+      await updateDoc(itemDocRef, updateData);
       return newStatus;
     } catch (error) {
-      console.error("Error alternant estat:", error);
+      console.error("Error actualitzant estat de comprat:", error);
       throw error;
     }
-  }, [db, userId, activeListId]);
+  }, [db, userId, activeListId, getItemsPath]);
+  
+  // =========================================================================
+  // 5. GESTIÓ D'ORDRE I EXCEL
+  // =========================================================================
 
-  // Importar des d'Excel
+  // Actualitzar l'ordre d'un ítem
+  const updateItemOrder = useCallback(async (itemId, newIndex) => {
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot actualitzar l'ordre: Falten dades.");
+    }
+    
+    try {
+      const itemDocRef = doc(db, getItemsPath(activeListId), itemId);
+      await updateDoc(itemDocRef, { orderIndex: newIndex });
+    } catch (error) {
+      console.error("Error actualitzant ordre de l'element:", error);
+      throw error;
+    }
+  }, [db, userId, activeListId, getItemsPath]);
+  
+  // Actualitzar l'ordre de les seccions
+  const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
+    if (!db || !userId) {
+      throw new Error("No es pot actualitzar l'ordre de seccions: Falten dades.");
+    }
+    
+    try {
+        const sectionDocRef = doc(db, getSectionOrderPath());
+        
+        // Obtenir el document actual per preservar l'ordre d'altres seccions
+        const docSnap = await getDoc(sectionDocRef);
+        const currentOrderMap = docSnap.exists() ? docSnap.data().orderMap || {} : {};
+        
+        const newOrderMap = { 
+            ...currentOrderMap, 
+            [sectionName]: newIndex 
+        };
+        
+        await setDoc(sectionDocRef, { orderMap: newOrderMap }, { merge: true });
+        
+    } catch (error) {
+        console.error("Error actualitzant ordre de seccions:", error);
+        throw error;
+    }
+  }, [db, userId, getSectionOrderPath]);
+
+
+  // Importació de dades des d'Excel
   const uploadFromExcel = useCallback(async (jsonData) => {
-    if (!db || !userId || !activeListId) return;
-    if (jsonData.length < 2) {
-      throw new Error("El fitxer Excel no té dades o el format és incorrecte.");
+    if (!db || !userId || !activeListId) {
+        throw new Error("No es pot importar: Falten dades d'usuari o llista activa.");
     }
-    const header = jsonData[0].map(h => String(h).trim().toLowerCase());
-    const rows = jsonData.slice(1);
-    const nameIndex = header.findIndex(h => h.includes('nom'));
-    const quantityIndex = header.findIndex(h => h.includes('quantitat'));
-    const sectionIndex = header.findIndex(h => h.includes('secció') || h.includes('seccio'));
-    const iconIndex = header.findIndex(h => h.includes('icona') && h.includes('principal'));
-    const secondIconIndex = header.findIndex(h => h.includes('icona') && (h.includes('secundària') || h.includes('secundaria')));
-    
-    if (nameIndex === -1) {
-      throw new Error("El fitxer Excel ha de contenir una columna amb 'Nom'.");
+
+    // La primera fila és la capçalera
+    if (!jsonData || jsonData.length < 2) {
+        return { successfulUploads: 0, skippedItems: 0 };
     }
+
+    // Mapeig de capçaleres de columna a camps de Firebase
+    const headers = jsonData[0].map(h => h ? h.trim() : null);
+    const itemData = jsonData.slice(1);
     
+    const validHeaders = {
+        'Nom': 'name',
+        'Quantitat': 'quantity',
+        'Secció': 'section',
+        'Icona Principal': 'icon',
+        'Icona Secundària': 'secondIcon'
+    };
+
     let successfulUploads = 0;
     let skippedItems = 0;
-    const batch = writeBatch(db);
     const itemsCollectionRef = collection(db, getItemsPath(activeListId));
-    
-    for (const row of rows) {
-      const itemName = row[nameIndex] ? String(row[nameIndex]).trim() : '';
-      if (itemName === '') {
-        skippedItems++;
-        continue;
-      }
-      const itemQuantity = quantityIndex !== -1 && row[quantityIndex] ? String(row[quantityIndex]).trim() : ''; 
-      let itemIcon = iconIndex !== -1 && row[iconIndex] ? cleanImageUrl(String(row[iconIndex])) : '';
-      let itemSecondIcon = secondIconIndex !== -1 && row[secondIconIndex] ? cleanImageUrl(String(row[secondIconIndex])) : '';
-      const itemData = {
-        name: itemName,
-        quantity: itemQuantity,
-        section: sectionIndex !== -1 && row[sectionIndex] ? String(row[sectionIndex]).trim() : '',
-        icon: itemIcon,
-        secondIcon: itemSecondIcon,
-        isBought: false,
-        isInShoppingList: false,
-        createdAt: serverTimestamp(),
-        orderIndex: null
-      };
-      const newDocRef = doc(itemsCollectionRef);
-      batch.set(newDocRef, itemData);
-      successfulUploads++;
-    }
-    
-    if (successfulUploads > 0) {
-      await batch.commit();
-      return { successfulUploads, skippedItems };
-    } else {
-      throw new Error("No s'ha pogut pujar cap producte des de l'Excel. Comprova que el format sigui correcte.");
-    }
-  }, [db, userId, activeListId]);
+    const batch = writeBatch(db);
 
-  // Autenticació (sense canvis)
+    itemData.forEach((row, index) => {
+        // Ignorar files amb la primera cel·la buida (presumiblement el nom)
+        if (!row[0] || row[0].trim() === '') {
+            skippedItems++;
+            return;
+        }
+
+        const item = {
+            isInShoppingList: false,
+            isBought: false,
+            createdAt: serverTimestamp(),
+            orderIndex: Date.now() + index // Per mantenir l'ordre de l'Excel si no hi ha dades a Firestore
+        };
+
+        headers.forEach((header, i) => {
+            const fieldName = validHeaders[header];
+            if (fieldName && row[i] !== undefined) {
+                item[fieldName] = String(row[i]).trim();
+                
+                // Conversió específica per a camps booleans de l'excel si es volen incloure (opcional)
+                if (header === 'A la llista') {
+                    item.isInShoppingList = ['sí', 'si', 'true', '1'].includes(item[fieldName].toLowerCase());
+                } else if (header === 'Comprat') {
+                    item.isBought = ['sí', 'si', 'true', '1'].includes(item[fieldName].toLowerCase());
+                }
+            }
+        });
+        
+        // Nom és obligatori
+        if (item.name) {
+            const newDocRef = doc(itemsCollectionRef);
+            batch.set(newDocRef, item);
+            successfulUploads++;
+        } else {
+            skippedItems++;
+        }
+    });
+
+    if (successfulUploads > 0) {
+        await batch.commit();
+        return { successfulUploads, skippedItems };
+    } else {
+        throw new Error("No s'ha pogut pujar cap producte vàlid de l'Excel. Comprova que el format sigui correcte.");
+    }
+  }, [db, userId, activeListId, getItemsPath]);
+
+
+  // =========================================================================
+  // 6. FUNCIONS D'AUTENTICACIÓ
+  // =========================================================================
+
   const handleLogin = useCallback(async (email, password) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -470,12 +593,14 @@ export const useFirebase = () => {
     items,
     sectionOrder,
     isAuthReady,
-    lists,             // NOU
-    activeListId,      // NOU
-    setActiveListId,   // NOU
-    addList,           // NOU
-    updateListName,    // NOU
-    deleteList,        // NOU
+    // LLISTES NOVES
+    lists,
+    activeListId,
+    setActiveListId,
+    addList,
+    updateListName,
+    deleteList,
+    // FUNCIONS D'ELEMENTS
     addItem,
     updateItem,
     deleteItem,
@@ -484,6 +609,7 @@ export const useFirebase = () => {
     updateItemOrder,
     updateSectionOrder,
     uploadFromExcel,
+    // FUNCIONS D'AUTENTICACIÓ
     handleLogin,
     handleRegister,
     handlePasswordReset,
