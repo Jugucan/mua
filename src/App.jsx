@@ -218,6 +218,24 @@ function App() {
         }
     }, [toggleBought, setFeedback]);
 
+    // **NOVA FUNCIÓ PER ELIMINAR COMPRATS**
+    // (Afegirem la lògica de Firebase al useFirebase.js i la cridarem des d'aquí)
+    const { clearCompletedItems } = useFirebase(); // Caldrà afegir-ho al useFirebase.js
+    
+    const handleClearCompletedItems = useCallback(async () => {
+        const confirmClear = window.confirm("Estàs segur que vols eliminar TOTS els productes comprats de la llista actual?");
+        if (!confirmClear) return;
+        
+        try {
+            // Cridem la funció que crearem a useFirebase
+            const count = await clearCompletedItems(); 
+            setFeedback(`S'han eliminat ${count} productes comprats de la llista!`, 'success');
+        } catch (error) {
+            setFeedback("Error eliminant productes comprats: " + error.message, 'error');
+        }
+    }, [clearCompletedItems, setFeedback]); 
+
+
     // Funcions d'autenticació amb feedback
     const onLogin = useCallback(async (email, password) => {
         setAuthErrorMessage("");
@@ -438,7 +456,8 @@ function App() {
     return (
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
             <header className="w-full mb-6 text-center relative">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">Llista de la compra</h1>
+                {/* CANVI AQUÍ: Usem currentListName en lloc del text estàtic */}
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
                 
                 {/* BOTÓ DRETA: Menú Usuari */}
                 {userId && (
@@ -460,7 +479,8 @@ function App() {
                     <ListChecks className="w-6 h-6 text-gray-700" />
                 </button>
 
-                <p className="text-gray-700 text-lg font-semibold mt-2">{currentListName}</p>
+                {/* ELIMINEM AQUEST P: El títol principal ja és el nom de la llista. */}
+                {/* <p className="text-gray-700 text-lg font-semibold mt-2">{currentListName}</p> */}
             </header>
 
             {feedbackMessage && (
@@ -643,6 +663,19 @@ function App() {
                                     </span>
                                 )}
                             </div>
+                            
+                            {/* **NOU BOTÓ D'ELIMINAR COMPRATS AQUÍ** */}
+                            {boughtItems.length > 0 && (
+                                <button
+                                    onClick={handleClearCompletedItems}
+                                    className="w-full px-4 py-2 rounded-md bg-red-500 text-white font-semibold 
+                                        box-shadow-neomorphic-button hover:bg-red-600 transition-all-smooth flex 
+                                        items-center justify-center gap-2"
+                                >
+                                    Eliminar {boughtItems.length} producte{boughtItems.length > 1 ? 's' : ''} comprat{boughtItems.length > 1 ? 's' : ''}
+                                </button>
+                            )}
+                            
                             {unboughtItems.length === 0 ? (
                                 <p className="text-gray-600 text-center py-4">
                                     No hi ha productes pendents a la teva llista de la compra.
