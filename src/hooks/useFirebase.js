@@ -23,7 +23,8 @@ import {
   orderBy,
   getDoc,
   setDoc,
-  where
+  where, // <- ASSEGURA'T QUE `where` ESTÀ IMPORTAT
+  getDocs // <- ASSEGURA'T QUE `getDocs` ESTÀ IMPORTAT
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -421,10 +422,43 @@ export const useFirebase = () => {
     }
   }, [db, userId, activeListId, getItemsPath]);
   
+  // **NOVA FUNCIÓ PER ELIMINAR COMPRATS**
+  const clearCompletedItems = useCallback(async () => {
+    if (!db || !userId || !activeListId) {
+      throw new Error("No es pot netejar la llista: Falten dades d'usuari o llista activa.");
+    }
+    
+    try {
+      const itemsCollectionRef = collection(db, getItemsPath(activeListId));
+      
+      // 1. Obtenir tots els documents on isBought és true
+      const q = query(itemsCollectionRef, where('isBought', '==', true));
+      const itemsSnapshot = await getDocs(q);
+      
+      if (itemsSnapshot.empty) {
+        return 0; // Cap ítem per eliminar
+      }
+      
+      // 2. Crear un batch per eliminar-los tots de cop
+      const batch = writeBatch(db);
+      itemsSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      
+      // 3. Executar l'operació
+      await batch.commit();
+      
+      return itemsSnapshot.size; // Retornar el nombre d'elements eliminats
+    } catch (error) {
+      console.error("Error eliminant productes comprats:", error);
+      throw error;
+    }
+  }, [db, userId, activeListId, getItemsPath]);
+
   // =========================================================================
   // 5. GESTIÓ D'ORDRE I EXCEL
   // =========================================================================
-
+// ... [La resta de funcions `updateItemOrder`, `updateSectionOrder`, `uploadFromExcel` no han canviat]
   // Actualitzar l'ordre d'un ítem
   const updateItemOrder = useCallback(async (itemId, newIndex) => {
     if (!db || !userId || !activeListId) {
@@ -606,6 +640,8 @@ export const useFirebase = () => {
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
+    // **NOVA FUNCIÓ**
+    clearCompletedItems,
     updateItemOrder,
     updateSectionOrder,
     uploadFromExcel,
