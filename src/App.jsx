@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // Hem canviat SortAlphaAsc per SortAsc (ja arreglat de l'error anterior)
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, Import as SortAsc } from 'lucide-react'; 
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
