@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// Hem canviat SortAlphaAsc per SortAsc (ja arreglat de l'error anterior)
 import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
+
+// ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 // Components
 import AuthModal from './components/AuthModal';
 import EditItemModal from './components/EditItemModal';
 import ImageModal from './components/ImageModal';
 import ProductCard from './components/ProductCard';
-import AddProductModal from './components/AddProductModal'; 
+import AddProductModal from './components/AddProductModal';
+import DraggableSection from './components/DraggableSection';
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
@@ -127,7 +130,7 @@ function App() {
         reader.readAsArrayBuffer(file);
     };
 
-    // Funció per exportar a Excel (SENSE CANVIS)
+    // Funció per exportar a Excel
     const handleExportToExcel = () => {
         try {
             const exportData = items.map(item => ({
@@ -191,14 +194,10 @@ function App() {
         }
     }, [deleteItem]);
 
-    // MODIFICAT: Ara la lògica de netejar quantitat és a useFirebase.js
     const handleToggleBought = useCallback(async (item, isBought) => {
         try {
-            // Passem l'estat oposat
             const newStatus = !isBought; 
             const result = await toggleBought(item, newStatus);
-            
-            // La lògica de netejar quantitat si es desmarca (newStatus=false) es fa dins de useFirebase.js
             
             setFeedbackMessage(`Element ${result ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
             setFeedbackType('success');
@@ -208,7 +207,7 @@ function App() {
         }
     }, [toggleBought]);
 
-    // Funcions d'autenticació amb feedback (SENSE CANVIS)
+    // Funcions d'autenticació amb feedback
     const onLogin = useCallback(async (email, password) => {
         setAuthErrorMessage("");
         try {
@@ -263,8 +262,7 @@ function App() {
         });
     };
     
-    // Funció per agrupar per secció i ordenar.
-    // L'ordenació és: 1. Segons l'ordre personalitzat guardat. 2. Segons DEFAULT_SECTION_ORDER. 3. Alfabèticament.
+    // Funció per agrupar per secció i ordenar
     const groupItemsBySection = (itemsList) => {
         const groups = {};
 
@@ -277,9 +275,8 @@ function App() {
             groups[sectionName].push(item);
         });
 
-        // 2. Ordenem els grups/seccions segons l'ordre personalitzat, després DEFAULT_SECTION_ORDER
+        // 2. Ordenem els grups/seccions segons l'ordre personalitzat
         const sortedSections = Object.keys(groups).sort((a, b) => {
-            // Primer mirem si tenen ordre personalitzat
             const customOrderA = sectionOrder[a];
             const customOrderB = sectionOrder[b];
             
@@ -289,7 +286,6 @@ function App() {
             if (customOrderA !== undefined) return -1;
             if (customOrderB !== undefined) return 1;
             
-            // Si no tenen ordre personalitzat, usem l'ordre per defecte
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
@@ -299,13 +295,11 @@ function App() {
         const sortedGroups = sortedSections.map(section => ({
             section: section,
             items: groups[section].sort((a, b) => {
-                // Si tenen orderIndex, ordenem per això
                 if (a.orderIndex !== undefined && b.orderIndex !== undefined) {
                     return a.orderIndex - b.orderIndex;
                 }
                 if (a.orderIndex !== undefined) return -1;
                 if (b.orderIndex !== undefined) return 1;
-                // Si no, ordenem alfabèticament
                 return a.name.localeCompare(b.name);
             })
         }));
@@ -324,7 +318,6 @@ function App() {
 
     // A la Despensa, els items es mostren ordenats alfabèticament
     const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
-    // La Llista de Compra ara utilitza la nova lògica d'agrupació i ordenació
     const itemsFromPantryInShoppingList = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
@@ -335,7 +328,7 @@ function App() {
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista (Ajustada per utilitzar DOBLE CLIC)
+    // Funció per renderitzar elements en format llista
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div 
@@ -343,10 +336,9 @@ function App() {
                 className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
                 onClick={(e) => { 
                     if (!requireDoubleClick) handleToggleBought(item, item.isBought);
-                    // Si requereix doble clic, el clic simple no fa res
                 }}
                 onDoubleClick={(e) => { 
-                    e.stopPropagation(); // Evitar clics parentals
+                    e.stopPropagation();
                     handleToggleBought(item, item.isBought); 
                 }}
                 title={`Doble clic per ${item.isBought ? 'desmarcar i netejar quantitat' : 'marcar com comprat'} ${item.name}`}
@@ -560,7 +552,7 @@ function App() {
             {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
-                    {/* Elements a la despensa (ja venen ordenats alfabèticament a 'pantryItems') */}
+                    {/* Elements a la despensa */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Elements a la despensa ({pantryItems.length})
@@ -580,7 +572,7 @@ function App() {
                                         actionLabel={`Clica per afegir ${item.name} a la llista`}
                                         additionalClasses="box-shadow-neomorphic-element cursor-pointer hover:box-shadow-neomorphic-element-hover"
                                         showEditButton={true}
-                                        requireDoubleClick={false} // Clic simple per afegir a llista
+                                        requireDoubleClick={false}
                                     />
                                 ))}
                             </div>
@@ -608,7 +600,7 @@ function App() {
                                             actionLabel={`Clica per treure ${item.name} de la llista`}
                                            additionalClasses="box-shadow-neomorphic-element-red cursor-pointer"
                                             showEditButton={true}
-                                            requireDoubleClick={false} // Clic simple per treure de llista
+                                            requireDoubleClick={false}
                                         />
                                     ))}
                                 </div>
@@ -714,7 +706,7 @@ function App() {
                 </DragDropContext>
             )}
 
-            {/* Botó flotant per afegir productes (només a la despensa) (SENSE CANVIS) */}
+            {/* Botó flotant per afegir productes (només a la despensa) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={() => setShowAddModal(true)}
@@ -727,7 +719,7 @@ function App() {
                 </button>
             )}
 
-            {/* Modals (SENSE CANVIS) */}
+            {/* Modals */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
