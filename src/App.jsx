@@ -42,8 +42,9 @@ function App() {
     const [expandedImage, setExpandedImage] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [currentListName, setCurrentListName] = useState('Llista Principal');
-    // NOU: Estat per controlar l'ordenació
-    const [shoppingListSort, setShoppingListSort] = useState('default'); // 'default' (secció/alfabètic) o 'manual' (no implementat completament encara)
+    // Estats per controlar l'ordenació
+    const [shoppingListSort, setShoppingListSort] = useState('default');
+    const [isReorderMode, setIsReorderMode] = useState(false);
     
     // Hook de Firebase
     const {
