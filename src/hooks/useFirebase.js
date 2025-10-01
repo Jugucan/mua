@@ -23,7 +23,7 @@ import {
   orderBy,
   getDoc,
   setDoc,
-  getDocs // Necessari per a deleteBoughtItems
+  getDocs 
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -313,7 +313,7 @@ export const useFirebase = () => {
         setSectionOrder({});
       }
     }, (error) => {
-      console.error("Error carregant ordre de seccions:", error);
+      console.error("Error carregant ordre de seccions:", error); // <-- Aquest és l'error de permisos
     });
 
     return () => {
@@ -450,7 +450,7 @@ export const useFirebase = () => {
       console.error("Error eliminant productes comprats:", error);
       throw error;
     }
-  }, [db, userId, activeListId, getItemsPath, items]); // Utilitzem l'estat 'items' com a dependència
+  }, [db, userId, activeListId, getItemsPath, items]); 
 
 
   // =========================================================================
@@ -638,7 +638,7 @@ export const useFirebase = () => {
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
-    deleteBoughtItems, // ⭐ AFegit
+    deleteBoughtItems, 
     updateItemOrder,
     updateSectionOrder,
     uploadFromExcel,
