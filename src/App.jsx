@@ -46,8 +46,6 @@ function App() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [expandedImage, setExpandedImage] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    // ESTAT ELIMINAT, ara el nom ve de Firebase/lists
-    // const [currentListName, setCurrentListName] = useState('Llista Principal'); 
     // NOU ESTAT
     const [showListManagerModal, setShowListManagerModal] = useState(false);
     // Estats per controlar l'ordenació
@@ -74,6 +72,8 @@ function App() {
         deleteItem,
         toggleItemInShoppingList,
         toggleBought,
+        // **FUNCIÓ NETA PRODUCTES COMPRATS (AFEGIDA AQUÍ)**
+        clearCompletedItems,
         uploadFromExcel,
         updateItemOrder,
         updateSectionOrder,
@@ -95,7 +95,7 @@ function App() {
         return Array.from(sections).sort();
     }, [items]);
     
-    // Calcula el nom de la llista activa (NOU)
+    // Calcula el nom de la llista activa (MILLORA DEL TÍTOL)
     const currentListName = useMemo(() => {
         const activeList = lists.find(l => l.id === activeListId);
         return activeList ? activeList.name : 'Carregant...';
@@ -219,15 +219,12 @@ function App() {
     }, [toggleBought, setFeedback]);
 
     // **NOVA FUNCIÓ PER ELIMINAR COMPRATS**
-    // (Afegirem la lògica de Firebase al useFirebase.js i la cridarem des d'aquí)
-    const { clearCompletedItems } = useFirebase(); // Caldrà afegir-ho al useFirebase.js
-    
     const handleClearCompletedItems = useCallback(async () => {
-        const confirmClear = window.confirm("Estàs segur que vols eliminar TOTS els productes comprats de la llista actual?");
+        const confirmClear = window.confirm("Estàs segur que vols eliminar TOTS els productes comprats de la llista actual? Aquesta acció és irreversible.");
         if (!confirmClear) return;
         
         try {
-            // Cridem la funció que crearem a useFirebase
+            // Cridem la funció que hem creat a useFirebase
             const count = await clearCompletedItems(); 
             setFeedback(`S'han eliminat ${count} productes comprats de la llista!`, 'success');
         } catch (error) {
@@ -456,7 +453,7 @@ function App() {
     return (
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
             <header className="w-full mb-6 text-center relative">
-                {/* CANVI AQUÍ: Usem currentListName en lloc del text estàtic */}
+                {/* 1. MILLORA: Títol de la llista activa */}
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
                 
                 {/* BOTÓ DRETA: Menú Usuari */}
@@ -470,7 +467,7 @@ function App() {
                     </button>
                 )}
                 
-                {/* BOTÓ ESQUERRA: Gestor de Llistes (NOU) */}
+                {/* BOTÓ ESQUERRA: Gestor de Llistes */}
                 <button 
                     onClick={() => setShowListManagerModal(true)} 
                     className="absolute top-0 left-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
@@ -478,9 +475,6 @@ function App() {
                 >
                     <ListChecks className="w-6 h-6 text-gray-700" />
                 </button>
-
-                {/* ELIMINEM AQUEST P: El títol principal ja és el nom de la llista. */}
-                {/* <p className="text-gray-700 text-lg font-semibold mt-2">{currentListName}</p> */}
             </header>
 
             {feedbackMessage && (
@@ -664,7 +658,7 @@ function App() {
                                 )}
                             </div>
                             
-                            {/* **NOU BOTÓ D'ELIMINAR COMPRATS AQUÍ** */}
+                            {/* **2. MILLORA: NOU BOTÓ D'ELIMINAR COMPRATS AQUÍ** */}
                             {boughtItems.length > 0 && (
                                 <button
                                     onClick={handleClearCompletedItems}
