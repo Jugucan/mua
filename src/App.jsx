@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks } from 'lucide-react'; 
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2 } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
@@ -658,18 +658,6 @@ function App() {
                                 )}
                             </div>
                             
-                            {/* **2. MILLORA: NOU BOTÓ D'ELIMINAR COMPRATS AQUÍ** */}
-                            {boughtItems.length > 0 && (
-                                <button
-                                    onClick={handleClearCompletedItems}
-                                    className="w-full px-4 py-2 rounded-md bg-red-500 text-white font-semibold 
-                                        box-shadow-neomorphic-button hover:bg-red-600 transition-all-smooth flex 
-                                        items-center justify-center gap-2"
-                                >
-                                    Eliminar {boughtItems.length} producte{boughtItems.length > 1 ? 's' : ''} comprat{boughtItems.length > 1 ? 's' : ''}
-                                </button>
-                            )}
-                            
                             {unboughtItems.length === 0 ? (
                                 <p className="text-gray-600 text-center py-4">
                                     No hi ha productes pendents a la teva llista de la compra.
@@ -701,6 +689,23 @@ function App() {
                                 </Droppable>
                             )}
                         </div>
+                        
+                        {/* **2. MILLORA: NOU BOTÓ DE NETEJA MÉS SUBTIL AQUÍ** */}
+                        {boughtItems.length > 0 && (
+                            <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
+                                <button
+                                    onClick={handleClearCompletedItems}
+                                    className="w-full px-4 py-3 rounded-md border border-gray-300 text-red-600 font-semibold 
+                                        bg-white box-shadow-neomorphic-button hover:bg-red-50 transition-all-smooth flex 
+                                        items-center justify-center gap-2"
+                                    aria-label={`Eliminar ${boughtItems.length} productes comprats`}
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                    Eliminar productes comprats ({boughtItems.length})
+                                </button>
+                            </div>
+                        )}
+                        {/* FI NOU BOTÓ */}
 
                         {/* Seccions per comprats */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
