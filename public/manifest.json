@@ -1,6 +1,10 @@
 {
-  "short_name": "Llista Compra",
-  "name": "La Meva Llista de la Compra",
+  // ⭐ CANVI AQUÍ: Aquest és el nom que veuràs sota la icona a la pantalla d'inici
+  "short_name": "Mua", 
+  
+  // ⭐ CANVI AQUÍ: Aquest és el nom utilitzat a la finestra d'instal·lació i altres llocs
+  "name": "Mua-app", 
+  
   "icons": [
     {
       "src": "/favicon-192x192.png",
