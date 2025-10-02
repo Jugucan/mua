@@ -384,19 +384,40 @@ export const useFirebase = () => {
     }
   }, [userId, items, activeListId]);
   
+  // ⭐ FUNCIÓ MODIFICADA PER MOURE A LA DESPENSA EN SER COMPRAT
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
-    // Si marquem com a comprat (newStatus=true), netegem la quantitat
     const updatedData = {
         isBought: newStatus,
         updatedAt: serverTimestamp()
     };
     
-    // Si marquem com a comprat (newStatus = true), netegem la quantitat perquè ja l'hem comprada.
-    // Això ens permet afegir una nova quantitat fàcilment quan es torna a afegir des de la despensa.
     if (newStatus) {
-        updatedData.quantity = ''; 
+        // Acció de COMPRAR
+        updatedData.quantity = ''; // Netegem la quantitat comprada (per la propera vegada)
+        
+        // ⭐ NOVA LÒGICA: Si es marca com a COMPRAT, el traiem de la llista de la compra (isInShoppingList: false)
+        // Això fa que passi automàticament a la "despensa" per a poder ser reutilitzat.
+        updatedData.isInShoppingList = false;
+        updatedData.orderIndex = -1; // Reset de l'ordre, ja que ja no és a la llista de compra
+    } else {
+        // Acció de DESMARCAR COM A COMPRAT (tornar al carret)
+        // L'usuari el vol recuperar, per tant, el tornem a la llista de la compra (isInShoppingList: true)
+        updatedData.isInShoppingList = true;
+        // La quantitat es podria deixar a "" perquè l'usuari la torni a posar si vol, o pots decidir mantenir-la.
+        // Amb la lògica actual, si es va netejar abans, seguirà neta.
+        
+        // Si el tornem a la llista, calculem el nou orderIndex
+        const sectionItems = items.filter(i => 
+            (i.section || '') === (item.section || '') && 
+            i.listId === activeListId &&
+            i.isInShoppingList === true
+        );
+        const maxOrderIndex = sectionItems.reduce((max, i) => 
+            (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
+        );
+        updatedData.orderIndex = maxOrderIndex + 1;
     }
     
     try {
@@ -406,7 +427,8 @@ export const useFirebase = () => {
       console.error("Error canviant estat de comprat:", error);
       throw new Error("No s'ha pogut canviar l'estat de comprat.");
     }
-  }, [userId]);
+  }, [userId, items, activeListId]); // Afegim 'items' i 'activeListId' com a dependències
+
   
   // ----------------------------------------------------
   // 4. ORDENACIÓ I GESTIÓ MASSIVA
@@ -442,16 +464,21 @@ export const useFirebase = () => {
   }, [userId, sectionOrder]);
 
 
-  // ⭐ FUNCIÓ MODIFICADA: NETEJA I ARXIVATGE
+  // ⭐ FUNCIÓ MODIFICADA PERQUÈ HA CANVIAT LA LÒGICA DE toggleBought
+  // Aquesta funció ja no és estrictament necessària per "moure a la despensa"
+  // Però la mantenim com a funció de "neteja" per si algun item s'hagués quedat "comprat" a la llista
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
     // 1. Cerquem tots els elements de la llista activa que estan marcats com a comprats
+    // i que, per alguna raó, segueixen a la llista de la compra (isInShoppingList: true)
+    // Amb la nova lògica de toggleBought, aquesta cerca hauria de retornar 0.
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
         where('listId', '==', activeListId),
-        where('isBought', '==', true) 
+        where('isBought', '==', true),
+        where('isInShoppingList', '==', true) 
     );
     
     // Usar getDocs per obtenir els elements que modificarem
@@ -464,10 +491,10 @@ export const useFirebase = () => {
     const batch = writeBatch(db);
     let count = 0;
 
-    // 2. Iterem sobre els documents trobats i els actualitzem (Arxivament)
+    // 2. Iterem sobre els documents trobats i els actualitzem (Arxivament / Moure a Despensa)
     snapshot.docs.forEach((docSnap) => {
         batch.update(docSnap.ref, {
-            // Tret de la llista de la compra
+            // Tret de la llista de la compra (Despensa)
             isInShoppingList: false, 
             // Reset de l'estat de comprat
             isBought: false, 
