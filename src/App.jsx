@@ -457,16 +457,14 @@ function App() {
                 {/* 1. MILLORA: Títol de la llista activa */}
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
                 
-                {/* BOTÓ DRETA: Menú Usuari */}
-                {userId && (
-                    <button 
-                        onClick={() => setShowAuthModal(true)} 
-                        className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
-                        aria-label="Menú d'usuari"
-                    >
-                        <User className="w-6 h-6 text-gray-700" />
-                    </button>
-                )}
+                {/* BOTÓ DRETA: Menú Usuari (ARA SENSE CONDICIÓ userId) */}
+                <button 
+                    onClick={() => setShowAuthModal(true)} 
+                    className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
+                    aria-label="Menú d'usuari"
+                >
+                    <User className="w-6 h-6 text-gray-700" />
+                </button>
                 
                 {/* BOTÓ ESQUERRA: Gestor de Llistes */}
                 <button 
