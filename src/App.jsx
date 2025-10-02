@@ -72,7 +72,7 @@ function App() {
         deleteItem,
         toggleItemInShoppingList,
         toggleBought,
-        // **FUNCIÓ NETA PRODUCTES COMPRATS (AFEGIDA AQUÍ)**
+        // **FUNCIÓ NETA PRODUCTES COMPRATS (ARA ARXIVAR)**
         clearCompletedItems,
         uploadFromExcel,
         updateItemOrder,
@@ -196,12 +196,12 @@ function App() {
     }, [updateItem, setFeedback]);
 
     const handleDeleteItem = useCallback(async (item) => {
-        const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
+        const confirmDelete = window.confirm(`Estàs segur que vols eliminar permanentment "${item.name}"?`);
         if (!confirmDelete) return;
 
         try {
             await deleteItem(item);
-            setFeedback("Element eliminat correctament!", 'success');
+            setFeedback("Element eliminat permanentment correctament!", 'success');
         } catch (error) {
             setFeedback(error.message, 'error');
         }
@@ -218,17 +218,19 @@ function App() {
         }
     }, [toggleBought, setFeedback]);
 
-    // **NOVA FUNCIÓ PER ELIMINAR COMPRATS**
+    // ⭐ FUNCIÓ ACTUALITZADA PER NETEJAR I ARXIVAR
     const handleClearCompletedItems = useCallback(async () => {
-        const confirmClear = window.confirm("Estàs segur que vols eliminar TOTS els productes comprats de la llista actual? Aquesta acció és irreversible.");
+        // Text actualitzat per reflectir l'acció d'"arxivar"
+        const confirmClear = window.confirm("Estàs segur que vols netejar/arxivar TOTS els productes comprats? Tornaran a la teva Despensa.");
         if (!confirmClear) return;
         
         try {
-            // Cridem la funció que hem creat a useFirebase
+            // Cridem la funció actualitzada de useFirebase
             const count = await clearCompletedItems(); 
-            setFeedback(`S'han eliminat ${count} productes comprats de la llista!`, 'success');
+            // Missatge de feedback actualitzat
+            setFeedback(`S'han netejat i arxivat ${count} productes a la Despensa!`, 'success');
         } catch (error) {
-            setFeedback("Error eliminant productes comprats: " + error.message, 'error');
+            setFeedback("Error netejant productes comprats: " + error.message, 'error');
         }
     }, [clearCompletedItems, setFeedback]); 
 
@@ -338,8 +340,7 @@ function App() {
     };
 
     // A la Despensa, els items es mostren ordenats alfabèticament
-    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
-    const itemsFromPantryInShoppingList = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
+    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList)));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
     
@@ -362,7 +363,7 @@ function App() {
                     e.stopPropagation();
                     handleToggleBought(item, item.isBought); 
                 }}
-                title={`Doble clic per ${item.isBought ? 'desmarcar i netejar quantitat' : 'marcar com comprat'} ${item.name}`}
+                title={`Doble clic per ${item.isBought ? 'desmarcar' : 'marcar com comprat'} ${item.name}`}
             >
                 <div className="list-item-icon">
                     {item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://')) ? (
@@ -612,14 +613,14 @@ function App() {
                     </div>
 
                     {/* Elements a la llista de la compra des de la despensa */}
-                    {itemsFromPantryInShoppingList.length > 0 && (
+                    {items.filter(item => item.isInShoppingList && !item.isBought).length > 0 && (
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
-                                Elements a la llista de la compra des de la despensa ({itemsFromPantryInShoppingList.length})
+                                Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})
                             </h2>
                             {displayMode === 'grid' ? (
                                 <div className={`${gridClasses} gap-4`}>
-                                    {itemsFromPantryInShoppingList.map(item => (
+                                    {items.filter(item => item.isInShoppingList && !item.isBought).map(item => (
                                         <ProductCard
                                             key={item.id}
                                             item={item}
@@ -634,7 +635,7 @@ function App() {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {renderListItems(itemsFromPantryInShoppingList, false, false)}
+                                    {renderListItems(items.filter(item => item.isInShoppingList && !item.isBought), false, false)}
                                 </div>
                             )}
                         </div>
@@ -690,7 +691,7 @@ function App() {
                             )}
                         </div>
                         
-                        {/* **2. MILLORA: NOU BOTÓ DE NETEJA MÉS SUBTIL AQUÍ** */}
+                        {/* **BOTÓ DE NETEJA/ARXIVATGE AQUÍ** */}
                         {boughtItems.length > 0 && (
                             <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                                 <button
@@ -698,14 +699,14 @@ function App() {
                                     className="w-full px-4 py-3 rounded-md border border-gray-300 text-red-600 font-semibold 
                                         bg-white box-shadow-neomorphic-button hover:bg-red-50 transition-all-smooth flex 
                                         items-center justify-center gap-2"
-                                    aria-label={`Eliminar ${boughtItems.length} productes comprats`}
+                                    aria-label={`Netejar i arxivar ${boughtItems.length} productes comprats`}
                                 >
                                     <Trash2 className="w-5 h-5" />
-                                    Eliminar productes comprats ({boughtItems.length})
+                                    Netejar i Arxivar Productes Comprats ({boughtItems.length})
                                 </button>
                             </div>
                         )}
-                        {/* FI NOU BOTÓ */}
+                        {/* FI BOTÓ */}
 
                         {/* Seccions per comprats */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
