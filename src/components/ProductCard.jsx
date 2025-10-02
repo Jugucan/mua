@@ -135,22 +135,28 @@ const ProductCard = ({
         <div className={`flip-card-inner w-full h-full ${isFlipped ? 'flip-card-flipped' : ""}`}>
 
           {/* Front */}
-          <div 
-            className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`} 
+          <div
+            className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`}
             onClick={handleCardClick}
             title={actionLabel}
           >
             {item.secondIcon && (
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  handleToggleFlip(); 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleFlip();
                 }}
-                className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110" 
+                className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110"
                 aria-label="Girar carta"
               >
                 <RotateCw className="w-3 h-3" />
               </button>
+            )}
+
+            {item.quantity && (
+              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                {item.quantity}
+              </div>
             )}
 
             <div className="flex-shrink-0 mb-3">{renderItemIcon(item.icon, 'w-16 h-16')}</div>
@@ -159,28 +165,33 @@ const ProductCard = ({
               <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${
                 additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : ''
               }`}>{item.name}</span>
-              {item.quantity && (<span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>)}
               {item.section && (<span className="text-xs text-gray-400 block text-center">{item.section}</span>)}
             </div>
           </div>
 
           {/* Back */}
           {item.secondIcon && (
-            <div 
-              className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`} 
+            <div
+              className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`}
               onClick={handleCardClick}
               title={actionLabel}
             >
-              <button 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  handleToggleFlip(); 
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleFlip();
                 }}
-                className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110" 
+                className="absolute top-2 left-2 p-1 rounded-full bg-[#f0f3f5] text-blue-500 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110"
                 aria-label="Tornar"
               >
                 <RotateCw className="w-3 h-3" />
               </button>
+
+              {item.quantity && (
+                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                  {item.quantity}
+                </div>
+              )}
 
               <div className="flex-shrink-0 mb-3">
                 {renderItemIcon(item.secondIcon, 'w-16 h-16', true)}
@@ -190,7 +201,6 @@ const ProductCard = ({
                 <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${
                   additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : ''
                 }`}>{item.name}</span>
-                {item.quantity && (<span className="text-xs text-gray-500 block text-center mb-1">{item.quantity}</span>)}
                 {item.section && (<span className="text-xs text-gray-400 block text-center">{item.section}</span>)}
               </div>
             </div>
