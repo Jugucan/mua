@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, LogOut, List, Grid2x2 as Grid } from 'lucide-react';
+import { X, LogOut } from 'lucide-react';
 
 const AuthModal = ({ 
   onClose, 
@@ -8,9 +8,7 @@ const AuthModal = ({
   onLogout, 
   userEmail, 
   errorMessage, 
-  onForgotPassword, 
-  displayMode, 
-  setDisplayMode 
+  onForgotPassword
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,17 +40,6 @@ const AuthModal = ({
           <div>
             <h3 className="text-xl font-bold mb-4 text-gray-700">El meu compte</h3>
             <p className="text-gray-700 mb-4">Sessió iniciada com a <br /><span className="font-semibold">{userEmail}</span></p>
-            <div className="mb-4">
-              <h4 className="text-lg font-bold mb-2">Preferències de visualització</h4>
-              <div className="flex justify-center gap-4">
-                <button onClick={() => setDisplayMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${displayMode === 'list' ? 'bg-[#f0f3f5] text-green-500' : 'bg-[#f0f3f5] text-gray-700'}`}>
-                  <List className="w-5 h-5" /> Vista llista
-                </button>
-                <button onClick={() => setDisplayMode('grid')} className={`flex items-center gap-2 px-4 py-2 rounded-lg box-shadow-neomorphic-button-inset transition-all ${displayMode === 'grid' ? 'bg-[#f0f3f5] text-green-500' : 'bg-[#f0f3f5] text-gray-700'}`}>
-                  <Grid className="w-5 h-5" /> Vista quadrícula
-                </button>
-              </div>
-            </div>
             <button onClick={onLogout} className="w-full bg-[#f0f3f5] text-red-500 font-bold py-2 px-4 rounded-md box-shadow-neomorphic-button hover:bg-[#e6e6e9] mt-4">
               <LogOut className="inline-block w-5 h-5 mr-2" /> Tanca sessió
             </button>
