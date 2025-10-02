@@ -496,24 +496,26 @@ export const useFirebase = () => {
 
     const header = data[0].map(h => h ? h.trim() : null);
     const validRows = data.slice(1);
-    
+
     const NAME_INDEX = header.indexOf('Nom');
     const QUANTITY_INDEX = header.indexOf('Quantitat');
     const SECTION_INDEX = header.indexOf('Secció');
+    const ICON_INDEX = header.indexOf('Icona Principal');
+    const SECOND_ICON_INDEX = header.indexOf('Icona Secundària');
 
     if (NAME_INDEX === -1) {
         throw new Error("La columna 'Nom' és obligatòria i no s'ha trobat a la primera fila.");
     }
-    
+
     const batch = writeBatch(db);
     let successfulUploads = 0;
     let skippedItems = 0;
-    
+
     const itemsCollection = collection(db, 'items');
 
     for (const row of validRows) {
         const name = row[NAME_INDEX] ? String(row[NAME_INDEX]).trim() : '';
-        
+
         if (!name) {
             skippedItems++;
             continue;
@@ -521,7 +523,9 @@ export const useFirebase = () => {
 
         const quantity = QUANTITY_INDEX !== -1 && row[QUANTITY_INDEX] ? String(row[QUANTITY_INDEX]).trim() : '';
         const section = SECTION_INDEX !== -1 && row[SECTION_INDEX] ? String(row[SECTION_INDEX]).trim() : '';
-        
+        const icon = ICON_INDEX !== -1 && row[ICON_INDEX] ? String(row[ICON_INDEX]).trim() : '';
+        const secondIcon = SECOND_ICON_INDEX !== -1 && row[SECOND_ICON_INDEX] ? String(row[SECOND_ICON_INDEX]).trim() : '';
+
         // Cerca si l'element ja existeix (limitat al nom i a l'usuari/llista)
         const existingQuery = query(
             itemsCollection,
@@ -537,9 +541,10 @@ export const useFirebase = () => {
             name: name,
             quantity: quantity,
             section: section,
-            isInShoppingList: true, // Quan es puja des d'Excel, van directes a la llista
+            icon: icon,
+            secondIcon: secondIcon,
+            isInShoppingList: false, // Quan es puja des d'Excel, van directes a la despensa
             isBought: false,
-            // orderIndex s'hauria de calcular per a un nou element, però per simplificar, només s'afegeix
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
@@ -547,7 +552,7 @@ export const useFirebase = () => {
         if (!existingSnapshot.empty) {
             // Actualitzar l'element existent
             const docRef = existingSnapshot.docs[0].ref;
-            batch.update(docRef, itemData); 
+            batch.update(docRef, itemData);
         } else {
             // Afegir com a nou element
             const newDocRef = doc(itemsCollection);
@@ -559,7 +564,7 @@ export const useFirebase = () => {
     await batch.commit();
 
     return { successfulUploads, skippedItems };
-    
+
   }, [userId, activeListId]);
 
 
