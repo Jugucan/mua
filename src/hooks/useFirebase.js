@@ -386,13 +386,15 @@ export const useFirebase = () => {
     }
   }, [userId]);
 
+  // ⭐ FUNCIÓ MODIFICADA: Si es mou de la despensa a la llista de compra, netegem 'isBought'
   const toggleItemInShoppingList = useCallback(async (item) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     const newStatus = !item.isInShoppingList;
-    const newQuantity = newStatus ? (item.quantity || '') : ''; // Si l'afegim a la llista, mantenim la quantitat; si la treiem, la netegem
+    const newQuantity = newStatus ? (item.quantity || '') : ''; 
     
-    // Si l'afegim a la llista, calculem el següent orderIndex
     let newOrderIndex = item.orderIndex;
+
+    // Si l'afegim a la llista (Element de la Despensa --> Llista de Compra)
     if (newStatus) {
         const sectionItems = items.filter(i => 
             (i.section || '') === (item.section || '') && 
@@ -403,25 +405,40 @@ export const useFirebase = () => {
             (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
         );
         newOrderIndex = maxOrderIndex + 1;
-    }
 
+        try {
+          await updateDoc(doc(db, 'items', item.id), {
+            isInShoppingList: newStatus,
+            isBought: false, // ⭐ CANVI CLAU: Netejar l'estat de comprat
+            quantity: newQuantity,
+            orderIndex: newOrderIndex, 
+            updatedAt: serverTimestamp()
+          });
+          return newStatus;
+        } catch (error) {
+          console.error("Error canviant estat de la llista:", error);
+          throw new Error("No s'ha pogut canviar l'estat de la llista.");
+        }
 
-    try {
-      await updateDoc(doc(db, 'items', item.id), {
-        isInShoppingList: newStatus,
-        isBought: false,
-        quantity: newQuantity,
-        orderIndex: newOrderIndex, 
-        updatedAt: serverTimestamp()
-      });
-      return newStatus;
-    } catch (error) {
-      console.error("Error canviant estat de la llista:", error);
-      throw new Error("No s'ha pogut canviar l'estat de la llista.");
+    } else {
+        // Si el traiem de la llista (Llista de Compra --> Despensa)
+         try {
+            await updateDoc(doc(db, 'items', item.id), {
+                isInShoppingList: newStatus,
+                isBought: false, // Per defecte a la despensa sense marcar com a comprat
+                quantity: newQuantity,
+                orderIndex: -1, 
+                updatedAt: serverTimestamp()
+            });
+            return newStatus;
+        } catch (error) {
+            console.error("Error canviant estat de la llista:", error);
+            throw new Error("No s'ha pogut canviar l'estat de la llista.");
+        }
     }
   }, [userId, items, activeListId]);
   
-  // ⭐ FUNCIÓ MODIFICADA PER PERMETRE VISUALITZAR EL PRODUCTE COMPRAT
+  // ⭐ FUNCIÓ CLAU MODIFICADA
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
@@ -431,22 +448,26 @@ export const useFirebase = () => {
     };
     
     if (newStatus) {
-        // Acció de COMPRAR (Moure a Despensa I marcar com a comprat)
+        // A. Producte COMPRAT: Va a Despensa I Historial
+        // ----------------------------------------------------
         updatedData.quantity = ''; 
         
-        // ⭐ CANVI CLAU 1: El traiem de la llista de la compra (passa a la despensa)
+        // 1. Va a la Despensa: Surt de la Llista de la Compra
         updatedData.isInShoppingList = false; 
         
-        // ⭐ CANVI CLAU 2: PERÒ mantenim isBought: true per a l'historial/vista de comprats.
-        // Aquesta propietat ja està a updatedData.isBought = newStatus (que és true).
+        // 2. Va a l'Historial: Es manté marcat com a comprat (newStatus = true)
         
-        updatedData.orderIndex = -1; // Reset de l'ordre
+        updatedData.orderIndex = -1; 
     } else {
-        // Acció de DESMARCAR COM A COMPRAT (tornar al carret)
-        updatedData.isInShoppingList = true;
-        updatedData.isBought = false;
+        // B. Producte DES-COMPRAT (o recuperat de l'historial): Va a Llista de Compra
+        // ----------------------------------------------------
         
-        // Si el tornem a la llista, calculem el nou orderIndex
+        // 1. Va a la Llista de Compra
+        updatedData.isInShoppingList = true;
+        
+        // 2. Surt de l'Historial: isBought = false (newStatus = false)
+        
+        // 3. Calculem nou orderIndex
         const sectionItems = items.filter(i => 
             (i.section || '') === (item.section || '') && 
             i.listId === activeListId &&
@@ -456,6 +477,13 @@ export const useFirebase = () => {
             (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
         );
         updatedData.orderIndex = maxOrderIndex + 1;
+        
+        // Opcional: Si l'usuari el des-compra, normalment voldrà posar-li quantitat. 
+        // Si l'ítem estava a l'historial, no tenia quantitat. Li posem un 1 per defecte
+        // si no té quantitat i així apareix a la llista de la compra visible.
+        if (!item.quantity) {
+             updatedData.quantity = '1'; 
+        }
     }
     
     try {
@@ -502,13 +530,11 @@ export const useFirebase = () => {
   }, [userId, sectionOrder]);
 
 
-  // ⭐ FUNCIÓ clearCompletedItems: MODIFICADA PER NETEJAR NOMÉS DE L'HISTORIAL
+  // ⭐ FUNCIÓ CLAU MODIFICADA
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
     // 1. Cerquem TOTS els elements de l'USUARI que estan marcats com a comprats (isBought: true).
-    // Això inclou tant si estan a la llista de compra (encara que amb la nova lògica no n'hi hauria)
-    // com els que estan a la despensa (isInShoppingList: false).
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
@@ -518,7 +544,7 @@ export const useFirebase = () => {
     const snapshot = await getDocs(q);
     
     if (snapshot.empty) {
-        return 0; // No hi ha res per netejar
+        return 0; 
     }
 
     const batch = writeBatch(db);
@@ -527,8 +553,11 @@ export const useFirebase = () => {
     // 2. Iterem sobre els documents i els actualitzem
     snapshot.docs.forEach((docSnap) => {
         batch.update(docSnap.ref, {
-            // ⭐ L'únic que fem és: Reset de l'estat de comprat
-            isBought: false, 
+            // TORNEN DE NOU A LA DESPENSA (si ja hi eren, no canvia)
+            isBought: false, // Surten de l'historial
+            isInShoppingList: false, // Per si algun s'havia quedat marcat a la llista
+            orderIndex: -1, // Netejar ordre
+            quantity: '', // Netejar quantitat
             updatedAt: serverTimestamp()
         });
         count++;
@@ -687,9 +716,9 @@ export const useFirebase = () => {
     updateItem,
     deleteItem,
     toggleItemInShoppingList,
-    toggleBought, // FUNCIÓ CLAU
+    toggleBought,
     // NETA I ORDENACIÓ
-    clearCompletedItems, // FUNCIÓ CLAU
+    clearCompletedItems, 
     uploadFromExcel,
     updateItemOrder,
     updateSectionOrder,
