@@ -326,18 +326,60 @@ export const useFirebase = () => {
     }
   }, [userId, activeListId, items]);
 
+  // ⭐ FUNCIÓ MODIFICADA PER MOURE A LA LLISTA DE LA COMPRA EN MODIFICAR QUANTITAT
   const updateItem = useCallback(async (id, updatedData) => {
     if (!userId) throw new Error("Usuari no autenticat.");
+    
+    // 1. Cercar l'element actual a la llista local
+    const currentItem = items.find(i => i.id === id);
+    if (!currentItem) {
+        console.error("Ítem no trobat a l'estat local:", id);
+        // Tot i l'error, intentem actualitzar el document directament per no trencar.
+        // Tot i així, és millor llançar l'error si no es troba.
+        throw new Error("Ítem no trobat per actualitzar.");
+    }
+
+    // 2. Comprovar si s'ha d'activar la lògica de "moure a la llista de la compra"
+    let finalUpdatedData = { ...updatedData };
+    
+    // Condicions:
+    // a) L'ítem no està actualment a la llista de la compra.
+    // b) S'està actualitzant el camp 'quantity' i el nou valor és una string no buida.
+    const isAddingQuantity = (
+        currentItem.isInShoppingList === false &&
+        'quantity' in updatedData && 
+        String(updatedData.quantity || '').trim() !== ''
+    );
+
+    if (isAddingQuantity) {
+        // Càlcul del nou orderIndex, només si el movem a la llista de la compra
+        const sectionItems = items.filter(i => 
+            (i.section || '') === (currentItem.section || '') && 
+            i.listId === activeListId &&
+            i.isInShoppingList === true
+        );
+        const maxOrderIndex = sectionItems.reduce((max, i) => 
+            (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
+        );
+        const newOrderIndex = maxOrderIndex + 1;
+        
+        // Moure l'ítem a la llista de la compra
+        finalUpdatedData.isInShoppingList = true;
+        finalUpdatedData.isBought = false; // Assegurem-nos que no està marcat com a comprat
+        finalUpdatedData.orderIndex = newOrderIndex;
+    }
+    
+    // 3. Executar l'actualització a Firebase
     try {
       await updateDoc(doc(db, 'items', id), {
-        ...updatedData,
+        ...finalUpdatedData,
         updatedAt: serverTimestamp()
       });
     } catch (error) {
       console.error("Error actualitzant element:", error);
       throw new Error("No s'ha pogut actualitzar l'element.");
     }
-  }, [userId]);
+  }, [userId, activeListId, items]); // Afegim 'items' i 'activeListId' com a dependències
 
   const deleteItem = useCallback(async (item) => {
     if (!userId) throw new Error("Usuari no autenticat.");
@@ -384,7 +426,7 @@ export const useFirebase = () => {
     }
   }, [userId, items, activeListId]);
   
-  // ⭐ FUNCIÓ MODIFICADA PER MOURE A LA DESPENSA EN SER COMPRAT
+  // FUNCIÓ toggleBought: No la canviem, ja està bé de l'apartat anterior
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
@@ -397,16 +439,13 @@ export const useFirebase = () => {
         // Acció de COMPRAR
         updatedData.quantity = ''; // Netegem la quantitat comprada (per la propera vegada)
         
-        // ⭐ NOVA LÒGICA: Si es marca com a COMPRAT, el traiem de la llista de la compra (isInShoppingList: false)
-        // Això fa que passi automàticament a la "despensa" per a poder ser reutilitzat.
+        // MOURE A LA DESPENSA!
         updatedData.isInShoppingList = false;
         updatedData.orderIndex = -1; // Reset de l'ordre, ja que ja no és a la llista de compra
     } else {
         // Acció de DESMARCAR COM A COMPRAT (tornar al carret)
         // L'usuari el vol recuperar, per tant, el tornem a la llista de la compra (isInShoppingList: true)
         updatedData.isInShoppingList = true;
-        // La quantitat es podria deixar a "" perquè l'usuari la torni a posar si vol, o pots decidir mantenir-la.
-        // Amb la lògica actual, si es va netejar abans, seguirà neta.
         
         // Si el tornem a la llista, calculem el nou orderIndex
         const sectionItems = items.filter(i => 
@@ -427,7 +466,7 @@ export const useFirebase = () => {
       console.error("Error canviant estat de comprat:", error);
       throw new Error("No s'ha pogut canviar l'estat de comprat.");
     }
-  }, [userId, items, activeListId]); // Afegim 'items' i 'activeListId' com a dependències
+  }, [userId, items, activeListId]); 
 
   
   // ----------------------------------------------------
@@ -464,15 +503,12 @@ export const useFirebase = () => {
   }, [userId, sectionOrder]);
 
 
-  // ⭐ FUNCIÓ MODIFICADA PERQUÈ HA CANVIAT LA LÒGICA DE toggleBought
-  // Aquesta funció ja no és estrictament necessària per "moure a la despensa"
-  // Però la mantenim com a funció de "neteja" per si algun item s'hagués quedat "comprat" a la llista
+  // FUNCIÓ clearCompletedItems: No la canviem, ja està bé.
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
     // 1. Cerquem tots els elements de la llista activa que estan marcats com a comprats
     // i que, per alguna raó, segueixen a la llista de la compra (isInShoppingList: true)
-    // Amb la nova lògica de toggleBought, aquesta cerca hauria de retornar 0.
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
@@ -655,12 +691,12 @@ export const useFirebase = () => {
     deleteList,
     // ELEMENTS
     addItem,
-    updateItem,
+    updateItem, // ⭐ FUNCIÓ ACTUALITZADA
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
     // NETA I ORDENACIÓ
-    clearCompletedItems, // ⭐ FUNCIÓ ACTUALITZADA
+    clearCompletedItems,
     uploadFromExcel,
     updateItemOrder,
     updateSectionOrder,
