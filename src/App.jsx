@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2 } from 'lucide-react'; 
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, Trash2, FolderPlus, CreditCard as Edit3 } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
-
-// ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext } from 'react-beautiful-dnd';
 
 // Components
 import AuthModal from './components/AuthModal';
 import EditItemModal from './components/EditItemModal';
 import ImageModal from './components/ImageModal';
 import ProductCard from './components/ProductCard';
-import AddProductModal from './components/AddProductModal';
+import AddProductModal from './components/AddProductModal'; 
 import DraggableSection from './components/DraggableSection';
-// NOU COMPONENT
-import ListManagerModal from './components/ListManagerModal'; 
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
@@ -46,8 +42,7 @@ function App() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [expandedImage, setExpandedImage] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    // NOU ESTAT
-    const [showListManagerModal, setShowListManagerModal] = useState(false);
+    const [currentListName, setCurrentListName] = useState('Llista Principal');
     // Estats per controlar l'ordenació
     const [shoppingListSort, setShoppingListSort] = useState('default');
     const [isReorderMode, setIsReorderMode] = useState(false);
@@ -59,21 +54,11 @@ function App() {
         items,
         sectionOrder,
         isAuthReady,
-        // NOUS VALORS
-        lists,
-        activeListId,
-        setActiveListId,
-        addList,
-        updateListName,
-        deleteList,
-        // FUNCIONS EXISTENTS
         addItem,
         updateItem,
         deleteItem,
         toggleItemInShoppingList,
         toggleBought,
-        // **FUNCIÓ NETA PRODUCTES COMPRATS (ARA ARXIVAR)**
-        clearCompletedItems,
         uploadFromExcel,
         updateItemOrder,
         updateSectionOrder,
@@ -94,18 +79,6 @@ function App() {
         });
         return Array.from(sections).sort();
     }, [items]);
-    
-    // Calcula el nom de la llista activa (MILLORA DEL TÍTOL)
-    const currentListName = useMemo(() => {
-        const activeList = lists.find(l => l.id === activeListId);
-        return activeList ? activeList.name : 'Carregant...';
-    }, [lists, activeListId]);
-    
-    // Funció unificada per al feedback (passada al modal)
-    const setFeedback = useCallback((message, type) => {
-        setFeedbackMessage(message);
-        setFeedbackType(type);
-    }, []);
 
     // Feedback temporal
     useEffect(() => {
@@ -121,10 +94,12 @@ function App() {
     const handleAddItem = async (itemData) => {
         try {
             await addItem(itemData);
-            setFeedback("Element afegit correctament!", 'success');
+            setFeedbackMessage("Element afegit correctament!");
+            setFeedbackType('success');
             return true;
         } catch (error) {
-            setFeedback(error.message, 'error');
+            setFeedbackMessage(error.message);
+            setFeedbackType('error');
             return false;
         }
     };
@@ -143,15 +118,17 @@ function App() {
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                 const result = await uploadFromExcel(json);
-                setFeedback(`S'han pujat ${result.successfulUploads} productes des de l'Excel! ${result.skippedItems > 0 ? `(${result.skippedItems} files buides saltades)` : ''}`, 'success');
+                setFeedbackMessage(`S'han pujat ${result.successfulUploads} productes des de l'Excel! ${result.skippedItems > 0 ? `(${result.skippedItems} files buides saltades)` : ''}`);
+                setFeedbackType('success');
             } catch (error) {
-                setFeedback(error.message, 'error');
+                setFeedbackMessage(error.message);
+                setFeedbackType('error');
             }
         };
         reader.readAsArrayBuffer(file);
     };
 
-    // Funció per exportar a Excel
+    // Funció per exportar a Excel (SENSE CANVIS)
     const handleExportToExcel = () => {
         try {
             const exportData = items.map(item => ({
@@ -168,115 +145,117 @@ function App() {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Llista de la compra");
             
-            const fileName = `${currentListName.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            const fileName = `${currentListName}_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, fileName);
             
-            setFeedback("Llista exportada correctament!", 'success');
+            setFeedbackMessage("Llista exportada correctament!");
+            setFeedbackType('success');
         } catch (error) {
-            setFeedback("Error exportant la llista: " + error.message, 'error');
+            setFeedbackMessage("Error exportant la llista: " + error.message);
+            setFeedbackType('error');
         }
     };
 
     const afegirDeDespensaALlista = useCallback(async (item) => {
         try {
             const result = await toggleItemInShoppingList(item);
-            setFeedback(`'${item.name}' ${result ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`, 'success');
+            setFeedbackMessage(`'${item.name}' ${result ? 'afegit a la llista de la compra' : 'tret de la llista de la compra'}!`);
+            setFeedbackType('success');
         } catch (error) {
-            setFeedback(error.message, 'error');
+            setFeedbackMessage(error.message);
+            setFeedbackType('error');
         }
-    }, [toggleItemInShoppingList, setFeedback]);
+    }, [toggleItemInShoppingList]);
 
     const handleUpdateItem = useCallback(async (id, updatedData) => {
         try {
             await updateItem(id, updatedData);
-            setFeedback("Element actualitzat correctament!", 'success');
+            setFeedbackMessage("Element actualitzat correctament!");
+            setFeedbackType('success');
         } catch (error) {
-            setFeedback(error.message, 'error');
+            setFeedbackMessage(error.message);
+            setFeedbackType('error');
         }
-    }, [updateItem, setFeedback]);
+    }, [updateItem]);
 
     const handleDeleteItem = useCallback(async (item) => {
-        const confirmDelete = window.confirm(`Estàs segur que vols eliminar permanentment "${item.name}"?`);
+        const confirmDelete = window.confirm(`Estàs segur que vols eliminar "${item.name}"?`);
         if (!confirmDelete) return;
 
         try {
             await deleteItem(item);
-            setFeedback("Element eliminat permanentment correctament!", 'success');
+            setFeedbackMessage("Element eliminat correctament!");
+            setFeedbackType('success');
         } catch (error) {
-            setFeedback(error.message, 'error');
+            setFeedbackMessage(error.message);
+            setFeedbackType('error');
         }
-    }, [deleteItem, setFeedback]);
+    }, [deleteItem]);
 
+    // MODIFICAT: Ara la lògica de netejar quantitat és a useFirebase.js
     const handleToggleBought = useCallback(async (item, isBought) => {
         try {
+            // Passem l'estat oposat
             const newStatus = !isBought; 
             const result = await toggleBought(item, newStatus);
             
-            setFeedback(`Element ${result ? 'marcat com a comprat' : 'marcat com a pendent'}!`, 'success');
+            // La lògica de netejar quantitat si es desmarca (newStatus=false) es fa dins de useFirebase.js
+            
+            setFeedbackMessage(`Element ${result ? 'marcat com a comprat' : 'marcat com a pendent'}!`);
+            setFeedbackType('success');
         } catch (error) {
-            setFeedback(error.message, 'error');
+            setFeedbackMessage(error.message);
+            setFeedbackType('error');
         }
-    }, [toggleBought, setFeedback]);
+    }, [toggleBought]);
 
-    // ⭐ FUNCIÓ ACTUALITZADA PER NETEJAR I ARXIVAR
-    const handleClearCompletedItems = useCallback(async () => {
-        // Text actualitzat per reflectir l'acció d'"arxivar"
-        const confirmClear = window.confirm("Estàs segur que vols netejar/arxivar TOTS els productes comprats? Tornaran a la teva Despensa.");
-        if (!confirmClear) return;
-        
-        try {
-            // Cridem la funció actualitzada de useFirebase
-            const count = await clearCompletedItems(); 
-            // Missatge de feedback actualitzat
-            setFeedback(`S'han netejat i arxivat ${count} productes a la Despensa!`, 'success');
-        } catch (error) {
-            setFeedback("Error netejant productes comprats: " + error.message, 'error');
-        }
-    }, [clearCompletedItems, setFeedback]); 
-
-
-    // Funcions d'autenticació amb feedback
+    // Funcions d'autenticació amb feedback (SENSE CANVIS)
     const onLogin = useCallback(async (email, password) => {
         setAuthErrorMessage("");
         try {
             await handleLogin(email, password);
             setShowAuthModal(false);
-            setFeedback("Sessió iniciada correctament!", 'success');
+            setFeedbackMessage("Sessió iniciada correctament!");
+            setFeedbackType('success');
         } catch (error) {
             setAuthErrorMessage("Error iniciant sessió: " + error.message);
         }
-    }, [handleLogin, setFeedback]);
+    }, [handleLogin]);
 
     const onRegister = useCallback(async (email, password) => {
         setAuthErrorMessage("");
         try {
             await handleRegister(email, password);
             setShowAuthModal(false);
-            setFeedback("Registre completat i sessió iniciada!", 'success');
+            setFeedbackMessage("Registre completat i sessió iniciada!");
+            setFeedbackType('success');
         } catch (error) {
             setAuthErrorMessage("Error registrant: " + error.message);
         }
-    }, [handleRegister, setFeedback]);
+    }, [handleRegister]);
 
     const onPasswordReset = useCallback(async (email) => {
         setAuthErrorMessage("");
         try {
             await handlePasswordReset(email);
-            setFeedback("S'ha enviat un correu de recuperació de contrasenya.", 'success');
+            setFeedbackMessage("S'ha enviat un correu de recuperació de contrasenya.");
+            setFeedbackType('success');
         } catch (error) {
             setAuthErrorMessage("Error enviant correu de recuperació: " + error.message);
         }
-    }, [handlePasswordReset, setFeedback]);
+    }, [handlePasswordReset]);
 
     const onLogout = useCallback(async () => {
         try {
             await handleLogout();
             setShowAuthModal(false);
-            setFeedback("Sessió tancada correctament!", 'info');
+            setFeedbackMessage("Sessió tancada correctament!");
+            setFeedbackType('info');
         } catch (error) {
-            setFeedback("Error tancant sessió: " + error.message, 'error');
+            setFeedbackMessage("Error tancant sessió: " + error.message);
+            setFeedbackType('error');
         }
-    }, [handleLogout, setFeedback]);
+    }, [handleLogout]);
 
     // Funció per ordenar productes alfabèticament
     const sortItemsAlphabetically = (itemsList) => {
@@ -285,7 +264,8 @@ function App() {
         });
     };
     
-    // Funció per agrupar per secció i ordenar
+    // Funció per agrupar per secció i ordenar.
+    // L'ordenació és: 1. Segons l'ordre personalitzat guardat. 2. Segons DEFAULT_SECTION_ORDER. 3. Alfabèticament.
     const groupItemsBySection = (itemsList) => {
         const groups = {};
 
@@ -298,8 +278,9 @@ function App() {
             groups[sectionName].push(item);
         });
 
-        // 2. Ordenem els grups/seccions segons l'ordre personalitzat
+        // 2. Ordenem els grups/seccions segons l'ordre personalitzat, després DEFAULT_SECTION_ORDER
         const sortedSections = Object.keys(groups).sort((a, b) => {
+            // Primer mirem si tenen ordre personalitzat
             const customOrderA = sectionOrder[a];
             const customOrderB = sectionOrder[b];
             
@@ -309,6 +290,7 @@ function App() {
             if (customOrderA !== undefined) return -1;
             if (customOrderB !== undefined) return 1;
             
+            // Si no tenen ordre personalitzat, usem l'ordre per defecte
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
@@ -318,11 +300,13 @@ function App() {
         const sortedGroups = sortedSections.map(section => ({
             section: section,
             items: groups[section].sort((a, b) => {
+                // Si tenen orderIndex, ordenem per això
                 if (a.orderIndex !== undefined && b.orderIndex !== undefined) {
                     return a.orderIndex - b.orderIndex;
                 }
                 if (a.orderIndex !== undefined) return -1;
                 if (b.orderIndex !== undefined) return 1;
+                // Si no, ordenem alfabèticament
                 return a.name.localeCompare(b.name);
             })
         }));
@@ -340,7 +324,9 @@ function App() {
     };
 
     // A la Despensa, els items es mostren ordenats alfabèticament
-    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList)));
+    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
+    // La Llista de Compra ara utilitza la nova lògica d'agrupació i ordenació
+    const itemsFromPantryInShoppingList = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
     
@@ -350,7 +336,7 @@ function App() {
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista
+    // Funció per renderitzar elements en format llista (Ajustada per utilitzar DOBLE CLIC)
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div 
@@ -358,12 +344,13 @@ function App() {
                 className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
                 onClick={(e) => { 
                     if (!requireDoubleClick) handleToggleBought(item, item.isBought);
+                    // Si requereix doble clic, el clic simple no fa res
                 }}
                 onDoubleClick={(e) => { 
-                    e.stopPropagation();
+                    e.stopPropagation(); // Evitar clics parentals
                     handleToggleBought(item, item.isBought); 
                 }}
-                title={`Doble clic per ${item.isBought ? 'desmarcar' : 'marcar com comprat'} ${item.name}`}
+                title={`Doble clic per ${item.isBought ? 'desmarcar i netejar quantitat' : 'marcar com comprat'} ${item.name}`}
             >
                 <div className="list-item-icon">
                     {item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://')) ? (
@@ -391,12 +378,12 @@ function App() {
     // Activar/desactivar mode reordenació
     const toggleReorderMode = () => {
         setIsReorderMode(!isReorderMode);
-        setFeedback(
+        setFeedbackMessage(
             !isReorderMode 
                 ? "Mode reordenació activat! Ara pots arrossegar seccions i productes."
-                : "Mode reordenació desactivat.", 
-            'info'
+                : "Mode reordenació desactivat."
         );
+        setFeedbackType('info');
     };
     
     // Gestionar drag & drop
@@ -421,9 +408,11 @@ function App() {
                 );
                 await Promise.all(promises);
                 
-                setFeedback("Ordre de seccions actualitzat!", 'success');
+                setFeedbackMessage("Ordre de seccions actualitzat!");
+                setFeedbackType('success');
             } catch (error) {
-                setFeedback("Error reordenant seccions: " + error.message, 'error');
+                setFeedbackMessage("Error reordenant seccions: " + error.message);
+                setFeedbackType('error');
             }
         } else if (type === 'ITEM') {
             // Reordenar productes dins d'una secció
@@ -443,9 +432,11 @@ function App() {
                     );
                     await Promise.all(promises);
                     
-                    setFeedback("Ordre de productes actualitzat!", 'success');
+                    setFeedbackMessage("Ordre de productes actualitzat!");
+                    setFeedbackType('success');
                 } catch (error) {
-                    setFeedback("Error reordenant productes: " + error.message, 'error');
+                    setFeedbackMessage("Error reordenant productes: " + error.message);
+                    setFeedbackType('error');
                 }
             }
         }
@@ -454,26 +445,17 @@ function App() {
     return (
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
             <header className="w-full mb-6 text-center relative">
-                {/* 1. MILLORA: Títol de la llista activa */}
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
-                
-                {/* BOTÓ DRETA: Menú Usuari (ARA SENSE CONDICIÓ userId) */}
-                <button 
-                    onClick={() => setShowAuthModal(true)} 
-                    className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
-                    aria-label="Menú d'usuari"
-                >
-                    <User className="w-6 h-6 text-gray-700" />
-                </button>
-                
-                {/* BOTÓ ESQUERRA: Gestor de Llistes */}
-                <button 
-                    onClick={() => setShowListManagerModal(true)} 
-                    className="absolute top-0 left-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
-                    aria-label="Gestionar llistes"
-                >
-                    <ListChecks className="w-6 h-6 text-gray-700" />
-                </button>
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">Llista de la compra</h1>
+                {userId && (
+                    <button 
+                        onClick={() => setShowAuthModal(true)} 
+                        className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
+                        aria-label="Menú d'usuari"
+                    >
+                        <User className="w-6 h-6 text-gray-700" />
+                    </button>
+                )}
+                <p className="text-gray-700 text-lg font-semibold mt-2">{currentListName}</p>
             </header>
 
             {feedbackMessage && (
@@ -550,11 +532,11 @@ function App() {
                         </div>
                     )}
                     
-                    {/* Botó d'exportació només a la despensa i només en PC (amagat en mòbil) */}
+                    {/* Botó d'exportació només a la despensa */}
                     {currentView === 'pantry' && (
-                        <button
+                        <button 
                             onClick={handleExportToExcel}
-                            className="hidden md:block p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
+                            className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
                             aria-label="Exportar a Excel"
                         >
                             <FileDown className="w-5 h-5" />
@@ -576,10 +558,10 @@ function App() {
                 </div>
             </div>
 
-            {/* Vistes principals (sense canvis aquí) */}
+            {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
-                    {/* Elements a la despensa */}
+                    {/* Elements a la despensa (ja venen ordenats alfabèticament a 'pantryItems') */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">
                             Elements a la despensa ({pantryItems.length})
@@ -599,7 +581,7 @@ function App() {
                                         actionLabel={`Clica per afegir ${item.name} a la llista`}
                                         additionalClasses="box-shadow-neomorphic-element cursor-pointer hover:box-shadow-neomorphic-element-hover"
                                         showEditButton={true}
-                                        requireDoubleClick={false}
+                                        requireDoubleClick={false} // Clic simple per afegir a llista
                                     />
                                 ))}
                             </div>
@@ -611,14 +593,14 @@ function App() {
                     </div>
 
                     {/* Elements a la llista de la compra des de la despensa */}
-                    {items.filter(item => item.isInShoppingList && !item.isBought).length > 0 && (
+                    {itemsFromPantryInShoppingList.length > 0 && (
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
-                                Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})
+                                Elements a la llista de la compra des de la despensa ({itemsFromPantryInShoppingList.length})
                             </h2>
                             {displayMode === 'grid' ? (
                                 <div className={`${gridClasses} gap-4`}>
-                                    {items.filter(item => item.isInShoppingList && !item.isBought).map(item => (
+                                    {itemsFromPantryInShoppingList.map(item => (
                                         <ProductCard
                                             key={item.id}
                                             item={item}
@@ -627,13 +609,13 @@ function App() {
                                             actionLabel={`Clica per treure ${item.name} de la llista`}
                                            additionalClasses="box-shadow-neomorphic-element-red cursor-pointer"
                                             showEditButton={true}
-                                            requireDoubleClick={false}
+                                            requireDoubleClick={false} // Clic simple per treure de llista
                                         />
                                     ))}
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {renderListItems(items.filter(item => item.isInShoppingList && !item.isBought), false, false)}
+                                    {renderListItems(itemsFromPantryInShoppingList, false, false)}
                                 </div>
                             )}
                         </div>
@@ -656,7 +638,6 @@ function App() {
                                     </span>
                                 )}
                             </div>
-                            
                             {unboughtItems.length === 0 ? (
                                 <p className="text-gray-600 text-center py-4">
                                     No hi ha productes pendents a la teva llista de la compra.
@@ -688,23 +669,6 @@ function App() {
                                 </Droppable>
                             )}
                         </div>
-                        
-                        {/* **BOTÓ DE NETEJA/ARXIVATGE AQUÍ** */}
-                        {boughtItems.length > 0 && (
-                            <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                                <button
-                                    onClick={handleClearCompletedItems}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-300 text-red-600 font-semibold 
-                                        bg-white box-shadow-neomorphic-button hover:bg-red-50 transition-all-smooth flex 
-                                        items-center justify-center gap-2"
-                                    aria-label={`Netejar i arxivar ${boughtItems.length} productes comprats`}
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                    Netejar i Arxivar Productes Comprats ({boughtItems.length})
-                                </button>
-                            </div>
-                        )}
-                        {/* FI BOTÓ */}
 
                         {/* Seccions per comprats */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
@@ -751,7 +715,7 @@ function App() {
                 </DragDropContext>
             )}
 
-            {/* Botó flotant per afegir productes (només a la despensa) */}
+            {/* Botó flotant per afegir productes (només a la despensa) (SENSE CANVIS) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={() => setShowAddModal(true)}
@@ -764,7 +728,7 @@ function App() {
                 </button>
             )}
 
-            {/* Modals */}
+            {/* Modals (SENSE CANVIS) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
@@ -776,28 +740,16 @@ function App() {
             )}
 
             {showAuthModal && (
-                <AuthModal
-                    onLogin={onLogin}
-                    onRegister={onRegister}
-                    onLogout={onLogout}
-                    userEmail={userEmail}
-                    errorMessage={authErrorMessage}
-                    onClose={() => setShowAuthModal(false)}
-                    onForgotPassword={onPasswordReset}
-                />
-            )}
-            
-            {/* NOU MODAL DE GESTIÓ DE LLISTES */}
-            {showListManagerModal && (
-                <ListManagerModal
-                    lists={lists}
-                    activeListId={activeListId}
-                    setActiveListId={setActiveListId}
-                    onAddList={addList}
-                    onUpdateListName={updateListName}
-                    onDeleteList={deleteList}
-                    setFeedback={setFeedback}
-                    onClose={() => setShowListManagerModal(false)}
+                <AuthModal 
+                    onLogin={onLogin} 
+                    onRegister={onRegister} 
+                    onLogout={onLogout} 
+                    userEmail={userEmail} 
+                    errorMessage={authErrorMessage} 
+                    onClose={() => setShowAuthModal(false)} 
+                    onForgotPassword={onPasswordReset} 
+                    displayMode={displayMode} 
+                    setDisplayMode={setDisplayMode} 
                 />
             )}
 
