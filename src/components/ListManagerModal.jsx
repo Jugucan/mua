@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // IMPORTACIÓ: Afegim Check
-import { X, Plus, CreditCard as Edit, Trash2, Check } from 'lucide-react'; 
+import { X, Plus, Edit, Trash2, Check } from 'lucide-react'; 
 
 const ListManagerModal = ({ 
     lists, 
