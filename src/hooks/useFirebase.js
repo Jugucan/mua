@@ -416,11 +416,11 @@ export const useFirebase = () => {
         // Acció: Marcar com a comprat (moure a la llista de Comprats/Historial)
         
         // 1. Convertir l'element actual en l'ítem d'HISTORIAL ("Productes Comprats")
-        // Amb 'isBought: true', es mostra a l'Historial.
+        // Estat final: isInShoppingList: false, isBought: true.
         batch.update(itemRef, {
             isBought: true,
-            isInShoppingList: false, // Ja no és a la llista de la compra
-            quantity: item.quantity || '', // Guardem la quantitat comprada (per a l'historial)
+            isInShoppingList: false, 
+            quantity: item.quantity || '', 
             orderIndex: -1, 
             updatedAt: serverTimestamp()
         });
@@ -446,28 +446,30 @@ export const useFirebase = () => {
                 userId: userId,
                 listId: activeListId,
                 name: item.name,
-                quantity: '', // La quantitat a la despensa és buida
+                quantity: '', 
                 section: item.section || '',
                 icon: item.icon || '',
                 secondIcon: item.secondIcon || '',
                 isInShoppingList: false, // Estat de Despensa/Inventari
                 isBought: false,         // Estat de Despensa/Inventari
-                orderIndex: -1,          // Sense ordre
+                orderIndex: -1,          
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             };
             batch.set(newItemRef, despensaItemData);
         } else {
-             // Si JA existeix un a la despensa, no fem res per evitar duplicats.
+             // Si JA existeix un a la despensa, no fem res.
         }
         
     } else {
         // Acció: Desmarcar com a comprat (moure a la llista de Per Comprar)
+        // Això només s'aplicaria si desmarques un element de l'Historial/Comprat
+        // per tornar-lo a la llista de la compra.
         
         const updatedData = {
             isBought: newStatus,
             isInShoppingList: true, // Tornar a la llista de la compra
-            quantity: '', // Solució al problema de la quantitat '1'
+            quantity: '', 
             updatedAt: serverTimestamp()
         };
         
@@ -550,10 +552,10 @@ export const useFirebase = () => {
     snapshot.docs.forEach((docSnap) => {
         // Acció: Treu l'ítem de l'Historial per convertir-lo en ítem de DESPENSA
         batch.update(docSnap.ref, {
-            isBought: false, // Ja no és Historial
-            isInShoppingList: false, // Continua no essent a la llista de la compra
+            isBought: false, // Ja no és Historial -> passa a Despensa/Inventari
+            isInShoppingList: false, 
             orderIndex: -1,
-            quantity: '', // La quantitat de la despensa es pot considerar buida
+            quantity: '', 
             updatedAt: serverTimestamp()
         });
         count++;
