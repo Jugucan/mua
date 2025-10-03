@@ -424,23 +424,44 @@ export const useFirebase = () => {
             updatedAt: serverTimestamp()
         });
         
-        // 2. Crear un NOU document (el producte que torna a la DESPENSA/INVENTARI)
-        const newItemRef = doc(collection(db, 'items'));
-        const despensaItemData = {
-            userId: userId,
-            listId: activeListId,
-            name: item.name,
-            quantity: '', // La quantitat a la despensa és zero o buida fins a la propera compra
-            section: item.section || '',
-            icon: item.icon || '',
-            secondIcon: item.secondIcon || '',
-            isInShoppingList: false, // Estat de Despensa/Inventari
-            isBought: false,         // Estat de Despensa/Inventari
-            orderIndex: -1,          // Sense ordre
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        };
-        batch.set(newItemRef, despensaItemData);
+        // 2. *** NOU CANVI CRÍTIC: EVITAR DUPLICATS A LA DESPENSA ***
+        // Abans de crear un element de Despensa, comprovem si ja existeix un element
+        // amb el mateix nom que NO estigui a la llista de la compra (isInShoppingList: false)
+        // i que NO sigui de l'historial (isBought: false).
+        
+        const despensaQuery = query(
+            collection(db, 'items'),
+            where('userId', '==', userId),
+            where('listId', '==', activeListId),
+            where('name', '==', item.name),
+            where('isInShoppingList', '==', false),
+            where('isBought', '==', false)
+        );
+        
+        const despensaSnapshot = await getDocs(despensaQuery);
+        
+        if (despensaSnapshot.empty) {
+            // Si NO existeix a la despensa (isInShoppingList: false, isBought: false), el creem.
+            const newItemRef = doc(collection(db, 'items'));
+            const despensaItemData = {
+                userId: userId,
+                listId: activeListId,
+                name: item.name,
+                quantity: '', // La quantitat a la despensa és buida
+                section: item.section || '',
+                icon: item.icon || '',
+                secondIcon: item.secondIcon || '',
+                isInShoppingList: false, // Estat de Despensa/Inventari
+                isBought: false,         // Estat de Despensa/Inventari
+                orderIndex: -1,          // Sense ordre
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+            batch.set(newItemRef, despensaItemData);
+        } else {
+            // Si JA existeix, no fem res. Això evita la duplicació.
+            console.log(`Producte "${item.name}" ja existeix a la despensa. No es crea duplicat.`);
+        }
         
     } else {
         // Acció: Desmarcar com a comprat (moure a la llista de Per Comprar)
@@ -512,10 +533,11 @@ export const useFirebase = () => {
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
+    // Hem de filtrar per listId per netejar només la llista activa
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
-        where('listId', '==', activeListId),
+        where('listId', '==', activeListId), 
         where('isBought', '==', true)
     );
     
@@ -529,7 +551,7 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // Això treu els productes de la llista de la compra, mantenint-los a la BD (inventari).
+        // Neteja l'historial (isBought=false) i el treu de la llista de la compra (isInShoppingList=false)
         batch.update(docSnap.ref, {
             isBought: false,
             isInShoppingList: false,
