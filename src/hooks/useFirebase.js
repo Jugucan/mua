@@ -409,18 +409,48 @@ export const useFirebase = () => {
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
-    const updatedData = {
-        isBought: newStatus,
-        updatedAt: serverTimestamp()
-    };
+    const itemRef = doc(db, 'items', item.id);
+    const batch = writeBatch(db);
     
     if (newStatus) {
-        // Acció: Marcar com a comprat (moure a la llista de Comprats)
-        updatedData.quantity = ''; 
-        updatedData.orderIndex = -1; 
+        // Acció: Marcar com a comprat (moure a la llista de Comprats/Historial)
+        
+        // 1. Convertir l'element actual en l'ítem d'HISTORIAL ("Productes Comprats")
+        batch.update(itemRef, {
+            isBought: true,
+            isInShoppingList: false, // Ja no és a la llista de la compra
+            quantity: item.quantity || '', // Guardem la quantitat comprada (per a l'historial)
+            orderIndex: -1, 
+            updatedAt: serverTimestamp()
+        });
+        
+        // 2. Crear un NOU document (el producte que torna a la DESPENSA/INVENTARI)
+        const newItemRef = doc(collection(db, 'items'));
+        const despensaItemData = {
+            userId: userId,
+            listId: activeListId,
+            name: item.name,
+            quantity: '', // La quantitat a la despensa és zero o buida fins a la propera compra
+            section: item.section || '',
+            icon: item.icon || '',
+            secondIcon: item.secondIcon || '',
+            isInShoppingList: false, // Estat de Despensa/Inventari
+            isBought: false,         // Estat de Despensa/Inventari
+            orderIndex: -1,          // Sense ordre
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+        batch.set(newItemRef, despensaItemData);
+        
     } else {
         // Acció: Desmarcar com a comprat (moure a la llista de Per Comprar)
-        updatedData.isInShoppingList = true;
+        
+        const updatedData = {
+            isBought: newStatus,
+            isInShoppingList: true, // Tornar a la llista de la compra
+            quantity: '', // Solució al problema de la quantitat '1'
+            updatedAt: serverTimestamp()
+        };
         
         // Càlcul del nou 'orderIndex' per a la llista de la compra
         const sectionItems = items.filter(i => 
@@ -433,14 +463,11 @@ export const useFirebase = () => {
         );
         updatedData.orderIndex = maxOrderIndex + 1;
         
-        // *** SOLUCIÓ AL PROBLEMA DE LA QUANTITAT '1' ***
-        // Ens assegurem que la quantitat es buidi o es deixi buida ('') en tornar a la llista de compra.
-        // Aquesta línia substitueix l'antiga lògica que afegia '1'.
-        updatedData.quantity = ''; 
+        batch.update(itemRef, updatedData);
     }
     
     try {
-      await updateDoc(doc(db, 'items', item.id), updatedData);
+      await batch.commit();
       return newStatus;
     } catch (error) {
       console.error("Error canviant estat de comprat:", error);
@@ -502,9 +529,7 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // *** CANVI CORREGIT: Actualitza en lloc d'eliminar ***
-        // Això treu els productes de la llista de la compra
-        // (isBought=false, isInShoppingList=false) però els MANTÉ a la BD.
+        // Això treu els productes de la llista de la compra, mantenint-los a la BD (inventari).
         batch.update(docSnap.ref, {
             isBought: false,
             isInShoppingList: false,
