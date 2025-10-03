@@ -44,8 +44,6 @@ const APP_ID = 'mua-app-da319';
 
 export const cleanImageUrl = (url) => {
   if (!url || typeof url !== 'string') return "";
-  // Funció per netejar la URL, potser per eliminar paràmetres de seguiment o ajustar la mida de la imatge
-  // De moment retornem la URL tal qual
   return url;
 };
 
@@ -59,7 +57,7 @@ const DEFAULT_SECTION_ORDER = [
     'Neteja', 
     'Higiene Personal', 
     'Altres',
-    '' // Secció sense nom al final
+    ''
 ];
 
 export const useFirebase = () => {
@@ -82,23 +80,19 @@ export const useFirebase = () => {
         setUserId(user.uid);
         setUserEmail(user.email);
         
-        // Assegurar-se que l'usuari té una llista de la compra per defecte
         const listDocRef = doc(db, 'userLists', user.uid);
         const listDocSnap = await getDoc(listDocRef);
 
         if (!listDocSnap.exists()) {
-            // Si no hi ha document de llistes, creem la llista per defecte
             const defaultListId = doc(collection(db, 'lists')).id;
             await setDoc(listDocRef, {
                 lists: [{ id: defaultListId, name: "La Meva Llista" }],
                 activeListId: defaultListId
             });
-            // Creem l'element de la llista per defecte
             await setDoc(doc(db, 'lists', defaultListId), { name: "La Meva Llista", userId: user.uid, createdAt: serverTimestamp() });
             setActiveListId(defaultListId);
 
         } else {
-            // Si hi ha document, carregar l'estat
             const data = listDocSnap.data();
             setLists(data.lists || []);
             setActiveListId(data.activeListId || (data.lists && data.lists[0] ? data.lists[0].id : null));
@@ -115,7 +109,6 @@ export const useFirebase = () => {
     return unsub;
   }, []);
   
-  // Sincronitza la informació de llistes (si l'usuari existeix)
   useEffect(() => {
     if (!userId) {
         setLists([]);
@@ -138,7 +131,6 @@ export const useFirebase = () => {
     return unsub;
   }, [userId]);
   
-  // Sincronitza l'ordre de les seccions (si l'usuari existeix)
   useEffect(() => {
     if (!userId) return;
 
@@ -148,7 +140,6 @@ export const useFirebase = () => {
         if (docSnap.exists()) {
             setSectionOrder(docSnap.data().order || {});
         } else {
-            // Si no hi ha un ordre personalitzat, utilitzem el per defecte
             const defaultOrder = DEFAULT_SECTION_ORDER.reduce((acc, section, index) => {
                 acc[section] = index;
                 return acc;
@@ -162,14 +153,12 @@ export const useFirebase = () => {
     return unsub;
   }, [userId]);
 
-  // Sincronitza els elements de la llista (si la llista activa existeix)
   useEffect(() => {
     if (!userId || !activeListId) {
       setItems([]);
       return;
     }
     
-    // Ordre: Primer pel flag isInShoppingList, després per orderIndex, després alfabèticament
     const q = query(
       collection(db, 'items'),
       where('userId', '==', userId),
@@ -212,14 +201,12 @@ export const useFirebase = () => {
       const newListRef = doc(collection(db, 'lists'));
       const newListId = newListRef.id;
       
-      // 1. Crear l'entrada de la llista
       await setDoc(newListRef, {
           name: name,
           userId: userId,
           createdAt: serverTimestamp()
       });
       
-      // 2. Actualitzar la llista de llistes de l'usuari
       const newLists = [...lists, { id: newListId, name: name }];
       await updateListsInFirestore(newLists, newListId);
       
@@ -228,10 +215,8 @@ export const useFirebase = () => {
   const updateListName = useCallback(async (listId, newName) => {
       if (!userId) throw new Error("Usuari no autenticat.");
       
-      // 1. Actualitzar el document principal de la llista
       await updateDoc(doc(db, 'lists', listId), { name: newName });
       
-      // 2. Actualitzar la llista de llistes de l'usuari
       const newLists = lists.map(l => l.id === listId ? { ...l, name: newName } : l);
       await updateListsInFirestore(newLists, activeListId);
 
@@ -241,14 +226,9 @@ export const useFirebase = () => {
       if (!userId) throw new Error("Usuari no autenticat.");
       if (lists.length <= 1) throw new Error("No pots eliminar l'última llista.");
       
-      // 1. Seleccionar la nova llista activa
       const remainingLists = lists.filter(l => l.id !== listId);
       const newActiveListId = remainingLists[0].id;
-
-      // 2. Eliminar la referència de la llista (però no els items encara)
-      // Mantenim l'entrada 'lists/listId' fins que es decideixi el destí dels items.
       
-      // 3. Moure tots els items d'aquesta llista a la nova llista activa
       const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
@@ -262,7 +242,6 @@ export const useFirebase = () => {
           batch.update(docSnap.ref, { listId: newActiveListId });
       });
       
-      // 4. Eliminar el document de la llista i actualitzar l'estat de l'usuari
       batch.delete(doc(db, 'lists', listId));
       batch.update(doc(db, 'userLists', userId), {
           lists: remainingLists,
@@ -277,7 +256,6 @@ export const useFirebase = () => {
   const setActiveListIdAndSave = useCallback(async (listId) => {
       if (!userId) return;
       
-      // Canviar l'estat local i guardar a Firestore
       setActiveListId(listId);
       await updateDoc(doc(db, 'userLists', userId), {
           activeListId: listId,
@@ -294,7 +272,6 @@ export const useFirebase = () => {
   const addItem = useCallback(async (itemData) => {
     if (!userId || !activeListId) throw new Error("Usuari o llista no seleccionada.");
     
-    // Calcula el següent orderIndex per a la secció
     const sectionItems = items.filter(i => 
         (i.section || '') === (itemData.section || '') && 
         i.listId === activeListId &&
@@ -314,9 +291,9 @@ export const useFirebase = () => {
         section: itemData.section || '',
         icon: itemData.icon || '',
         secondIcon: itemData.secondIcon || '',
-        isInShoppingList: itemData.isInShoppingList ?? false, // Per defecte fora de la llista
+        isInShoppingList: itemData.isInShoppingList ?? false,
         isBought: false,
-        orderIndex: newOrderIndex, // Assignem un orderIndex
+        orderIndex: newOrderIndex,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -326,18 +303,15 @@ export const useFirebase = () => {
     }
   }, [userId, activeListId, items]);
 
-  // FUNCIÓ updateItem: Actualitzada en l'apartat anterior
   const updateItem = useCallback(async (id, updatedData) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
-    // 1. Cercar l'element actual a la llista local
     const currentItem = items.find(i => i.id === id);
     if (!currentItem) {
         console.error("Ítem no trobat a l'estat local:", id);
         throw new Error("Ítem no trobat per actualitzar.");
     }
 
-    // 2. Comprovar si s'ha d'activar la lògica de "moure a la llista de la compra"
     let finalUpdatedData = { ...updatedData };
     
     const isAddingQuantity = (
@@ -347,7 +321,6 @@ export const useFirebase = () => {
     );
 
     if (isAddingQuantity) {
-        // Càlcul del nou orderIndex, només si el movem a la llista de la compra
         const sectionItems = items.filter(i => 
             (i.section || '') === (currentItem.section || '') && 
             i.listId === activeListId &&
@@ -358,13 +331,11 @@ export const useFirebase = () => {
         );
         const newOrderIndex = maxOrderIndex + 1;
         
-        // Moure l'ítem a la llista de la compra
         finalUpdatedData.isInShoppingList = true;
-        finalUpdatedData.isBought = false; // Assegurem-nos que no està marcat com a comprat
+        finalUpdatedData.isBought = false;
         finalUpdatedData.orderIndex = newOrderIndex;
     }
     
-    // 3. Executar l'actualització a Firebase
     try {
       await updateDoc(doc(db, 'items', id), {
         ...finalUpdatedData,
@@ -386,7 +357,6 @@ export const useFirebase = () => {
     }
   }, [userId]);
 
-  // ⭐ FUNCIÓ MODIFICADA: Si es mou de la despensa a la llista de compra, netegem 'isBought'
   const toggleItemInShoppingList = useCallback(async (item) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     const newStatus = !item.isInShoppingList;
@@ -394,14 +364,13 @@ export const useFirebase = () => {
     
     let newOrderIndex = item.orderIndex;
 
-    // Si l'afegim a la llista (Element de la Despensa --> Llista de Compra)
     if (newStatus) {
         const sectionItems = items.filter(i => 
             (i.section || '') === (item.section || '') && 
             i.listId === activeListId &&
             i.isInShoppingList === true
         );
-        const maxOrderIndex = sectionItems.reduce((max, i => 
+        const maxOrderIndex = sectionItems.reduce((max, i) => 
             (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
         );
         newOrderIndex = maxOrderIndex + 1;
@@ -409,7 +378,7 @@ export const useFirebase = () => {
         try {
           await updateDoc(doc(db, 'items', item.id), {
             isInShoppingList: newStatus,
-            isBought: false, // ⭐ CANVI CLAU: Netejar l'estat de comprat
+            isBought: false,
             quantity: newQuantity,
             orderIndex: newOrderIndex, 
             updatedAt: serverTimestamp()
@@ -421,11 +390,10 @@ export const useFirebase = () => {
         }
 
     } else {
-        // Si el traiem de la llista (Llista de Compra --> Despensa)
          try {
             await updateDoc(doc(db, 'items', item.id), {
                 isInShoppingList: newStatus,
-                isBought: false, // Per defecte a la despensa sense marcar com a comprat
+                isBought: false,
                 quantity: newQuantity,
                 orderIndex: -1, 
                 updatedAt: serverTimestamp()
@@ -438,7 +406,6 @@ export const useFirebase = () => {
     }
   }, [userId, items, activeListId]);
   
-  // ⭐⭐⭐ AQUESTA ÉS LA FUNCIÓ CLAU QUE HEM MODIFICAT ⭐⭐⭐
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
@@ -448,30 +415,11 @@ export const useFirebase = () => {
     };
     
     if (newStatus) {
-        // A. Producte COMPRAT
-        // ----------------------------------------------------
-        // 1. Netegem la quantitat (ja no cal que es vegi)
         updatedData.quantity = ''; 
-        
-        // 2. EL DEIXEM A LA LLISTA DE COMPRA (AIXÒ ÉS EL CANVI!)
-        // Abans posàvem: updatedData.isInShoppingList = false;
-        // Ara NO ho canviem, es queda a true
-        
-        // 3. Es marca com a comprat (això ja ho feia)
-        // updatedData.isBought ja està a true (per newStatus)
-        
         updatedData.orderIndex = -1; 
     } else {
-        // B. Producte DES-COMPRAT (o recuperat de l'historial)
-        // ----------------------------------------------------
-        
-        // 1. Assegurem que estigui a la llista de compra
         updatedData.isInShoppingList = true;
         
-        // 2. El desmarquem com a comprat
-        // updatedData.isBought ja està a false (per newStatus)
-        
-        // 3. Calculem nou orderIndex
         const sectionItems = items.filter(i => 
             (i.section || '') === (item.section || '') && 
             i.listId === activeListId &&
@@ -482,7 +430,6 @@ export const useFirebase = () => {
         );
         updatedData.orderIndex = maxOrderIndex + 1;
         
-        // 4. Si no té quantitat, li posem un 1 per defecte
         if (!item.quantity) {
              updatedData.quantity = '1'; 
         }
@@ -520,7 +467,6 @@ export const useFirebase = () => {
     const newSectionOrder = { ...sectionOrder, [sectionName]: newIndex };
 
     try {
-      // S'utilitza setDoc amb merge: true per crear si no existeix o actualitzar si existeix
       await setDoc(doc(db, 'sectionOrder', userId), { 
           order: newSectionOrder,
           updatedAt: serverTimestamp()
@@ -532,11 +478,9 @@ export const useFirebase = () => {
   }, [userId, sectionOrder]);
 
 
-  // ⭐ FUNCIÓ NETEJAR PRODUCTES COMPRATS (SENSE CANVIS)
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
-    // 1. Cerquem TOTS els elements de l'USUARI que estan marcats com a comprats (isBought: true).
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
@@ -552,20 +496,17 @@ export const useFirebase = () => {
     const batch = writeBatch(db);
     let count = 0;
 
-    // 2. Iterem sobre els documents i els actualitzem
     snapshot.docs.forEach((docSnap) => {
         batch.update(docSnap.ref, {
-            // TORNEN DE NOU A LA DESPENSA (si ja hi eren, no canvia)
-            isBought: false, // Surten de l'historial
-            isInShoppingList: false, // Tornen a la despensa
-            orderIndex: -1, // Netejar ordre
-            quantity: '', // Netejar quantitat
+            isBought: false,
+            isInShoppingList: false,
+            orderIndex: -1,
+            quantity: '',
             updatedAt: serverTimestamp()
         });
         count++;
     });
 
-    // 3. Executem l'operació massiva
     await batch.commit();
     return count;
   }, [userId]);
@@ -613,7 +554,6 @@ export const useFirebase = () => {
         const icon = ICON_INDEX !== -1 && row[ICON_INDEX] ? String(row[ICON_INDEX]).trim() : '';
         const secondIcon = SECOND_ICON_INDEX !== -1 && row[SECOND_ICON_INDEX] ? String(row[SECOND_ICON_INDEX]).trim() : '';
 
-        // Cerca si l'element ja existeix (limitat al nom i a l'usuari/llista)
         const existingQuery = query(
             itemsCollection,
             where('userId', '==', userId),
@@ -630,20 +570,18 @@ export const useFirebase = () => {
             section: section,
             icon: icon,
             secondIcon: secondIcon,
-            isInShoppingList: false, // Quan es puja des d'Excel, van directes a la despensa
+            isInShoppingList: false,
             isBought: false,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
 
         if (!existingSnapshot.empty) {
-            // Actualitzar l'element existent
             const docRef = existingSnapshot.docs[0].ref;
             batch.update(docRef, itemData);
         } else {
-            // Afegir com a nou element
             const newDocRef = doc(itemsCollection);
-            batch.set(newDocRef, { ...itemData, orderIndex: -1 }); // Amb orderIndex inicial a -1
+            batch.set(newDocRef, { ...itemData, orderIndex: -1 });
         }
         successfulUploads++;
     }
@@ -706,25 +644,21 @@ export const useFirebase = () => {
     items,
     sectionOrder,
     isAuthReady,
-    // LLISTES
     lists,
     activeListId,
     setActiveListId: setActiveListIdAndSave,
     addList,
     updateListName,
     deleteList,
-    // ELEMENTS
     addItem,
     updateItem,
     deleteItem,
     toggleItemInShoppingList,
     toggleBought,
-    // NETA I ORDENACIÓ
     clearCompletedItems, 
     uploadFromExcel,
     updateItemOrder,
     updateSectionOrder,
-    // AUTH
     handleLogin,
     handleRegister,
     handlePasswordReset,
