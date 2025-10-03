@@ -444,61 +444,79 @@ export const useFirebase = () => {
   }, [userId, items, activeListId]); 
 
   // ----------------------------------------------------
-  // 3B. PRODUCTES COMPRATS (historial)
-  // ----------------------------------------------------
+// 3B. PRODUCTES COMPRATS (historial)
+// ----------------------------------------------------
 
-  const markProductAsBought = useCallback(async (item) => {
-    if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
+const markProductAsBought = useCallback(async (item) => {
+  if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
 
-    try {
-      // Afegim a la col·lecció "purchasedItems"
-      await addDoc(collection(db, 'purchasedItems'), {
-        userId: userId,
-        listId: activeListId,
-        name: item.name,
-        quantity: item.quantity || '',
-        section: item.section || '',
-        icon: item.icon || '',
-        secondIcon: item.secondIcon || '',
-        boughtAt: serverTimestamp()
-      });
+  try {
+    // 1. Afegim a la col·lecció "purchasedItems"
+    await addDoc(collection(db, 'purchasedItems'), {
+      userId: userId,
+      listId: activeListId,
+      name: item.name,
+      quantity: item.quantity || '',
+      section: item.section || '',
+      icon: item.icon || '',
+      secondIcon: item.secondIcon || '',
+      boughtAt: serverTimestamp()
+    });
 
-      // Actualitzem l'ítem original a "items"
-      await updateDoc(doc(db, 'items', item.id), {
-        isBought: true,
-        quantity: '',
-        orderIndex: -1,
-        updatedAt: serverTimestamp()
-      });
+    // 2. Afegim a la DESPENSA (col·lecció items, però com a disponible)
+    await addDoc(collection(db, 'items'), {
+      userId: userId,
+      listId: activeListId,
+      name: item.name,
+      quantity: item.quantity || '',
+      section: item.section || '',
+      icon: item.icon || '',
+      secondIcon: item.secondIcon || '',
+      isInShoppingList: false, // ja no està a la llista de compra
+      isBought: false,         // a la despensa no va com "comprat"
+      orderIndex: -1,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
 
-      return true;
-    } catch (error) {
-      console.error("Error afegint a Productes Comprats:", error);
-      throw new Error("No s'ha pogut afegir el producte a l'historial.");
-    }
-  }, [userId, activeListId]);
+    // 3. Actualitzem l’ítem original (el que estava a la llista de compra)
+    await updateDoc(doc(db, 'items', item.id), {
+      isBought: true,
+      isInShoppingList: false,
+      quantity: '',
+      orderIndex: -1,
+      updatedAt: serverTimestamp()
+    });
 
-  const clearPurchased = useCallback(async () => {
-    if (!userId) throw new Error("Usuari no autenticat.");
+    return true;
+  } catch (error) {
+    console.error("Error afegint a Productes Comprats i Despensa:", error);
+    throw new Error("No s'ha pogut completar l'operació.");
+  }
+}, [userId, activeListId]);
 
-    try {
-      const q = query(collection(db, 'purchasedItems'), where('userId', '==', userId));
-      const snapshot = await getDocs(q);
+const clearPurchased = useCallback(async () => {
+  if (!userId) throw new Error("Usuari no autenticat.");
 
-      if (snapshot.empty) return 0;
+  try {
+    const q = query(collection(db, 'purchasedItems'), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
 
-      const batch = writeBatch(db);
-      snapshot.docs.forEach(docSnap => {
-        batch.delete(docSnap.ref);
-      });
+    if (snapshot.empty) return 0;
 
-      await batch.commit();
-      return snapshot.size;
-    } catch (error) {
-      console.error("Error netejant Productes Comprats:", error);
-      throw new Error("No s'ha pogut netejar l'historial.");
-    }
-  }, [userId]);
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(docSnap => {
+      batch.delete(docSnap.ref);
+    });
+
+    await batch.commit();
+    return snapshot.size;
+  } catch (error) {
+    console.error("Error netejant Productes Comprats:", error);
+    throw new Error("No s'ha pogut netejar l'historial.");
+  }
+}, [userId]);
+
 
   // ----------------------------------------------------
   // 4. ORDENACIÓ I GESTIÓ MASSIVA
