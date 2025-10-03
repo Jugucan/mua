@@ -416,8 +416,8 @@ export const useFirebase = () => {
     
     if (newStatus) {
         // Acció: Marcar com a comprat (moure a la llista de Comprats)
-        updatedData.quantity = ''; // Neteja la quantitat en marcar com a Comprat
-        updatedData.orderIndex = -1; // Ja no necessita ordre a la llista de la compra
+        updatedData.quantity = ''; 
+        updatedData.orderIndex = -1; 
     } else {
         // Acció: Desmarcar com a comprat (moure a la llista de Per Comprar)
         updatedData.isInShoppingList = true;
@@ -434,24 +434,9 @@ export const useFirebase = () => {
         updatedData.orderIndex = maxOrderIndex + 1;
         
         // *** SOLUCIÓ AL PROBLEMA DE LA QUANTITAT '1' ***
-        // Quan l'element torna a la llista de 'Productes per comprar',
-        // ens assegurem que la quantitat sigui una cadena buida ('').
-        // La teva lògica anterior afegia '1' si no tenia quantitat:
-        // if (!item.quantity) {
-        //      updatedData.quantity = '1'; 
-        // }
-        // Elimino aquesta línia perquè la funció 'toggleBought' s'utilitza
-        // per moure l'ítem a l'estat 'Per Comprar', i no ha d'assignar una quantitat.
-        // Si no té quantitat (i ja té 'isInShoppingList: true'), és millor deixar-la buida.
-        // Si l'ítem ja tenia una quantitat a l'estat original (item.quantity), es perd amb
-        // la línia 'updatedData.quantity = '';' de la part 'if (newStatus)'
-        // Però per al cas de TORNAR A LA LLISTA (newStatus = false),
-        // SIMPLEMENT NO TOQUEM LA QUANTITAT SI NO ESTÀ DEFINIDA, o si té valor,
-        // la deixem com estava abans de ser comprada (que en la majoria de casos serà buida).
-        
-        // CANVI: Ens assegurem que la quantitat es deixi buida (''), que és l'esperat
-        // per a un producte que torna a la llista de compra.
-        updatedData.quantity = ''; // S'assegura que no es posi "1"
+        // Ens assegurem que la quantitat es buidi o es deixi buida ('') en tornar a la llista de compra.
+        // Aquesta línia substitueix l'antiga lògica que afegia '1'.
+        updatedData.quantity = ''; 
     }
     
     try {
@@ -500,21 +485,10 @@ export const useFirebase = () => {
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
-    // 1. Crear la consulta per obtenir SENSE FILTRAR PER LA LLISTA ACTIVA.
-    // Això eliminaria TOTS els items comprats de TOTES les llistes de l'usuari.
-    /*
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
-        where('isBought', '==', true)
-    );
-    */
-    
-    // *** CANVI CRÍTIC: FILTRAM PER LA LLISTA ACTIVA ***
-    const q = query(
-        collection(db, 'items'),
-        where('userId', '==', userId),
-        where('listId', '==', activeListId), // Assegura que només esborrem de la llista actual
+        where('listId', '==', activeListId),
         where('isBought', '==', true)
     );
     
@@ -528,9 +502,9 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // *** CANVI CRÍTIC: ELIMINAR en lloc d'actualitzar (Arxivar/Netejar) ***
-        batch.delete(docSnap.ref);
-        /* // Lògica anterior que només actualitzava:
+        // *** CANVI CORREGIT: Actualitza en lloc d'eliminar ***
+        // Això treu els productes de la llista de la compra
+        // (isBought=false, isInShoppingList=false) però els MANTÉ a la BD.
         batch.update(docSnap.ref, {
             isBought: false,
             isInShoppingList: false,
@@ -538,13 +512,12 @@ export const useFirebase = () => {
             quantity: '',
             updatedAt: serverTimestamp()
         });
-        */
         count++;
     });
 
     await batch.commit();
     return count;
-  }, [userId, activeListId]); // Afegim activeListId a les dependències
+  }, [userId, activeListId]); 
   
   // ----------------------------------------------------
   // 5. IMPORTACIÓ DES D'EXCEL
