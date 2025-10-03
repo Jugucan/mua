@@ -69,7 +69,6 @@ export const useFirebase = () => {
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState(null);
 
-
   // ----------------------------------------------------
   // 1. AUTENTICACIÓ I ESTATS D'USUARI
   // ----------------------------------------------------
@@ -409,71 +408,17 @@ export const useFirebase = () => {
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
-    const itemRef = doc(db, 'items', item.id);
-    const batch = writeBatch(db);
+    const updatedData = {
+        isBought: newStatus,
+        updatedAt: serverTimestamp()
+    };
     
     if (newStatus) {
-        // Acció: Marcar com a comprat (moure a la llista de Comprats/Historial)
-        
-        // 1. Convertir l'element actual en l'ítem d'HISTORIAL ("Productes Comprats")
-        // Estat final: isInShoppingList: false, isBought: true.
-        batch.update(itemRef, {
-            isBought: true,
-            isInShoppingList: false, 
-            quantity: item.quantity || '', 
-            orderIndex: -1, 
-            updatedAt: serverTimestamp()
-        });
-        
-        // 2. Comprovar i Crear Element de Despensa (Inventari)
-        // L'element de Despensa ha de ser: isInShoppingList: false I isBought: false.
-        
-        const despensaQuery = query(
-            collection(db, 'items'),
-            where('userId', '==', userId),
-            where('listId', '==', activeListId),
-            where('name', '==', item.name),
-            where('isInShoppingList', '==', false),
-            where('isBought', '==', false)
-        );
-        
-        const despensaSnapshot = await getDocs(despensaQuery);
-        
-        if (despensaSnapshot.empty) {
-            // Si NO existeix a la despensa, el creem.
-            const newItemRef = doc(collection(db, 'items'));
-            const despensaItemData = {
-                userId: userId,
-                listId: activeListId,
-                name: item.name,
-                quantity: '', 
-                section: item.section || '',
-                icon: item.icon || '',
-                secondIcon: item.secondIcon || '',
-                isInShoppingList: false, // Estat de Despensa/Inventari
-                isBought: false,         // Estat de Despensa/Inventari
-                orderIndex: -1,          
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            };
-            batch.set(newItemRef, despensaItemData);
-        } else {
-             // Si JA existeix un a la despensa, no fem res.
-        }
-        
+        updatedData.quantity = ''; 
+        updatedData.orderIndex = -1; 
     } else {
-        // Acció: Desmarcar com a comprat (moure a la llista de Per Comprar)
-        // Això només s'aplicaria si desmarques un element de l'Historial/Comprat
-        // per tornar-lo a la llista de la compra.
+        updatedData.isInShoppingList = true;
         
-        const updatedData = {
-            isBought: newStatus,
-            isInShoppingList: true, // Tornar a la llista de la compra
-            quantity: '', 
-            updatedAt: serverTimestamp()
-        };
-        
-        // Càlcul del nou 'orderIndex' per a la llista de la compra
         const sectionItems = items.filter(i => 
             (i.section || '') === (item.section || '') && 
             i.listId === activeListId &&
@@ -484,19 +429,77 @@ export const useFirebase = () => {
         );
         updatedData.orderIndex = maxOrderIndex + 1;
         
-        batch.update(itemRef, updatedData);
+        if (!item.quantity) {
+             updatedData.quantity = '1'; 
+        }
     }
     
     try {
-      await batch.commit();
+      await updateDoc(doc(db, 'items', item.id), updatedData);
       return newStatus;
     } catch (error) {
       console.error("Error canviant estat de comprat:", error);
       throw new Error("No s'ha pogut canviar l'estat de comprat.");
     }
-  }, [userId, activeListId]); 
+  }, [userId, items, activeListId]); 
 
-  
+  // ----------------------------------------------------
+  // 3B. PRODUCTES COMPRATS (historial)
+  // ----------------------------------------------------
+
+  const markProductAsBought = useCallback(async (item) => {
+    if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
+
+    try {
+      // Afegim a la col·lecció "purchasedItems"
+      await addDoc(collection(db, 'purchasedItems'), {
+        userId: userId,
+        listId: activeListId,
+        name: item.name,
+        quantity: item.quantity || '',
+        section: item.section || '',
+        icon: item.icon || '',
+        secondIcon: item.secondIcon || '',
+        boughtAt: serverTimestamp()
+      });
+
+      // Actualitzem l'ítem original a "items"
+      await updateDoc(doc(db, 'items', item.id), {
+        isBought: true,
+        quantity: '',
+        orderIndex: -1,
+        updatedAt: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error afegint a Productes Comprats:", error);
+      throw new Error("No s'ha pogut afegir el producte a l'historial.");
+    }
+  }, [userId, activeListId]);
+
+  const clearPurchased = useCallback(async () => {
+    if (!userId) throw new Error("Usuari no autenticat.");
+
+    try {
+      const q = query(collection(db, 'purchasedItems'), where('userId', '==', userId));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) return 0;
+
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+
+      await batch.commit();
+      return snapshot.size;
+    } catch (error) {
+      console.error("Error netejant Productes Comprats:", error);
+      throw new Error("No s'ha pogut netejar l'historial.");
+    }
+  }, [userId]);
+
   // ----------------------------------------------------
   // 4. ORDENACIÓ I GESTIÓ MASSIVA
   // ----------------------------------------------------
@@ -529,15 +532,13 @@ export const useFirebase = () => {
     }
   }, [userId, sectionOrder]);
 
-
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
-        where('listId', '==', activeListId), 
-        where('isBought', '==', true) // Filtrem pels items de l'Historial
+        where('isBought', '==', true)
     );
     
     const snapshot = await getDocs(q);
@@ -550,12 +551,11 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // Acció: Treu l'ítem de l'Historial per convertir-lo en ítem de DESPENSA
         batch.update(docSnap.ref, {
-            isBought: false, // Ja no és Historial -> passa a Despensa/Inventari
-            isInShoppingList: false, 
+            isBought: false,
+            isInShoppingList: false,
             orderIndex: -1,
-            quantity: '', 
+            quantity: '',
             updatedAt: serverTimestamp()
         });
         count++;
@@ -563,7 +563,7 @@ export const useFirebase = () => {
 
     await batch.commit();
     return count;
-  }, [userId, activeListId]); 
+  }, [userId]);
   
   // ----------------------------------------------------
   // 5. IMPORTACIÓ DES D'EXCEL
@@ -716,6 +716,9 @@ export const useFirebase = () => {
     handleLogin,
     handleRegister,
     handlePasswordReset,
-    handleLogout
+    handleLogout,
+    // 👇 noves funcions
+    markProductAsBought,
+    clearPurchased
   };
 };
