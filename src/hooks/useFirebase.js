@@ -69,6 +69,7 @@ export const useFirebase = () => {
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState(null);
 
+
   // ----------------------------------------------------
   // 1. AUTENTICACIÓ I ESTATS D'USUARI
   // ----------------------------------------------------
@@ -443,81 +444,7 @@ export const useFirebase = () => {
     }
   }, [userId, items, activeListId]); 
 
-  // ----------------------------------------------------
-// 3B. PRODUCTES COMPRATS (historial)
-// ----------------------------------------------------
-
-const markProductAsBought = useCallback(async (item) => {
-  if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
-
-  try {
-    // 1. Afegim a la col·lecció "purchasedItems"
-    await addDoc(collection(db, 'purchasedItems'), {
-      userId: userId,
-      listId: activeListId,
-      name: item.name,
-      quantity: item.quantity || '',
-      section: item.section || '',
-      icon: item.icon || '',
-      secondIcon: item.secondIcon || '',
-      boughtAt: serverTimestamp()
-    });
-
-    // 2. Afegim a la DESPENSA (col·lecció items, però com a disponible)
-    await addDoc(collection(db, 'items'), {
-      userId: userId,
-      listId: activeListId,
-      name: item.name,
-      quantity: item.quantity || '',
-      section: item.section || '',
-      icon: item.icon || '',
-      secondIcon: item.secondIcon || '',
-      isInShoppingList: false, // ja no està a la llista de compra
-      isBought: false,         // a la despensa no va com "comprat"
-      orderIndex: -1,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-
-    // 3. Actualitzem l’ítem original (el que estava a la llista de compra)
-    await updateDoc(doc(db, 'items', item.id), {
-      isBought: true,
-      isInShoppingList: false,
-      quantity: '',
-      orderIndex: -1,
-      updatedAt: serverTimestamp()
-    });
-
-    return true;
-  } catch (error) {
-    console.error("Error afegint a Productes Comprats i Despensa:", error);
-    throw new Error("No s'ha pogut completar l'operació.");
-  }
-}, [userId, activeListId]);
-
-const clearPurchased = useCallback(async () => {
-  if (!userId) throw new Error("Usuari no autenticat.");
-
-  try {
-    const q = query(collection(db, 'purchasedItems'), where('userId', '==', userId));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) return 0;
-
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(docSnap => {
-      batch.delete(docSnap.ref);
-    });
-
-    await batch.commit();
-    return snapshot.size;
-  } catch (error) {
-    console.error("Error netejant Productes Comprats:", error);
-    throw new Error("No s'ha pogut netejar l'historial.");
-  }
-}, [userId]);
-
-
+  
   // ----------------------------------------------------
   // 4. ORDENACIÓ I GESTIÓ MASSIVA
   // ----------------------------------------------------
@@ -549,6 +476,7 @@ const clearPurchased = useCallback(async () => {
       throw new Error("No s'ha pogut actualitzar l'ordre de la secció.");
     }
   }, [userId, sectionOrder]);
+
 
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
@@ -734,9 +662,6 @@ const clearPurchased = useCallback(async () => {
     handleLogin,
     handleRegister,
     handlePasswordReset,
-    handleLogout,
-    // 👇 noves funcions
-    markProductAsBought,
-    clearPurchased
+    handleLogout
   };
 };
