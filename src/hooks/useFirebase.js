@@ -416,6 +416,7 @@ export const useFirebase = () => {
         // Acció: Marcar com a comprat (moure a la llista de Comprats/Historial)
         
         // 1. Convertir l'element actual en l'ítem d'HISTORIAL ("Productes Comprats")
+        // Amb 'isBought: true', es mostra a l'Historial.
         batch.update(itemRef, {
             isBought: true,
             isInShoppingList: false, // Ja no és a la llista de la compra
@@ -424,10 +425,8 @@ export const useFirebase = () => {
             updatedAt: serverTimestamp()
         });
         
-        // 2. *** NOU CANVI CRÍTIC: EVITAR DUPLICATS A LA DESPENSA ***
-        // Abans de crear un element de Despensa, comprovem si ja existeix un element
-        // amb el mateix nom que NO estigui a la llista de la compra (isInShoppingList: false)
-        // i que NO sigui de l'historial (isBought: false).
+        // 2. Comprovar i Crear Element de Despensa (Inventari)
+        // L'element de Despensa ha de ser: isInShoppingList: false I isBought: false.
         
         const despensaQuery = query(
             collection(db, 'items'),
@@ -441,7 +440,7 @@ export const useFirebase = () => {
         const despensaSnapshot = await getDocs(despensaQuery);
         
         if (despensaSnapshot.empty) {
-            // Si NO existeix a la despensa (isInShoppingList: false, isBought: false), el creem.
+            // Si NO existeix a la despensa, el creem.
             const newItemRef = doc(collection(db, 'items'));
             const despensaItemData = {
                 userId: userId,
@@ -459,8 +458,7 @@ export const useFirebase = () => {
             };
             batch.set(newItemRef, despensaItemData);
         } else {
-            // Si JA existeix, no fem res. Això evita la duplicació.
-            console.log(`Producte "${item.name}" ja existeix a la despensa. No es crea duplicat.`);
+             // Si JA existeix un a la despensa, no fem res per evitar duplicats.
         }
         
     } else {
@@ -494,7 +492,7 @@ export const useFirebase = () => {
       console.error("Error canviant estat de comprat:", error);
       throw new Error("No s'ha pogut canviar l'estat de comprat.");
     }
-  }, [userId, items, activeListId]); 
+  }, [userId, activeListId]); 
 
   
   // ----------------------------------------------------
@@ -533,12 +531,11 @@ export const useFirebase = () => {
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
-    // Hem de filtrar per listId per netejar només la llista activa
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
         where('listId', '==', activeListId), 
-        where('isBought', '==', true)
+        where('isBought', '==', true) // Filtrem pels items de l'Historial
     );
     
     const snapshot = await getDocs(q);
@@ -551,12 +548,12 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // Neteja l'historial (isBought=false) i el treu de la llista de la compra (isInShoppingList=false)
+        // Acció: Treu l'ítem de l'Historial per convertir-lo en ítem de DESPENSA
         batch.update(docSnap.ref, {
-            isBought: false,
-            isInShoppingList: false,
+            isBought: false, // Ja no és Historial
+            isInShoppingList: false, // Continua no essent a la llista de la compra
             orderIndex: -1,
-            quantity: '',
+            quantity: '', // La quantitat de la despensa es pot considerar buida
             updatedAt: serverTimestamp()
         });
         count++;
