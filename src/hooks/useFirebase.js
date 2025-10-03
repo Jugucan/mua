@@ -401,7 +401,7 @@ export const useFirebase = () => {
             i.listId === activeListId &&
             i.isInShoppingList === true
         );
-        const maxOrderIndex = sectionItems.reduce((max, i) => 
+        const maxOrderIndex = sectionItems.reduce((max, i => 
             (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
         );
         newOrderIndex = maxOrderIndex + 1;
@@ -438,7 +438,7 @@ export const useFirebase = () => {
     }
   }, [userId, items, activeListId]);
   
-  // ⭐ FUNCIÓ CLAU MODIFICADA
+  // ⭐⭐⭐ AQUESTA ÉS LA FUNCIÓ CLAU QUE HEM MODIFICAT ⭐⭐⭐
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
@@ -448,24 +448,28 @@ export const useFirebase = () => {
     };
     
     if (newStatus) {
-        // A. Producte COMPRAT: Va a Despensa I Historial
+        // A. Producte COMPRAT
         // ----------------------------------------------------
+        // 1. Netegem la quantitat (ja no cal que es vegi)
         updatedData.quantity = ''; 
         
-        // 1. Va a la Despensa: Surt de la Llista de la Compra
-        updatedData.isInShoppingList = false; 
+        // 2. EL DEIXEM A LA LLISTA DE COMPRA (AIXÒ ÉS EL CANVI!)
+        // Abans posàvem: updatedData.isInShoppingList = false;
+        // Ara NO ho canviem, es queda a true
         
-        // 2. Va a l'Historial: Es manté marcat com a comprat (newStatus = true)
+        // 3. Es marca com a comprat (això ja ho feia)
+        // updatedData.isBought ja està a true (per newStatus)
         
         updatedData.orderIndex = -1; 
     } else {
-        // B. Producte DES-COMPRAT (o recuperat de l'historial): Va a Llista de Compra
+        // B. Producte DES-COMPRAT (o recuperat de l'historial)
         // ----------------------------------------------------
         
-        // 1. Va a la Llista de Compra
+        // 1. Assegurem que estigui a la llista de compra
         updatedData.isInShoppingList = true;
         
-        // 2. Surt de l'Historial: isBought = false (newStatus = false)
+        // 2. El desmarquem com a comprat
+        // updatedData.isBought ja està a false (per newStatus)
         
         // 3. Calculem nou orderIndex
         const sectionItems = items.filter(i => 
@@ -478,9 +482,7 @@ export const useFirebase = () => {
         );
         updatedData.orderIndex = maxOrderIndex + 1;
         
-        // Opcional: Si l'usuari el des-compra, normalment voldrà posar-li quantitat. 
-        // Si l'ítem estava a l'historial, no tenia quantitat. Li posem un 1 per defecte
-        // si no té quantitat i així apareix a la llista de la compra visible.
+        // 4. Si no té quantitat, li posem un 1 per defecte
         if (!item.quantity) {
              updatedData.quantity = '1'; 
         }
@@ -530,7 +532,7 @@ export const useFirebase = () => {
   }, [userId, sectionOrder]);
 
 
-  // ⭐ FUNCIÓ CLAU MODIFICADA
+  // ⭐ FUNCIÓ NETEJAR PRODUCTES COMPRATS (SENSE CANVIS)
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
     
@@ -555,7 +557,7 @@ export const useFirebase = () => {
         batch.update(docSnap.ref, {
             // TORNEN DE NOU A LA DESPENSA (si ja hi eren, no canvia)
             isBought: false, // Surten de l'historial
-            isInShoppingList: false, // Per si algun s'havia quedat marcat a la llista
+            isInShoppingList: false, // Tornen a la despensa
             orderIndex: -1, // Netejar ordre
             quantity: '', // Netejar quantitat
             updatedAt: serverTimestamp()
