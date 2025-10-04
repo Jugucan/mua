@@ -138,21 +138,25 @@ export const useFirebase = () => {
 
     const unsub = onSnapshot(sectionsRef, (docSnap) => {
         if (docSnap.exists()) {
-            // ⭐ IMPORTANT: Convertim __EMPTY_SECTION__ de tornada a cadena buida
+            // ⭐ IMPORTANT: Convertim SENSE_SECCIO de tornada a cadena buida
             const rawOrder = docSnap.data().order || {};
+            console.log('📥 RAW ORDER des de Firebase:', rawOrder);
+            
             const normalizedOrder = {};
             
             Object.keys(rawOrder).forEach(key => {
-                const normalizedKey = key === '__EMPTY_SECTION__' ? '' : key;
+                const normalizedKey = (key === 'SENSE_SECCIO' || key === '__EMPTY_SECTION__') ? '' : key;
                 normalizedOrder[normalizedKey] = rawOrder[key];
             });
             
+            console.log('✅ NORMALIZED ORDER aplicat:', normalizedOrder);
             setSectionOrder(normalizedOrder);
         } else {
             const defaultOrder = DEFAULT_SECTION_ORDER.reduce((acc, section, index) => {
                 acc[section] = index;
                 return acc;
             }, {});
+            console.log('🔄 Usant ordre per defecte:', defaultOrder);
             setSectionOrder(defaultOrder);
         }
     }, (error) => {
@@ -479,6 +483,8 @@ export const useFirebase = () => {
   const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
+    console.log(`🔄 Actualitzant secció "${sectionName}" a índex ${newIndex}`);
+    
     // ⭐ IMPORTANT: Si la secció té un nom buit, utilitzem una clau especial
     const sectionKey = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
     
@@ -494,14 +500,16 @@ export const useFirebase = () => {
     });
     
     const newSectionOrder = { ...cleanedSectionOrder, [sectionKey]: newIndex };
+    console.log('💾 Guardant a Firebase:', newSectionOrder);
 
     try {
       await setDoc(doc(db, 'sectionOrder', userId), {
           order: newSectionOrder,
           updatedAt: serverTimestamp()
       }, { merge: true });
+      console.log('✅ Guardat correctament a Firebase');
     } catch (error) {
-      console.error("Error actualitzant ordre de secció:", error);
+      console.error("❌ Error actualitzant ordre de secció:", error);
       throw new Error("No s'ha pogut actualitzar l'ordre de la secció.");
     }
   }, [userId, sectionOrder]);
