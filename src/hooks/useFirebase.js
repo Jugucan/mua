@@ -480,16 +480,16 @@ export const useFirebase = () => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
     // ⭐ IMPORTANT: Si la secció té un nom buit, utilitzem una clau especial
-    const sectionKey = sectionName === '' ? '__EMPTY_SECTION__' : sectionName;
+    const sectionKey = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
     
     // ⭐ NETEGEM l'objecte sectionOrder eliminant claus buides abans de crear el nou
     const cleanedSectionOrder = {};
     Object.keys(sectionOrder).forEach(key => {
-      if (key !== '') {
+      if (key !== '' && key !== '__EMPTY_SECTION__') {
         cleanedSectionOrder[key] = sectionOrder[key];
-      } else {
-        // Convertim la clau buida a __EMPTY_SECTION__
-        cleanedSectionOrder['__EMPTY_SECTION__'] = sectionOrder[key];
+      } else if (key === '' || key === '__EMPTY_SECTION__') {
+        // Convertim la clau buida o la clau antiga a SENSE_SECCIO
+        cleanedSectionOrder['SENSE_SECCIO'] = sectionOrder[key];
       }
     });
     
