@@ -400,7 +400,7 @@ function App() {
         );
     };
     
-    // Gestionar drag & drop
+    // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
 
@@ -416,11 +416,11 @@ function App() {
                 const [movedSection] = sections.splice(source.index, 1);
                 sections.splice(destination.index, 0, movedSection);
                 
-                // Actualitzar ordre de seccions
-                const promises = sections.map((section, index) => 
-                    updateSectionOrder(section, index)
-                );
-                await Promise.all(promises);
+                // ⭐ CORRECCIÓ AQUÍ: Actualitzar ordre de seccions correctament
+                // Cridem updateSectionOrder per cada secció amb el seu nou índex
+                for (let i = 0; i < sections.length; i++) {
+                    await updateSectionOrder(sections[i], i);
+                }
                 
                 setFeedback("Ordre de seccions actualitzat!", 'success');
             } catch (error) {
@@ -435,14 +435,14 @@ function App() {
                         ? groupedUnboughtItems.find(g => g.section === sectionName)?.items || []
                         : [];
                     
-                    const [movedItem] = sectionItems.splice(source.index, 1);
-                    sectionItems.splice(destination.index, 0, movedItem);
+                    const itemsCopy = [...sectionItems];
+                    const [movedItem] = itemsCopy.splice(source.index, 1);
+                    itemsCopy.splice(destination.index, 0, movedItem);
                     
-                    // Actualitzar orderIndex dels productes
-                    const promises = sectionItems.map((item, index) => 
-                        updateItemOrder(item.id, index)
-                    );
-                    await Promise.all(promises);
+                    // ⭐ CORRECCIÓ AQUÍ: Actualitzar orderIndex dels productes correctament
+                    for (let i = 0; i < itemsCopy.length; i++) {
+                        await updateItemOrder(itemsCopy[i].id, i);
+                    }
                     
                     setFeedback("Ordre de productes actualitzat!", 'success');
                 } catch (error) {
