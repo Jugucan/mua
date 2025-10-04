@@ -488,25 +488,35 @@ export const useFirebase = () => {
     // ⭐ IMPORTANT: Si la secció té un nom buit, utilitzem una clau especial
     const sectionKey = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
     
-    // ⭐ NETEGEM l'objecte sectionOrder eliminant claus buides abans de crear el nou
-    const cleanedSectionOrder = {};
+    // ⭐ Construïm el nou objecte d'ordre des de zero
+    // Agafem totes les claus de sectionOrder i afegim/actualitzem la nova
+    const newSectionOrder = {};
+    
+    // Primer copiem totes les claus existents (normalitzades)
     Object.keys(sectionOrder).forEach(key => {
-      if (key !== '' && key !== '__EMPTY_SECTION__') {
-        cleanedSectionOrder[key] = sectionOrder[key];
+      if (key !== '' && key !== '__EMPTY_SECTION__' && key !== sectionName) {
+        // Mantenim les altres seccions amb el seu ordre actual
+        const firebaseKey = key === '' ? 'SENSE_SECCIO' : key;
+        newSectionOrder[firebaseKey] = sectionOrder[key];
       } else if (key === '' || key === '__EMPTY_SECTION__') {
-        // Convertim la clau buida o la clau antiga a SENSE_SECCIO
-        cleanedSectionOrder['SENSE_SECCIO'] = sectionOrder[key];
+        // La secció buida sempre es guarda com SENSE_SECCIO
+        if (sectionName !== '') {
+          newSectionOrder['SENSE_SECCIO'] = sectionOrder[key];
+        }
       }
     });
     
-    const newSectionOrder = { ...cleanedSectionOrder, [sectionKey]: newIndex };
+    // Ara afegim/actualitzem la secció que estem movent
+    newSectionOrder[sectionKey] = newIndex;
+    
     console.log('💾 Guardant a Firebase:', newSectionOrder);
 
     try {
+      // ⭐ CANVI IMPORTANT: NO usem merge, sobreescrivim tot l'objecte
       await setDoc(doc(db, 'sectionOrder', userId), {
           order: newSectionOrder,
           updatedAt: serverTimestamp()
-      }, { merge: true });
+      });
       console.log('✅ Guardat correctament a Firebase');
     } catch (error) {
       console.error("❌ Error actualitzant ordre de secció:", error);
