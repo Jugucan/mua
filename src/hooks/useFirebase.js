@@ -138,7 +138,16 @@ export const useFirebase = () => {
 
     const unsub = onSnapshot(sectionsRef, (docSnap) => {
         if (docSnap.exists()) {
-            setSectionOrder(docSnap.data().order || {});
+            // ⭐ IMPORTANT: Convertim __EMPTY_SECTION__ de tornada a cadena buida
+            const rawOrder = docSnap.data().order || {};
+            const normalizedOrder = {};
+            
+            Object.keys(rawOrder).forEach(key => {
+                const normalizedKey = key === '__EMPTY_SECTION__' ? '' : key;
+                normalizedOrder[normalizedKey] = rawOrder[key];
+            });
+            
+            setSectionOrder(normalizedOrder);
         } else {
             const defaultOrder = DEFAULT_SECTION_ORDER.reduce((acc, section, index) => {
                 acc[section] = index;
