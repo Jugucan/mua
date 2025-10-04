@@ -300,19 +300,21 @@ function App() {
 
         // 2. Ordenem els grups/seccions segons l'ordre personalitzat
         const sortedSections = Object.keys(groups).sort((a, b) => {
-            // ⭐ IMPORTANT: Convertim cadenes buides a la clau especial per comparar
-            const keyA = a === '' ? 'SENSE_SECCIO' : a;
-            const keyB = b === '' ? 'SENSE_SECCIO' : b;
+            // ⭐ IMPORTANT: Primer mirem si tenim ordre personalitzat directe
+            // Recordem que sectionOrder ja té les claus normalitzades (cadenes buides com '')
+            const customOrderA = sectionOrder[a];
+            const customOrderB = sectionOrder[b];
             
-            const customOrderA = sectionOrder[keyA];
-            const customOrderB = sectionOrder[keyB];
-            
+            // Si ambdues tenen ordre personalitzat, les ordenem per aquest ordre
             if (customOrderA !== undefined && customOrderB !== undefined) {
                 return customOrderA - customOrderB;
             }
+            // Si només A té ordre personalitzat, va primer
             if (customOrderA !== undefined) return -1;
+            // Si només B té ordre personalitzat, va primer
             if (customOrderB !== undefined) return 1;
             
+            // Si cap té ordre personalitzat, usem l'ordre per defecte
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
@@ -427,6 +429,11 @@ function App() {
                 }
                 
                 setFeedback("Ordre de seccions actualitzat!", 'success');
+                
+                // ⭐ FORCEM REFRESC: Desactivem temporalment el mode reordenació per forçar re-render
+                setIsReorderMode(false);
+                setTimeout(() => setIsReorderMode(true), 100);
+                
             } catch (error) {
                 setFeedback("Error reordenant seccions: " + error.message, 'error');
             }
