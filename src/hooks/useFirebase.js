@@ -482,7 +482,18 @@ export const useFirebase = () => {
     // ⭐ IMPORTANT: Si la secció té un nom buit, utilitzem una clau especial
     const sectionKey = sectionName === '' ? '__EMPTY_SECTION__' : sectionName;
     
-    const newSectionOrder = { ...sectionOrder, [sectionKey]: newIndex };
+    // ⭐ NETEGEM l'objecte sectionOrder eliminant claus buides abans de crear el nou
+    const cleanedSectionOrder = {};
+    Object.keys(sectionOrder).forEach(key => {
+      if (key !== '') {
+        cleanedSectionOrder[key] = sectionOrder[key];
+      } else {
+        // Convertim la clau buida a __EMPTY_SECTION__
+        cleanedSectionOrder['__EMPTY_SECTION__'] = sectionOrder[key];
+      }
+    });
+    
+    const newSectionOrder = { ...cleanedSectionOrder, [sectionKey]: newIndex };
 
     try {
       await setDoc(doc(db, 'sectionOrder', userId), {
