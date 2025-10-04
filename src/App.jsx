@@ -300,8 +300,12 @@ function App() {
 
         // 2. Ordenem els grups/seccions segons l'ordre personalitzat
         const sortedSections = Object.keys(groups).sort((a, b) => {
-            const customOrderA = sectionOrder[a];
-            const customOrderB = sectionOrder[b];
+            // ⭐ IMPORTANT: Convertim cadenes buides a la clau especial per comparar
+            const keyA = a === '' ? '__EMPTY_SECTION__' : a;
+            const keyB = b === '' ? '__EMPTY_SECTION__' : b;
+            
+            const customOrderA = sectionOrder[keyA];
+            const customOrderB = sectionOrder[keyB];
             
             if (customOrderA !== undefined && customOrderB !== undefined) {
                 return customOrderA - customOrderB;
@@ -416,7 +420,7 @@ function App() {
                 const [movedSection] = sections.splice(source.index, 1);
                 sections.splice(destination.index, 0, movedSection);
                 
-                // ⭐ CORRECCIÓ AQUÍ: Actualitzar ordre de seccions correctament
+                // ⭐ CORRECCIÓ: Actualitzar ordre de seccions correctament
                 // Cridem updateSectionOrder per cada secció amb el seu nou índex
                 for (let i = 0; i < sections.length; i++) {
                     await updateSectionOrder(sections[i], i);
@@ -439,7 +443,7 @@ function App() {
                     const [movedItem] = itemsCopy.splice(source.index, 1);
                     itemsCopy.splice(destination.index, 0, movedItem);
                     
-                    // ⭐ CORRECCIÓ AQUÍ: Actualitzar orderIndex dels productes correctament
+                    // ⭐ CORRECCIÓ: Actualitzar orderIndex dels productes correctament
                     for (let i = 0; i < itemsCopy.length; i++) {
                         await updateItemOrder(itemsCopy[i].id, i);
                     }
@@ -577,7 +581,7 @@ function App() {
                 </div>
             </div>
 
-            {/* Vistes principals (sense canvis aquí) */}
+            {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     {/* Elements a la despensa */}
