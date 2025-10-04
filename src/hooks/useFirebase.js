@@ -415,10 +415,11 @@ export const useFirebase = () => {
     };
 
     if (newStatus) {
-        // CANVI IMPORTANT: Quan marquem com a comprat, el producte torna a la despensa
-        updatedData.isInShoppingList = false;
+        // Quan marquem com a comprat:
+        // - Mantenim isInShoppingList a true perquè aparegui a "Productes comprats"
+        // - Buidem la quantitat
+        // - L'orderIndex es manté per si el desmarquem
         updatedData.quantity = '';
-        updatedData.orderIndex = -1;
     } else {
         // Si desmarquem com a comprat, torna a la llista de la compra
         updatedData.isInShoppingList = true;
@@ -484,7 +485,7 @@ export const useFirebase = () => {
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
 
-    // CANVI IMPORTANT: Només busquem productes comprats de la llista activa
+    // Busquem només productes comprats de la llista activa
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
@@ -502,10 +503,12 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // CANVI IMPORTANT: Només canviem isBought a false
-        // Els productes ja estan a la despensa (isInShoppingList ja és false)
+        // Arxivem els productes comprats: tornen a la despensa
         batch.update(docSnap.ref, {
             isBought: false,
+            isInShoppingList: false,  // Ara SÍ els traiem de la llista
+            quantity: '',
+            orderIndex: -1,
             updatedAt: serverTimestamp()
         });
         count++;
