@@ -466,9 +466,14 @@ export const useFirebase = () => {
     }
   }, [userId]);
 
+  // ⭐ FUNCIÓ CORREGIDA: updateSectionOrder
   const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
     if (!userId) throw new Error("Usuari no autenticat.");
-    const newSectionOrder = { ...sectionOrder, [sectionName]: newIndex };
+    
+    // ⭐ IMPORTANT: Si la secció té un nom buit, utilitzem una clau especial
+    const sectionKey = sectionName === '' ? '__EMPTY_SECTION__' : sectionName;
+    
+    const newSectionOrder = { ...sectionOrder, [sectionKey]: newIndex };
 
     try {
       await setDoc(doc(db, 'sectionOrder', userId), {
