@@ -301,8 +301,8 @@ function App() {
         // 2. Ordenem els grups/seccions segons l'ordre personalitzat
         const sortedSections = Object.keys(groups).sort((a, b) => {
             // ⭐ IMPORTANT: Convertim cadenes buides a la clau especial per comparar
-            const keyA = a === '' ? '__EMPTY_SECTION__' : a;
-            const keyB = b === '' ? '__EMPTY_SECTION__' : b;
+            const keyA = a === '' ? 'SENSE_SECCIO' : a;
+            const keyB = b === '' ? 'SENSE_SECCIO' : b;
             
             const customOrderA = sectionOrder[keyA];
             const customOrderB = sectionOrder[keyB];
