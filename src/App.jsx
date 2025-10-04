@@ -340,7 +340,8 @@ function App() {
     };
 
     // A la Despensa, els items es mostren ordenats alfabèticament
-    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList)));
+    // Incloem productes que no estan a la llista O que estan comprats
+    const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
     
