@@ -422,20 +422,22 @@ function App() {
                 const [movedSection] = sections.splice(source.index, 1);
                 sections.splice(destination.index, 0, movedSection);
                 
-                // ⭐ CORRECCIÓ: Actualitzar ordre de seccions correctament
-                // Cridem updateSectionOrder per cada secció amb el seu nou índex
-                for (let i = 0; i < sections.length; i++) {
-                    await updateSectionOrder(sections[i], i);
-                }
+                // ⭐ MILLORA: Actualitzem totes les seccions d'un cop
+                console.log('🔄 Nou ordre de seccions:', sections);
+                
+                // Cridem updateSectionOrder per CADA secció amb el seu nou índex
+                // Això sobreescriurà completament l'ordre a Firebase
+                const updatePromises = sections.map((section, index) => 
+                    updateSectionOrder(section, index)
+                );
+                
+                await Promise.all(updatePromises);
                 
                 setFeedback("Ordre de seccions actualitzat!", 'success');
                 
-                // ⭐ FORCEM REFRESC: Desactivem temporalment el mode reordenació per forçar re-render
-                setIsReorderMode(false);
-                setTimeout(() => setIsReorderMode(true), 100);
-                
             } catch (error) {
                 setFeedback("Error reordenant seccions: " + error.message, 'error');
+                console.error('❌ Error:', error);
             }
         } else if (type === 'ITEM') {
             // Reordenar productes dins d'una secció
@@ -450,10 +452,12 @@ function App() {
                     const [movedItem] = itemsCopy.splice(source.index, 1);
                     itemsCopy.splice(destination.index, 0, movedItem);
                     
-                    // ⭐ CORRECCIÓ: Actualitzar orderIndex dels productes correctament
-                    for (let i = 0; i < itemsCopy.length; i++) {
-                        await updateItemOrder(itemsCopy[i].id, i);
-                    }
+                    // Actualitzar orderIndex dels productes
+                    const updatePromises = itemsCopy.map((item, index) => 
+                        updateItemOrder(item.id, index)
+                    );
+                    
+                    await Promise.all(updatePromises);
                     
                     setFeedback("Ordre de productes actualitzat!", 'success');
                 } catch (error) {
