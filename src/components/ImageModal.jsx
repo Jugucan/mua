@@ -4,9 +4,9 @@ import { X } from 'lucide-react';
 const ImageModal = ({ src, onClose }) => {
   return (
     <div 
-      // CANVI CLAU AQUÍ: Hem substituït l'estil en línia pel classe de Tailwind z-[9999]
-      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4 z-[9999]" 
+      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4 z-[99999]" 
       onClick={onClose}
+      style={{ zIndex: 99999 }}
     >
       <div className="relative" onClick={e => e.stopPropagation()}>
         <img 
