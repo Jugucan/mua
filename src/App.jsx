@@ -39,8 +39,8 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
-    // ⭐ ESTAT MODIFICAT: Més clar, com demanaves
-    const [isGridView, setIsGridView] = useState(true); 
+    // ⭐ ESTAT MANTINGUT: displayMode
+    const [displayMode, setDisplayMode] = useState('grid'); 
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [feedbackType, setFeedbackType] = useState('info');
@@ -88,7 +88,7 @@ function App() {
 
     // ⭐ NOU: Funció per canviar vista (Passada a BottomNavBar)
     const toggleDisplayMode = useCallback(() => {
-        setIsGridView(prev => !prev);
+        setDisplayMode(prev => prev === 'grid' ? 'list' : 'grid');
     }, []);
 
     // Seccions disponibles (Usades a modals)
@@ -404,27 +404,21 @@ function App() {
         );
     };
 
-    // Funció per obrir el modal d'ordenació de seccions
+    // Funcions per obrir modals (Necessàries per passar al BottomNavBar)
     const openSectionOrderModal = () => {
         setShowSectionOrderModal(true);
     };
-
-    // Funció per obrir el modal d'afegir producte
     const openAddModal = () => {
         setShowAddModal(true);
     };
-    
-    // Funció per obrir el modal d'usuari (Passada a BottomNavBar)
     const openAuthModal = () => {
         setShowAuthModal(true);
     };
-    
-    // Funció per obrir el gestor de llistes (Passada a BottomNavBar)
     const openListManagerModal = () => {
         setShowListManagerModal(true);
     };
 
-    // Funció per gestionar drag & drop (Sense canvis, es manté la lògica)
+    // Funció per gestionar drag & drop (Sense canvis)
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
 
@@ -477,7 +471,7 @@ function App() {
     };
 
     return (
-        // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa
+        {/* ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa */}
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
@@ -522,7 +516,7 @@ function App() {
                 {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS */}
                 <div className="flex justify-between items-center flex-wrap gap-4">
                     
-                    {/* 1. SECCIÓ ESQUERRA (Comuna, però la Cerca només a la Despensa) */}
+                    {/* 1. SECCIÓ ESQUERRA (Cerca i Exportació) */}
                     <div className="flex gap-2 items-center flex-grow sm:flex-grow-0">
                         {currentView === 'pantry' && (
                             <div className="relative">
@@ -530,7 +524,6 @@ function App() {
                                 <input
                                     type="text"
                                     placeholder="Cerca productes..."
-                                    // ⭐ AJUST D'AMPLADA: Fem que només creixi en pantalla petita i limitat.
                                     className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full sm:w-64"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -540,7 +533,8 @@ function App() {
                         {currentView === 'pantry' && (
                             <button
                                 onClick={handleExportToExcel}
-                                className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105 flex-shrink-0"
+                                // ⭐ AJUST: Amagat en mòbil, només visible en 'md' (PC) i superiors
+                                className="hidden md:block p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105 flex-shrink-0"
                                 aria-label="Exportar a Excel"
                             >
                                 <FileDown className="w-5 h-5" />
@@ -551,7 +545,7 @@ function App() {
                     {/* 2. SECCIÓ DRETA (Només a la Llista): Botons d'Ordenació */}
                     {currentView === 'shoppingList' && (
                         <div className={`flex gap-2 items-center w-full justify-end sm:w-auto`}>
-                            {/* Botó de Mode Reordenació de Productes (CANVI D'ICONA: Rotació per ser més genèrica) */}
+                            {/* Botó de Mode Reordenació de Productes */}
                             <button
                                 onClick={toggleReorderMode}
                                 className={`p-2 rounded-md transition-all-smooth ${isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-600' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'}`}
@@ -576,15 +570,14 @@ function App() {
             </div>
             {/* FI CONTENIDOR SUPERIOR */}
 
-            {/* Vistes principals (Canvis de displayMode a isGridView) */}
-            {/* ... Contingut de la Despensa (Pantry) ... */}
+            {/* Vistes principals (Sense canvis, només canvi de prop) */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                         <h2 className="text-xl font-bold mb-4 text-gray-700">Elements a la despensa ({pantryItems.length})</h2>
                         {pantryItems.length === 0 ? (
                             <p className="text-gray-600 text-center py-4">{searchTerm ? 'No s\'han trobat elements amb aquest criteri de cerca.' : 'No hi ha elements. Afegeix-ne alguns per començar!'}</p>
-                        ) : isGridView ? (
+                        ) : displayMode === 'grid' ? (
                             <div className={`${gridClasses} gap-4`}>
                                 {pantryItems.map(item => (
                                     <ProductCard
@@ -607,7 +600,7 @@ function App() {
                     {items.filter(item => item.isInShoppingList && !item.isBought).length > 0 && (
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                             <h2 className="text-xl font-bold mb-4 text-gray-700">Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})</h2>
-                            {isGridView ? (
+                            {displayMode === 'grid' ? (
                                 <div className={`${gridClasses} gap-4`}>
                                     {items.filter(item => item.isInShoppingList && !item.isBought).map(item => (
                                         <ProductCard
@@ -630,7 +623,6 @@ function App() {
                 </div>
             )}
             
-            {/* ... Contingut de la Llista (ShoppingList) ... */}
             {currentView === 'shoppingList' && (
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div className="space-y-6">
@@ -652,7 +644,7 @@ function App() {
                                                     section={group.section}
                                                     items={group.items}
                                                     sectionIndex={index}
-                                                    displayMode={isGridView ? 'grid' : 'list'} 
+                                                    displayMode={displayMode} 
                                                     gridClasses={gridClasses}
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
@@ -685,7 +677,7 @@ function App() {
                             ) : groupedBoughtItems.map((group) => (
                                 <div key={group.section} className="border-t border-gray-300 pt-4">
                                     <h3 className="text-lg font-semibold mb-3 text-gray-700">{group.section || 'Sense Secció'} ({group.items.length})</h3>
-                                    {isGridView ? ( 
+                                    {displayMode === 'grid' ? ( 
                                         <div className={`${gridClasses} gap-4`}>
                                             {group.items.map(item => (
                                                 <ProductCard
@@ -715,7 +707,8 @@ function App() {
             {currentView === 'pantry' && (
                 <button
                     onClick={openAddModal}
-                    className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
+                    // ⭐ AJUST: El canvi de 'bottom-6' a 'bottom-20' el posa per sobre de la barra inferior fixa
+                    className="fixed bottom-20 right-6 p-4 rounded-full bg-green-500 text-white 
                         box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
                         shadow-xl flex items-center justify-center transform hover:scale-105"
                     aria-label="Afegir nou producte"
@@ -798,10 +791,10 @@ function App() {
             
             {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB ELS TRES BOTONS COMUNS */}
             <BottomNavBar
-                isGridView={isGridView}
-                onToggleView={toggleDisplayMode}
-                onOpenAuthModal={openAuthModal}
-                onOpenListManagerModal={openListManagerModal}
+                displayMode={displayMode} // Utilitzem displayMode actual
+                onToggleView={toggleDisplayMode} // Funció per canviar mode
+                onOpenAuthModal={openAuthModal} // Funció per obrir modal d'usuari
+                onOpenListManagerModal={openListManagerModal} // Funció per obrir gestor de llistes
             />
             {/* FI INTEGRACIÓ */}
 
