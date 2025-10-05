@@ -3,7 +3,7 @@ import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, Ro
 import * as XLSX from 'xlsx';
 
 // ⭐ IMPORTACIÓ NOVA: Afegim un nou component, el Modal de Confirmació
-import ConfirmationModal from './components/ConfirmationModal';
+import ConfirmationModal from './components/ConfirmationModal'; // ⭐ MANTENIM L'IMPORT
 
 // ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
@@ -731,12 +731,11 @@ function App() {
                                 <button
                                     // ⭐ CRIDA AL MODAL EN LLOC DE WINDOW.CONFIRM
                                     onClick={() => setShowClearConfirmModal(true)} 
-                                    className="w-full clear-bought-button transition-all-smooth flex 
-                                        items-center justify-center gap-2"
+                                    // ⭐ NOU ESTIL: Apliquem la classe per l'estil "premut" (invertit) de l'original
+                                    className="w-full px-4 py-3 rounded-md font-bold text-green-500 clear-bought-button-inset transition-all-smooth flex items-center justify-center"
                                     aria-label={`Netejar i arxivar ${boughtItems.length} productes comprats`}
                                 >
-                                    <Trash2 className="w-5 h-5" />
-                                    Netejar i Arxivar Productes Comprats ({boughtItems.length})
+                                    Neteja elements comprats
                                 </button>
                             </div>
                         )}
@@ -861,15 +860,16 @@ function App() {
                 />
             )}
 
-            {/* ⭐ NOU MODAL DE CONFIRMACIÓ (Al final per tenir més Z-index) */}
+            {/* ⭐ NOU MODAL DE CONFIRMACIÓ AJUSTAT */}
             {showClearConfirmModal && (
                 <ConfirmationModal
-                    title="Netejar Productes Comprats"
-                    message={`Estàs segur que vols netejar i arxivar a la Despensa els ${boughtItems.length} productes que ja has marcat com a comprats?`}
-                    confirmLabel="Sí, Netejar i Arxivar"
+                    // ⭐ Títol i missatge ajustats a la imatge
+                    title="" // Buit per al modal senzill
+                    message="Estàs segur que vols eliminar tots els elements comprats de la llista de la compra?"
+                    confirmLabel="Confirma"
                     onConfirm={executeClearCompletedItems}
                     onCancel={() => setShowClearConfirmModal(false)}
-                    isDestructive={true} // Per fer el botó vermell
+                    isDestructive={false} // ⭐ NO DESTRUCTIU: Botons verd/gris
                 />
             )}
             {/* FI NOU MODAL */}
