@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// ⭐ ATENCIÓ: Tornem a afegir les icones necessàries que ara s'usen a App.jsx (ArrowUpDown, RotateCcw)
-import { ShoppingBag, User, Search, Grid3x3 as Grid3X3, List, FileDown, ArrowUpDown, Layers, ListChecks } from 'lucide-react'; 
+// ⭐ ICONES MODIFICADES: Ja no calen les icones de la barra inferior aquí (User, ListChecks)
+import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
-// ⭐ NOU IMPORT: Importem el nou menú de navegació inferior
-import BottomNavBar from './components/BottomNavBar'; // <--- MANTINGUT
+// ⭐ NOU IMPORT: Importem la barra de navegació inferior
+import BottomNavBar from './components/BottomNavBar'; 
+import ConfirmationModal from './components/ConfirmationModal'; 
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 // Components
 import AuthModal from './components/AuthModal';
@@ -15,8 +17,6 @@ import AddProductModal from './components/AddProductModal';
 import DraggableSection from './components/DraggableSection';
 import ListManagerModal from './components/ListManagerModal';
 import SectionOrderModal from './components/SectionOrderModal'; 
-import ConfirmationModal from './components/ConfirmationModal'; 
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
@@ -39,6 +39,7 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
+    // ⭐ ESTAT MODIFICAT: Més clar, com demanaves
     const [isGridView, setIsGridView] = useState(true); 
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -53,7 +54,7 @@ function App() {
     const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
     const [shoppingListSort, setShoppingListSort] = useState('default');
-    const [isReorderMode, setIsReorderMode] = useState(false); 
+    const [isReorderMode, setIsReorderMode] = useState(false);
     
     // Hook de Firebase
     const {
@@ -84,8 +85,8 @@ function App() {
         handleLogout,
         cleanImageUrl
     } = useFirebase();
-    
-    // ⭐ FUNCIÓ PER CANVIAR VISTA (Passada a BottomNavBar)
+
+    // ⭐ NOU: Funció per canviar vista (Passada a BottomNavBar)
     const toggleDisplayMode = useCallback(() => {
         setIsGridView(prev => !prev);
     }, []);
@@ -408,17 +409,17 @@ function App() {
         setShowSectionOrderModal(true);
     };
 
-    // Funció per obrir el modal d'afegir producte (Passada a BottomNavBar)
+    // Funció per obrir el modal d'afegir producte
     const openAddModal = () => {
         setShowAddModal(true);
     };
     
-    // Funció per obrir el modal d'usuari
+    // Funció per obrir el modal d'usuari (Passada a BottomNavBar)
     const openAuthModal = () => {
         setShowAuthModal(true);
     };
     
-    // Funció per obrir el gestor de llistes
+    // Funció per obrir el gestor de llistes (Passada a BottomNavBar)
     const openListManagerModal = () => {
         setShowListManagerModal(true);
     };
@@ -476,10 +477,9 @@ function App() {
     };
 
     return (
-        // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-24' per fer espai a la barra inferior fixa
-        <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-24"> 
+        // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa
+        <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
-                {/* 1. Títol de la llista activa */}
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
                 
                 {/* ⭐ ELIMINATS: Botó d'Usuari i Gestor de Llistes (ara a BottomNavBar) */}
@@ -519,22 +519,25 @@ function App() {
                     </button>
                 </div>
 
-                {/* ⭐ NOU CONTENIDOR DE FUNCIONALITATS SUPERIORS */}
-                <div className="flex justify-between items-center flex-wrap gap-2">
+                {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS */}
+                <div className="flex justify-between items-center flex-wrap gap-4">
                     
-                    {/* 1. SECCIÓ ESQUERRA (Només a la Despensa): Cerca i Exportació */}
-                    {currentView === 'pantry' && (
-                        <div className="flex gap-2 items-center w-full sm:w-auto flex-grow">
-                            <div className="relative flex-grow">
+                    {/* 1. SECCIÓ ESQUERRA (Comuna, però la Cerca només a la Despensa) */}
+                    <div className="flex gap-2 items-center flex-grow sm:flex-grow-0">
+                        {currentView === 'pantry' && (
+                            <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Cerca productes..."
-                                    className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
+                                    // ⭐ AJUST D'AMPLADA: Fem que només creixi en pantalla petita i limitat.
+                                    className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full sm:w-64"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
+                        )}
+                        {currentView === 'pantry' && (
                             <button
                                 onClick={handleExportToExcel}
                                 className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105 flex-shrink-0"
@@ -542,20 +545,20 @@ function App() {
                             >
                                 <FileDown className="w-5 h-5" />
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                     
-                    {/* 2. SECCIÓ DRETA (Només a la Llista): Botons d'Ordenació (Recuperats) */}
+                    {/* 2. SECCIÓ DRETA (Només a la Llista): Botons d'Ordenació */}
                     {currentView === 'shoppingList' && (
-                        <div className={`flex gap-2 items-center w-full justify-end sm:w-auto ${currentView === 'pantry' ? 'ml-auto' : 'mx-auto'}`}>
-                            {/* Botó de Mode Reordenació de Productes */}
+                        <div className={`flex gap-2 items-center w-full justify-end sm:w-auto`}>
+                            {/* Botó de Mode Reordenació de Productes (CANVI D'ICONA: Rotació per ser més genèrica) */}
                             <button
                                 onClick={toggleReorderMode}
                                 className={`p-2 rounded-md transition-all-smooth ${isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-600' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'}`}
                                 aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació de productes"}
                                 title="Reordenar Productes (Drag & Drop)"
                             >
-                                <ArrowUpDown className="w-5 h-5" />
+                                <RotateCcw className="w-5 h-5" />
                             </button>
                             
                             {/* Botó de Reordenar Seccions (Obre Modal) */}
@@ -565,15 +568,15 @@ function App() {
                                 aria-label="Reordenar Seccions"
                                 title="Reordenar Seccions"
                             >
-                                <Layers className="w-5 h-5" />
+                                <ArrowUpDown className="w-5 h-5" />
                             </button>
                         </div>
                     )}
                 </div>
             </div>
-            {/* FI NOU CONTENIDOR SUPERIOR */}
+            {/* FI CONTENIDOR SUPERIOR */}
 
-            {/* Vistes principals (Sense canvis de contingut) */}
+            {/* Vistes principals (Canvis de displayMode a isGridView) */}
             {/* ... Contingut de la Despensa (Pantry) ... */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
@@ -708,6 +711,20 @@ function App() {
                 </DragDropContext>
             )}
 
+            {/* ⭐ BOTÓ FLOTANT REUBICAT I CONDICIONAL (Només a la Despensa) */}
+            {currentView === 'pantry' && (
+                <button
+                    onClick={openAddModal}
+                    className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
+                        box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
+                        shadow-xl flex items-center justify-center transform hover:scale-105"
+                    aria-label="Afegir nou producte"
+                >
+                    <Plus className="w-8 h-8" />
+                </button>
+            )}
+            {/* FI BOTÓ FLOTANT */}
+
             {/* Modals (Sense canvis) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
@@ -779,12 +796,10 @@ function App() {
                 />
             )}
             
-            {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB LES NOVES PROPS */}
+            {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB ELS TRES BOTONS COMUNS */}
             <BottomNavBar
-                currentView={currentView}
                 isGridView={isGridView}
                 onToggleView={toggleDisplayMode}
-                onOpenAddModal={openAddModal}
                 onOpenAuthModal={openAuthModal}
                 onOpenListManagerModal={openListManagerModal}
             />
