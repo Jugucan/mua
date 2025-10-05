@@ -132,23 +132,22 @@ export const useFirebase = () => {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !activeListId) return;
 
-    const sectionsRef = doc(db, 'sectionOrder', userId);
+    const sectionsRef = doc(db, 'sectionOrder', `${userId}_${activeListId}`);
 
     const unsub = onSnapshot(sectionsRef, (docSnap) => {
         if (docSnap.exists()) {
-            // ⭐ IMPORTANT: Convertim SENSE_SECCIO de tornada a cadena buida
             const rawOrder = docSnap.data().order || {};
             console.log('📥 RAW ORDER des de Firebase:', rawOrder);
-            
+
             const normalizedOrder = {};
-            
+
             Object.keys(rawOrder).forEach(key => {
                 const normalizedKey = (key === 'SENSE_SECCIO' || key === '__EMPTY_SECTION__') ? '' : key;
                 normalizedOrder[normalizedKey] = rawOrder[key];
             });
-            
+
             console.log('✅ NORMALIZED ORDER aplicat:', normalizedOrder);
             setSectionOrder(normalizedOrder);
         } else {
@@ -164,7 +163,7 @@ export const useFirebase = () => {
     });
 
     return unsub;
-  }, [userId]);
+  }, [userId, activeListId]);
 
   useEffect(() => {
     if (!userId || !activeListId) {
@@ -481,21 +480,20 @@ export const useFirebase = () => {
 
   // ⭐ NOVA FUNCIÓ: Actualitzar tot l'ordre de seccions d'un cop
   const updateAllSectionsOrder = useCallback(async (sectionsArray) => {
-    if (!userId) throw new Error("Usuari no autenticat.");
-    
-    console.log('🔄 Actualitzant TOTES les seccions:', sectionsArray);
-    
-    // Construïm l'objecte d'ordre complet
+    if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
+
+    console.log('🔄 Actualitzant TOTES les seccions per llista:', activeListId, sectionsArray);
+
     const newSectionOrder = {};
     sectionsArray.forEach((sectionName, index) => {
       const key = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
       newSectionOrder[key] = index;
     });
-    
+
     console.log('💾 Guardant a Firebase:', newSectionOrder);
 
     try {
-      await setDoc(doc(db, 'sectionOrder', userId), {
+      await setDoc(doc(db, 'sectionOrder', `${userId}_${activeListId}`), {
           order: newSectionOrder,
           updatedAt: serverTimestamp()
       });
@@ -504,41 +502,33 @@ export const useFirebase = () => {
       console.error("❌ Error actualitzant ordre de seccions:", error);
       throw new Error("No s'ha pogut actualitzar l'ordre de les seccions.");
     }
-  }, [userId]);
+  }, [userId, activeListId]);
   const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
-    if (!userId) throw new Error("Usuari no autenticat.");
-    
+    if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
+
     console.log(`🔄 Actualitzant secció "${sectionName}" a índex ${newIndex}`);
-    
-    // ⭐ IMPORTANT: Si la secció té un nom buit, utilitzem una clau especial
+
     const sectionKey = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
-    
-    // ⭐ Construïm el nou objecte d'ordre des de zero
-    // Agafem totes les claus de sectionOrder i afegim/actualitzem la nova
+
     const newSectionOrder = {};
-    
-    // Primer copiem totes les claus existents (normalitzades)
+
     Object.keys(sectionOrder).forEach(key => {
       if (key !== '' && key !== '__EMPTY_SECTION__' && key !== sectionName) {
-        // Mantenim les altres seccions amb el seu ordre actual
         const firebaseKey = key === '' ? 'SENSE_SECCIO' : key;
         newSectionOrder[firebaseKey] = sectionOrder[key];
       } else if (key === '' || key === '__EMPTY_SECTION__') {
-        // La secció buida sempre es guarda com SENSE_SECCIO
         if (sectionName !== '') {
           newSectionOrder['SENSE_SECCIO'] = sectionOrder[key];
         }
       }
     });
-    
-    // Ara afegim/actualitzem la secció que estem movent
+
     newSectionOrder[sectionKey] = newIndex;
-    
+
     console.log('💾 Guardant a Firebase:', newSectionOrder);
 
     try {
-      // ⭐ CANVI IMPORTANT: NO usem merge, sobreescrivim tot l'objecte
-      await setDoc(doc(db, 'sectionOrder', userId), {
+      await setDoc(doc(db, 'sectionOrder', `${userId}_${activeListId}`), {
           order: newSectionOrder,
           updatedAt: serverTimestamp()
       });
@@ -547,7 +537,7 @@ export const useFirebase = () => {
       console.error("❌ Error actualitzant ordre de secció:", error);
       throw new Error("No s'ha pogut actualitzar l'ordre de la secció.");
     }
-  }, [userId, sectionOrder]);
+  }, [userId, activeListId, sectionOrder]);
 
 
   const clearCompletedItems = useCallback(async () => {
@@ -734,12 +724,10 @@ export const useFirebase = () => {
     uploadFromExcel,
     updateItemOrder,
     updateSectionOrder,
-    updateAllSectionsOrder,  // ⭐ AQUESTA LÍNIA ÉS IMPORTANT
+    updateAllSectionsOrder,
     handleLogin,
     handleRegister,
     handlePasswordReset,
-    handleLogout,
-    cleanImageUrl
-};
-
+    handleLogout
+  };
 };
