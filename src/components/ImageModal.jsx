@@ -1,12 +1,13 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 const ImageModal = ({ src, onClose }) => {
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4 z-[99999]" 
+      className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4"
+      style={{ zIndex: 999999 }}
       onClick={onClose}
-      style={{ zIndex: 99999 }}
     >
       <div className="relative" onClick={e => e.stopPropagation()}>
         <img 
@@ -24,6 +25,8 @@ const ImageModal = ({ src, onClose }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ImageModal;
