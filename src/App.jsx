@@ -469,8 +469,7 @@ function App() {
     };
 
     return (
-        // ⭐ FIX: Solució a l'error de sintaxi: eliminem la clau {} del comentari inicial.
-        // A més, afegim 'pb-20' per fer espai a la barra inferior fixa
+        // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
@@ -510,24 +509,24 @@ function App() {
                     </button>
                 </div>
 
-                {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS */}
-                <div className="flex justify-between items-center flex-wrap gap-4">
+                {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS: BARRRA DE CERCA/ORDENACIÓ */}
+                {/* Fem que la barra de cerca ocupe tota l'amplada i quedi centrada, com a la captura */}
+                <div className="flex justify-between items-center w-full">
                     
-                    {/* 1. SECCIÓ ESQUERRA (Cerca i Exportació) */}
-                    <div className="flex gap-2 items-center flex-grow sm:flex-grow-0">
-                        {currentView === 'pantry' && (
-                            <div className="relative">
+                    {/* 1. SECCIÓ ESQUERRA: Cerca i Exportació (Només Despensa) */}
+                    {currentView === 'pantry' && (
+                        // Contenidor per a la barra de cerca i exportació
+                        <div className="flex gap-2 items-center w-full max-w-md mx-auto">
+                            <div className="relative flex-grow">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Cerca productes..."
-                                    className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full sm:w-64"
+                                    className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                        )}
-                        {currentView === 'pantry' && (
                             <button
                                 onClick={handleExportToExcel}
                                 // ⭐ AJUST: Amagat en mòbil, només visible en 'md' (PC) i superiors
@@ -536,12 +535,26 @@ function App() {
                             >
                                 <FileDown className="w-5 h-5" />
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                     
-                    {/* 2. SECCIÓ DRETA (Només a la Llista): Botons d'Ordenació */}
+                    {/* 2. SECCIÓ DRETA: Botons d'Ordenació (Només Llista) */}
                     {currentView === 'shoppingList' && (
+                        // Contenidor per als botons d'ordenació, justificat a la dreta (sense ocupar tot l'ample)
                         <div className={`flex gap-2 items-center w-full justify-end sm:w-auto`}>
+                            {/* Botó de Vista (Grid/List) - MANTENIM A LA BARRA SUPERIOR PER LA COMPATIBILITAT DEL FLIP-CARD */}
+                            <button 
+                                onClick={toggleDisplayMode} 
+                                className={`p-2 rounded-md transition-all-smooth ${
+                                    displayMode === 'list' 
+                                        ? 'box-shadow-neomorphic-button-inset text-green-500' 
+                                        : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
+                                }`}
+                                aria-label={displayMode === 'list' ? "Vista quadrícula" : "Vista llista"}
+                            >
+                                {displayMode === 'list' ? <Grid3X3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
+                            </button>
+
                             {/* Botó de Mode Reordenació de Productes */}
                             <button
                                 onClick={toggleReorderMode}
@@ -704,7 +717,7 @@ function App() {
             {currentView === 'pantry' && (
                 <button
                     onClick={openAddModal}
-                    // ⭐ AJUST: El canvi de 'bottom-6' a 'bottom-20' el posa per sobre de la barra inferior fixa
+                    // ⭐ AJUST: El padding inferior 'pb-20' a l'App.jsx fa l'espai
                     className="fixed bottom-20 right-6 p-4 rounded-full bg-green-500 text-white 
                         box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
                         shadow-xl flex items-center justify-center transform hover:scale-105"
