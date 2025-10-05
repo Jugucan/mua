@@ -734,9 +734,12 @@ export const useFirebase = () => {
     uploadFromExcel,
     updateItemOrder,
     updateSectionOrder,
+    updateAllSectionsOrder,  // ⭐ AQUESTA LÍNIA ÉS IMPORTANT
     handleLogin,
     handleRegister,
     handlePasswordReset,
-    handleLogout
-  };
+    handleLogout,
+    cleanImageUrl
+};
+
 };
