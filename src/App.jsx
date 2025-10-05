@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2, ArrowUpDown } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
+// ⭐ IMPORTACIÓ NOVA: Afegim un nou component, el Modal de Confirmació
+import ConfirmationModal from './components/ConfirmationModal';
+
 // ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
@@ -50,6 +53,8 @@ function App() {
     // NOU ESTAT
     const [showListManagerModal, setShowListManagerModal] = useState(false);
     const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
+    // ⭐ NOU ESTAT: Per controlar el modal de confirmació de neteja
+    const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
     // Estats per controlar l'ordenació
     const [shoppingListSort, setShoppingListSort] = useState('default');
     const [isReorderMode, setIsReorderMode] = useState(false);
@@ -221,12 +226,14 @@ function App() {
         }
     }, [toggleBought, setFeedback]);
 
-    // ⭐ FUNCIÓ ACTUALITZADA PER NETEJAR I ARXIVAR
+    // ⭐ FUNCIÓ MODIFICADA: Només obre el modal, ja no confirma directament
     const handleClearCompletedItems = useCallback(async () => {
-        // Text actualitzat per reflectir l'acció d'"arxivar"
-        const confirmClear = window.confirm("Estàs segur que vols netejar/arxivar TOTS els productes comprats? Tornaran a la teva Despensa.");
-        if (!confirmClear) return;
-        
+        setShowClearConfirmModal(true);
+    }, []); 
+
+    // ⭐ NOU: Funció que s'executa quan es confirma l'acció al modal
+    const executeClearCompletedItems = useCallback(async () => {
+        setShowClearConfirmModal(false); // Tanquem el modal
         try {
             // Cridem la funció actualitzada de useFirebase
             const count = await clearCompletedItems(); 
@@ -235,7 +242,7 @@ function App() {
         } catch (error) {
             setFeedback("Error netejant productes comprats: " + error.message, 'error');
         }
-    }, [clearCompletedItems, setFeedback]); 
+    }, [clearCompletedItems, setFeedback]);
 
 
     // Funcions d'autenticació amb feedback
@@ -409,7 +416,7 @@ function App() {
         );
     };
     
-    // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop
+    // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop (Sense canvis aquí, mantinc el teu codi)
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
 
@@ -495,6 +502,7 @@ function App() {
                 </button>
             </header>
 
+            {/* ⭐ MODIFICAT: El feedbackMessage es queda com està, però ara només l'utilitzem per success/error/info */}
             {feedbackMessage && (
                 <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 
                     rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center 
@@ -503,7 +511,7 @@ function App() {
                 </div>
             )}
 
-            {/* Botons de navegació */}
+            {/* Botons de navegació (Sense canvis aquí, es mantenen) */}
             <div className="w-full max-w-full flex flex-col gap-4 mb-6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button 
@@ -528,7 +536,7 @@ function App() {
                     </button>
                 </div>
 
-                {/* Botons de vista i cerca */}
+                {/* Botons de vista i cerca (Sense canvis) */}
                 <div className="flex justify-center items-center gap-4 flex-wrap">
                     <div className="flex gap-2">
                         <button 
@@ -580,7 +588,7 @@ function App() {
                         </button>
                     )}
                     
-                    {/* Botons només a la llista */}
+                    {/* Botons només a la llista (Sense canvis) */}
                     {currentView === 'shoppingList' && (
                         <>
                             <button
@@ -604,7 +612,7 @@ function App() {
                 </div>
             </div>
 
-            {/* Vistes principals */}
+            {/* Vistes principals (Sense canvis) */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     {/* Elements a la despensa */}
@@ -717,13 +725,13 @@ function App() {
                             )}
                         </div>
                         
-                        {/* **BOTÓ DE NETEJA/ARXIVATGE AQUÍ** */}
+                        {/* ⭐ BOTÓ DE NETEJA/ARXIVATGE MODIFICAT amb la nova classe CSS */}
                         {boughtItems.length > 0 && (
                             <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                                 <button
-                                    onClick={handleClearCompletedItems}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-300 text-red-600 font-semibold 
-                                        bg-white box-shadow-neomorphic-button hover:bg-red-50 transition-all-smooth flex 
+                                    // ⭐ CRIDA AL MODAL EN LLOC DE WINDOW.CONFIRM
+                                    onClick={() => setShowClearConfirmModal(true)} 
+                                    className="w-full clear-bought-button transition-all-smooth flex 
                                         items-center justify-center gap-2"
                                     aria-label={`Netejar i arxivar ${boughtItems.length} productes comprats`}
                                 >
@@ -734,7 +742,7 @@ function App() {
                         )}
                         {/* FI BOTÓ */}
 
-                        {/* Seccions per comprats */}
+                        {/* Seccions per comprats (Sense canvis) */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <h2 className="text-xl font-bold text-gray-700">
                                 Productes comprats ({boughtItems.length})
@@ -779,7 +787,7 @@ function App() {
                 </DragDropContext>
             )}
 
-            {/* Botó flotant per afegir productes (només a la despensa) */}
+            {/* Botó flotant per afegir productes (només a la despensa) (Sense canvis) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={() => setShowAddModal(true)}
@@ -792,7 +800,7 @@ function App() {
                 </button>
             )}
 
-            {/* Modals */}
+            {/* Modals (Sense canvis) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
@@ -815,7 +823,7 @@ function App() {
                 />
             )}
             
-            {/* NOU MODAL DE GESTIÓ DE LLISTES */}
+            {/* NOU MODAL DE GESTIÓ DE LLISTES (Sense canvis) */}
             {showListManagerModal && (
                 <ListManagerModal
                     lists={lists}
@@ -852,6 +860,20 @@ function App() {
                     cleanImageUrl={cleanImageUrl}
                 />
             )}
+
+            {/* ⭐ NOU MODAL DE CONFIRMACIÓ (Al final per tenir més Z-index) */}
+            {showClearConfirmModal && (
+                <ConfirmationModal
+                    title="Netejar Productes Comprats"
+                    message={`Estàs segur que vols netejar i arxivar a la Despensa els ${boughtItems.length} productes que ja has marcat com a comprats?`}
+                    confirmLabel="Sí, Netejar i Arxivar"
+                    onConfirm={executeClearCompletedItems}
+                    onCancel={() => setShowClearConfirmModal(false)}
+                    isDestructive={true} // Per fer el botó vermell
+                />
+            )}
+            {/* FI NOU MODAL */}
+
         </div>
     );
 }
