@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// ⭐ ATENCIÓ: Eliminem RotateCcw i ArrowUpDown de l'import d'App.jsx, ja que s'usen al nou component.
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, ListChecks, Trash2 } from 'lucide-react'; 
+// ⭐ ATENCIÓ: Tornem a afegir les icones necessàries que ara s'usen a App.jsx (ArrowUpDown, RotateCcw)
+import { ShoppingBag, User, Search, Grid3x3 as Grid3X3, List, FileDown, ArrowUpDown, Layers, ListChecks } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // ⭐ NOU IMPORT: Importem el nou menú de navegació inferior
-import BottomNavBar from './components/BottomNavBar'; // <--- AFEGIT
+import BottomNavBar from './components/BottomNavBar'; // <--- MANTINGUT
 
 // Components
 import AuthModal from './components/AuthModal';
@@ -39,7 +39,6 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
-    // ⭐ ESTAT DE VISTA MANTINGUT
     const [isGridView, setIsGridView] = useState(true); 
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -49,7 +48,7 @@ function App() {
     const [editingItem, setEditingItem] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [expandedImage, setExpandedImage] = useState(null);
-    const [showAddModal, setShowAddModal] = useState(false); // <--- MANTINGUT
+    const [showAddModal, setShowAddModal] = useState(false);
     const [showListManagerModal, setShowListManagerModal] = useState(false);
     const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
@@ -102,13 +101,13 @@ function App() {
         return Array.from(sections).sort();
     }, [items]);
     
-    // Calcula el nom de la llista activa (MILLORA DEL TÍTOL)
+    // Calcula el nom de la llista activa
     const currentListName = useMemo(() => {
         const activeList = lists.find(l => l.id === activeListId);
         return activeList ? activeList.name : 'Carregant...';
     }, [lists, activeListId]);
     
-    // Funció unificada per al feedback (passada al modal)
+    // Funció unificada per al feedback
     const setFeedback = useCallback((message, type) => {
         setFeedbackMessage(message);
         setFeedbackType(type);
@@ -225,18 +224,16 @@ function App() {
         }
     }, [toggleBought, setFeedback]);
 
-    // ⭐ FUNCIÓ MODIFICADA: Només obre el modal, ja no confirma directament
+    // Funció per obrir el modal de confirmació de neteja
     const handleClearCompletedItems = useCallback(async () => {
         setShowClearConfirmModal(true);
     }, []); 
 
-    // ⭐ NOU: Funció que s'executa quan es confirma l'acció al modal
+    // Funció que s'executa quan es confirma l'acció al modal
     const executeClearCompletedItems = useCallback(async () => {
-        setShowClearConfirmModal(false); // Tanquem el modal
+        setShowClearConfirmModal(false); 
         try {
-            // Cridem la funció actualitzada de useFirebase
             const count = await clearCompletedItems(); 
-            // Missatge de feedback actualitzat
             setFeedback(`S'han netejat i arxivat ${count} productes a la Despensa!`, 'success');
         } catch (error) {
             setFeedback("Error netejant productes comprats: " + error.message, 'error');
@@ -309,21 +306,15 @@ function App() {
 
         // 2. Ordenem els grups/seccions segons l'ordre personalitzat
         const sortedSections = Object.keys(groups).sort((a, b) => {
-            // ⭐ IMPORTANT: Primer mirem si tenim ordre personalitzat directe
-            // Recordem que sectionOrder ja té les claus normalitzades (cadenes buides com '')
             const customOrderA = sectionOrder[a];
             const customOrderB = sectionOrder[b];
             
-            // Si ambdues tenen ordre personalitzat, les ordenem per aquest ordre
             if (customOrderA !== undefined && customOrderB !== undefined) {
                 return customOrderA - customOrderB;
             }
-            // Si només A té ordre personalitzat, va primer
             if (customOrderA !== undefined) return -1;
-            // Si només B té ordre personalitzat, va primer
             if (customOrderB !== undefined) return 1;
             
-            // Si cap té ordre personalitzat, usem l'ordre per defecte
             const indexA = DEFAULT_SECTION_MAP.has(a) ? DEFAULT_SECTION_MAP.get(a) : DEFAULT_SECTION_ORDER.length;
             const indexB = DEFAULT_SECTION_MAP.has(b) ? DEFAULT_SECTION_MAP.get(b) : DEFAULT_SECTION_ORDER.length;
             return indexA - indexB;
@@ -354,20 +345,16 @@ function App() {
         );
     };
 
-    // A la Despensa, els items es mostren ordenats alfabèticament
-    // Incloem productes que no estan a la llista O que estan comprats
     const pantryItems = sortItemsAlphabetically(filterItems(items.filter(item => !item.isInShoppingList || item.isBought)));
     const unboughtItems = filterItems(items.filter(item => item.isInShoppingList && !item.isBought));
     const boughtItems = filterItems(items.filter(item => item.isInShoppingList && item.isBought));
     
-    // Agrupació de la llista de la compra per seccions
     const groupedUnboughtItems = groupItemsBySection(unboughtItems);
     const groupedBoughtItems = groupItemsBySection(boughtItems);
 
-    // ⭐ MANTINGUT
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista
+    // Funció per renderitzar elements en format llista (Sense canvis)
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div 
@@ -405,7 +392,7 @@ function App() {
         ));
     };
     
-    // Activar/desactivar mode reordenació (Passada a BottomNavBar)
+    // Activar/desactivar mode reordenació
     const toggleReorderMode = () => {
         setIsReorderMode(!isReorderMode);
         setFeedback(
@@ -416,24 +403,33 @@ function App() {
         );
     };
 
-    // ⭐ Funció per obrir el modal d'ordenació de seccions (Passada a BottomNavBar)
+    // Funció per obrir el modal d'ordenació de seccions
     const openSectionOrderModal = () => {
         setShowSectionOrderModal(true);
     };
 
-    // ⭐ Funció per obrir el modal d'afegir producte (Passada a BottomNavBar)
+    // Funció per obrir el modal d'afegir producte (Passada a BottomNavBar)
     const openAddModal = () => {
         setShowAddModal(true);
     };
     
-    // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop (Sense canvis aquí, mantinc el teu codi)
+    // Funció per obrir el modal d'usuari
+    const openAuthModal = () => {
+        setShowAuthModal(true);
+    };
+    
+    // Funció per obrir el gestor de llistes
+    const openListManagerModal = () => {
+        setShowListManagerModal(true);
+    };
+
+    // Funció per gestionar drag & drop (Sense canvis, es manté la lògica)
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
 
         const { source, destination, type } = result;
 
         if (type === 'SECTION') {
-            // Reordenar seccions
             try {
                 const sections = currentView === 'shoppingList' 
                     ? [...groupedUnboughtItems.map(g => g.section)]
@@ -442,11 +438,6 @@ function App() {
                 const [movedSection] = sections.splice(source.index, 1);
                 sections.splice(destination.index, 0, movedSection);
                 
-                // ⭐ MILLORA: Actualitzem totes les seccions d'un cop
-                console.log('🔄 Nou ordre de seccions:', sections);
-                
-                // Cridem updateSectionOrder per CADA secció amb el seu nou índex
-                // Això sobreescriurà completament l'ordre a Firebase
                 const updatePromises = sections.map((section, index) => 
                     updateSectionOrder(section, index)
                 );
@@ -457,10 +448,8 @@ function App() {
                 
             } catch (error) {
                 setFeedback("Error reordenant seccions: " + error.message, 'error');
-                console.error('❌ Error:', error);
             }
         } else if (type === 'ITEM') {
-            // Reordenar productes dins d'una secció
             if (source.droppableId === destination.droppableId) {
                 try {
                     const sectionName = source.droppableId.replace('section-items-', '');
@@ -472,7 +461,6 @@ function App() {
                     const [movedItem] = itemsCopy.splice(source.index, 1);
                     itemsCopy.splice(destination.index, 0, movedItem);
                     
-                    // Actualitzar orderIndex dels productes
                     const updatePromises = itemsCopy.map((item, index) => 
                         updateItemOrder(item.id, index)
                     );
@@ -494,23 +482,7 @@ function App() {
                 {/* 1. Títol de la llista activa */}
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
                 
-                {/* BOTÓ DRETA: Menú Usuari (Sense canvis) */}
-                <button 
-                    onClick={() => setShowAuthModal(true)} 
-                    className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
-                    aria-label="Menú d'usuari"
-                >
-                    <User className="w-6 h-6 text-gray-700" />
-                </button>
-                
-                {/* BOTÓ ESQUERRA: Gestor de Llistes (Sense canvis) */}
-                <button 
-                    onClick={() => setShowListManagerModal(true)} 
-                    className="absolute top-0 left-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
-                    aria-label="Gestionar llistes"
-                >
-                    <ListChecks className="w-6 h-6 text-gray-700" />
-                </button>
+                {/* ⭐ ELIMINATS: Botó d'Usuari i Gestor de Llistes (ara a BottomNavBar) */}
             </header>
 
             {/* Feedback Message (Sense canvis) */}
@@ -547,13 +519,12 @@ function App() {
                     </button>
                 </div>
 
-                {/* ⭐ CANVIS PRINCIPALS: Contenidor de Cerca/Opcions */}
-                {/* Aquesta secció ara conté només la cerca, l'exportació i els botons de vista de la Despensa */}
+                {/* ⭐ NOU CONTENIDOR DE FUNCIONALITATS SUPERIORS */}
                 <div className="flex justify-between items-center flex-wrap gap-2">
                     
                     {/* 1. SECCIÓ ESQUERRA (Només a la Despensa): Cerca i Exportació */}
                     {currentView === 'pantry' && (
-                        <div className="flex gap-2 items-center w-full sm:w-auto">
+                        <div className="flex gap-2 items-center w-full sm:w-auto flex-grow">
                             <div className="relative flex-grow">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
@@ -564,7 +535,6 @@ function App() {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            
                             <button
                                 onClick={handleExportToExcel}
                                 className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105 flex-shrink-0"
@@ -575,56 +545,43 @@ function App() {
                         </div>
                     )}
                     
-                    {/* 2. SECCIÓ DRETA: Botons de Vista (Només a la Despensa) */}
-                    {/* Aquests són els únics botons de funcionalitat que queden a dalt */}
-                    {currentView === 'pantry' && (
-                        <div className={`flex gap-2 items-center ${currentView === 'pantry' ? 'ml-auto' : 'mx-auto'}`}>
+                    {/* 2. SECCIÓ DRETA (Només a la Llista): Botons d'Ordenació (Recuperats) */}
+                    {currentView === 'shoppingList' && (
+                        <div className={`flex gap-2 items-center w-full justify-end sm:w-auto ${currentView === 'pantry' ? 'ml-auto' : 'mx-auto'}`}>
+                            {/* Botó de Mode Reordenació de Productes */}
+                            <button
+                                onClick={toggleReorderMode}
+                                className={`p-2 rounded-md transition-all-smooth ${isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-600' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'}`}
+                                aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació de productes"}
+                                title="Reordenar Productes (Drag & Drop)"
+                            >
+                                <ArrowUpDown className="w-5 h-5" />
+                            </button>
                             
-                            {/* BOTONS DE VISTA (Només a la Despensa) */}
-                            <div className="flex gap-2">
-                                <button 
-                                    onClick={() => setIsGridView(true)} 
-                                    className={`p-2 rounded-md transition-all-smooth ${
-                                        isGridView 
-                                            ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                            : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                                    }`}
-                                    aria-label="Vista quadrícula"
-                                >
-                                    <Grid3X3 className="w-5 h-5" />
-                                </button>
-                                <button 
-                                    onClick={() => setIsGridView(false)} 
-                                    className={`p-2 rounded-md transition-all-smooth ${
-                                        !isGridView
-                                            ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                            : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                                    }`}
-                                    aria-label="Vista llista"
-                                >
-                                    <List className="w-5 h-5" />
-                                </button>
-                            </div>
+                            {/* Botó de Reordenar Seccions (Obre Modal) */}
+                            <button
+                                onClick={openSectionOrderModal}
+                                className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
+                                aria-label="Reordenar Seccions"
+                                title="Reordenar Seccions"
+                            >
+                                <Layers className="w-5 h-5" />
+                            </button>
                         </div>
                     )}
-                    
-                    {/* ⭐ ELIMINAT OptionsMenu: La seva funcionalitat passa a BottomNavBar */}
                 </div>
             </div>
+            {/* FI NOU CONTENIDOR SUPERIOR */}
 
-            {/* Vistes principals (Sense canvis, isGridView ja està ajustat) */}
+            {/* Vistes principals (Sense canvis de contingut) */}
+            {/* ... Contingut de la Despensa (Pantry) ... */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
-                    {/* Elements a la despensa */}
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                        <h2 className="text-xl font-bold mb-4 text-gray-700">
-                            Elements a la despensa ({pantryItems.length})
-                        </h2>
+                        <h2 className="text-xl font-bold mb-4 text-gray-700">Elements a la despensa ({pantryItems.length})</h2>
                         {pantryItems.length === 0 ? (
-                            <p className="text-gray-600 text-center py-4">
-                                {searchTerm ? 'No s\'han trobat elements amb aquest criteri de cerca.' : 'No hi ha elements. Afegeix-ne alguns per començar!'}
-                            </p>
-                        ) : isGridView ? ( 
+                            <p className="text-gray-600 text-center py-4">{searchTerm ? 'No s\'han trobat elements amb aquest criteri de cerca.' : 'No hi ha elements. Afegeix-ne alguns per començar!'}</p>
+                        ) : isGridView ? (
                             <div className={`${gridClasses} gap-4`}>
                                 {pantryItems.map(item => (
                                     <ProductCard
@@ -640,19 +597,14 @@ function App() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="space-y-2">
-                                {renderListItems(pantryItems, false, false)}
-                            </div>
+                            <div className="space-y-2">{renderListItems(pantryItems, false, false)}</div>
                         )}
                     </div>
 
-                    {/* Elements a la llista de la compra des de la despensa */}
                     {items.filter(item => item.isInShoppingList && !item.isBought).length > 0 && (
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
-                            <h2 className="text-xl font-bold mb-4 text-gray-700">
-                                Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})
-                            </h2>
-                            {isGridView ? ( 
+                            <h2 className="text-xl font-bold mb-4 text-gray-700">Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})</h2>
+                            {isGridView ? (
                                 <div className={`${gridClasses} gap-4`}>
                                     {items.filter(item => item.isInShoppingList && !item.isBought).map(item => (
                                         <ProductCard
@@ -668,43 +620,29 @@ function App() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {renderListItems(items.filter(item => item.isInShoppingList && !item.isBought), false, false)}
-                                </div>
+                                <div className="space-y-2">{renderListItems(items.filter(item => item.isInShoppingList && !item.isBought), false, false)}</div>
                             )}
                         </div>
                     )}
                 </div>
             )}
-
+            
+            {/* ... Contingut de la Llista (ShoppingList) ... */}
             {currentView === 'shoppingList' && (
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div className="space-y-6">
-                        {/* Seccions per comprar */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <div className="flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-gray-700">
-                                    Productes per comprar ({unboughtItems.length})
-                                </h2>
-                                {isReorderMode && (
-                                    <span className="text-sm text-blue-600 font-medium">
-                                        Mode reordenació actiu
-                                    </span>
-                                )}
+                                <h2 className="text-xl font-bold text-gray-700">Productes per comprar ({unboughtItems.length})</h2>
+                                {isReorderMode && (<span className="text-sm text-blue-600 font-medium">Mode reordenació actiu</span>)}
                             </div>
                             
                             {unboughtItems.length === 0 ? (
-                                <p className="text-gray-600 text-center py-4">
-                                    No hi ha productes pendents a la teva llista de la compra.
-                                </p>
+                                <p className="text-gray-600 text-center py-4">No hi ha productes pendents a la teva llista de la compra.</p>
                             ) : (
                                 <Droppable droppableId="unbought-sections" type="SECTION">
                                     {(provided) => (
-                                        <div
-                                            ref={provided.innerRef}
-                                            {...provided.droppableProps}
-                                            className="space-y-4"
-                                        >
+                                        <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-4">
                                             {groupedUnboughtItems.map((group, index) => (
                                                 <DraggableSection
                                                     key={group.section}
@@ -725,7 +663,6 @@ function App() {
                             )}
                         </div>
                         
-                        {/* BOTÓ DE NETEJA/ARXIVATGE MODIFICAT amb la nova classe CSS */}
                         {boughtItems.length > 0 && (
                             <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                                 <button
@@ -738,23 +675,13 @@ function App() {
                             </div>
                         )}
 
-                        {/* Seccions per comprats (Sense canvis, només canvi de displayMode) */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
-                            <h2 className="text-xl font-bold text-gray-700">
-                                Productes comprats ({boughtItems.length})
-                            </h2>
+                            <h2 className="text-xl font-bold text-gray-700">Productes comprats ({boughtItems.length})</h2>
                             {boughtItems.length === 0 ? (
-                                <p className="text-gray-600 text-center py-4">
-                                    Encara no hi ha productes comprats.
-                                </p>
+                                <p className="text-gray-600 text-center py-4">Encara no hi ha productes comprats.</p>
                             ) : groupedBoughtItems.map((group) => (
-                                <div 
-                                    key={group.section} 
-                                    className="border-t border-gray-300 pt-4"
-                                >
-                                    <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                                        {group.section || 'Sense Secció'} ({group.items.length})
-                                    </h3>
+                                <div key={group.section} className="border-t border-gray-300 pt-4">
+                                    <h3 className="text-lg font-semibold mb-3 text-gray-700">{group.section || 'Sense Secció'} ({group.items.length})</h3>
                                     {isGridView ? ( 
                                         <div className={`${gridClasses} gap-4`}>
                                             {group.items.map(item => (
@@ -772,9 +699,7 @@ function App() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="space-y-2">
-                                            {renderListItems(group.items, false, true)}
-                                        </div>
+                                        <div className="space-y-2">{renderListItems(group.items, false, true)}</div>
                                     )}
                                 </div>
                             ))}
@@ -782,9 +707,6 @@ function App() {
                     </div>
                 </DragDropContext>
             )}
-
-            {/* ⭐ ELIMINAT: Botó flotant per afegir productes (la funció passa a BottomNavBar) */}
-            {/* {currentView === 'pantry' && ( ... botó flotant ... )} */}
 
             {/* Modals (Sense canvis) */}
             {showEditModal && editingItem && (
@@ -837,7 +759,6 @@ function App() {
             )}
             
             {showAddModal && (
-                // L'obertura d'aquest modal ara es gestiona des de BottomNavBar
                 <AddProductModal 
                     onClose={() => setShowAddModal(false)}
                     availableSections={availableSections}
@@ -858,15 +779,14 @@ function App() {
                 />
             )}
             
-            {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR */}
+            {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB LES NOVES PROPS */}
             <BottomNavBar
                 currentView={currentView}
                 isGridView={isGridView}
-                isReorderMode={isReorderMode}
                 onToggleView={toggleDisplayMode}
                 onOpenAddModal={openAddModal}
-                onOpenSectionOrderModal={openSectionOrderModal}
-                onToggleReorderMode={toggleReorderMode}
+                onOpenAuthModal={openAuthModal}
+                onOpenListManagerModal={openListManagerModal}
             />
             {/* FI INTEGRACIÓ */}
 
