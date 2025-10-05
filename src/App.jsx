@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2, ArrowUpDown } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
+// ⭐ NOU IMPORT: Importem el nou menú d'opcions
+import OptionsMenu from './components/OptionsMenu'; // <--- AFEGIT
+
 // ⭐ IMPORTACIÓ NOVA: Afegim un nou component, el Modal de Confirmació
 import ConfirmationModal from './components/ConfirmationModal'; // ⭐ MANTENIM L'IMPORT
 
@@ -40,7 +43,8 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
-    const [displayMode, setDisplayMode] = useState('grid');
+    // ⭐ ESTAT RENOMENAT: displayMode a isGridView per claredat al nou component
+    const [isGridView, setIsGridView] = useState(true); // Canvi de 'grid' a true (per ser coherent amb el nom)
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [feedbackType, setFeedbackType] = useState('info');
@@ -91,6 +95,11 @@ function App() {
         handleLogout,
         cleanImageUrl
     } = useFirebase();
+    
+    // ⭐ NOU: Funció per canviar la vista (necessària pel nou component)
+    const toggleDisplayMode = useCallback(() => {
+        setIsGridView(prev => !prev);
+    }, []);
 
     // Seccions disponibles (Usades a modals)
     const availableSections = useMemo(() => {
@@ -365,6 +374,7 @@ function App() {
     const groupedUnboughtItems = groupItemsBySection(unboughtItems);
     const groupedBoughtItems = groupItemsBySection(boughtItems);
 
+    // ⭐ MODIFICAT: La classe grid ara depèn de si estem a vista 'grid' (isGridView)
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
     // Funció per renderitzar elements en format llista
@@ -414,6 +424,11 @@ function App() {
                 : "Mode reordenació desactivat.", 
             'info'
         );
+    };
+
+    // ⭐ Funció per obrir el modal d'ordenació de seccions
+    const openSectionOrderModal = () => {
+        setShowSectionOrderModal(true);
     };
     
     // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop (Sense canvis aquí, mantinc el teu codi)
@@ -536,34 +551,13 @@ function App() {
                     </button>
                 </div>
 
-                {/* Botons de vista i cerca (Sense canvis) */}
+                {/* Botons de vista i cerca (Modificació A) */}
                 <div className="flex justify-center items-center gap-4 flex-wrap">
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={() => setDisplayMode('grid')} 
-                            className={`p-2 rounded-md transition-all-smooth ${
-                                displayMode === 'grid' 
-                                    ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                    : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                            }`}
-                            aria-label="Vista quadrícula"
-                        >
-                            <Grid3X3 className="w-5 h-5" />
-                        </button>
-                        <button 
-                            onClick={() => setDisplayMode('list')} 
-                            className={`p-2 rounded-md transition-all-smooth ${
-                                displayMode === 'list' 
-                                    ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                    : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                            }`}
-                            aria-label="Vista llista"
-                        >
-                            <List className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Barra de cerca només a la despensa */}
+                    
+                    {/* Botons de vista (Eliminats per ser substituïts pel menú) */}
+                    {/* {currentView === 'pantry' && ( ... botons de vista de la Despensa ... )} */}
+                    
+                    {/* Barra de cerca només a la despensa (Sense canvis) */}
                     {currentView === 'pantry' && (
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -577,7 +571,7 @@ function App() {
                         </div>
                     )}
                     
-                    {/* Botó d'exportació només a la despensa i només en PC (amagat en mòbil) */}
+                    {/* Botó d'exportació només a la despensa i només en PC (amagat en mòbil) (Sense canvis) */}
                     {currentView === 'pantry' && (
                         <button
                             onClick={handleExportToExcel}
@@ -588,8 +582,19 @@ function App() {
                         </button>
                     )}
                     
-                    {/* Botons només a la llista (Sense canvis) */}
+                    {/* ⭐ NOU COMPONENT: Substitueix els 4 botons de la Llista (Vista + Ordenació) */}
                     {currentView === 'shoppingList' && (
+                        <OptionsMenu 
+                            isGridView={isGridView}
+                            onToggleView={toggleDisplayMode} // Funció per canviar entre llista/quadrícula
+                            onOpenSectionOrderModal={openSectionOrderModal} // Funció per obrir el modal d'ordenació de seccions
+                            onReorderProducts={toggleReorderMode} // Funció per activar/desactivar el mode reordenació
+                        />
+                    )}
+                    {/* FI NOU COMPONENT */}
+                    
+                    {/* Botons antics ELIMINATS (per vista, reordenació productes, reordenació seccions) */}
+                    {/* {currentView === 'shoppingList' && (
                         <>
                             <button
                                 onClick={toggleReorderMode}
@@ -608,11 +613,13 @@ function App() {
                                 <ArrowUpDown className="w-5 h-5" />
                             </button>
                         </>
-                    )}
+                    )} 
+                    */}
+                    
                 </div>
             </div>
 
-            {/* Vistes principals (Sense canvis) */}
+            {/* Vistes principals (Modificació B: Ajustar 'displayMode' a 'isGridView') */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     {/* Elements a la despensa */}
@@ -624,7 +631,7 @@ function App() {
                             <p className="text-gray-600 text-center py-4">
                                 {searchTerm ? 'No s\'han trobat elements amb aquest criteri de cerca.' : 'No hi ha elements. Afegeix-ne alguns per començar!'}
                             </p>
-                        ) : displayMode === 'grid' ? (
+                        ) : isGridView ? ( // ⭐ CANVI: 'displayMode === 'grid'' per 'isGridView'
                             <div className={`${gridClasses} gap-4`}>
                                 {pantryItems.map(item => (
                                     <ProductCard
@@ -652,7 +659,7 @@ function App() {
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
                                 Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})
                             </h2>
-                            {displayMode === 'grid' ? (
+                            {isGridView ? ( // ⭐ CANVI: 'displayMode === 'grid'' per 'isGridView'
                                 <div className={`${gridClasses} gap-4`}>
                                     {items.filter(item => item.isInShoppingList && !item.isBought).map(item => (
                                         <ProductCard
@@ -711,7 +718,7 @@ function App() {
                                                     section={group.section}
                                                     items={group.items}
                                                     sectionIndex={index}
-                                                    displayMode={displayMode}
+                                                    displayMode={isGridView ? 'grid' : 'list'} // ⭐ CANVI: Usar isGridView
                                                     gridClasses={gridClasses}
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
@@ -741,7 +748,7 @@ function App() {
                         )}
                         {/* FI BOTÓ */}
 
-                        {/* Seccions per comprats (Sense canvis) */}
+                        {/* Seccions per comprats (Sense canvis, només canvi de displayMode) */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <h2 className="text-xl font-bold text-gray-700">
                                 Productes comprats ({boughtItems.length})
@@ -758,7 +765,7 @@ function App() {
                                     <h3 className="text-lg font-semibold mb-3 text-gray-700">
                                         {group.section || 'Sense Secció'} ({group.items.length})
                                     </h3>
-                                    {displayMode === 'grid' ? (
+                                    {isGridView ? ( // ⭐ CANVI: 'displayMode === 'grid'' per 'isGridView'
                                         <div className={`${gridClasses} gap-4`}>
                                             {group.items.map(item => (
                                                 <ProductCard
