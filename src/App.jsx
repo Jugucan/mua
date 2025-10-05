@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// ⭐ ICONES MODIFICADES: Ja no calen les icones de la barra inferior aquí (User, ListChecks)
+// ICONES
 import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
-// ⭐ NOU IMPORT: Importem la barra de navegació inferior
+// Components
 import BottomNavBar from './components/BottomNavBar'; 
 import ConfirmationModal from './components/ConfirmationModal'; 
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-
-// Components
 import AuthModal from './components/AuthModal';
 import EditItemModal from './components/EditItemModal';
 import ImageModal from './components/ImageModal';
@@ -39,7 +37,7 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
-    // ⭐ ESTAT MANTINGUT: displayMode
+    // ESTAT MANTINGUT
     const [displayMode, setDisplayMode] = useState('grid'); 
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -86,7 +84,7 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
-    // ⭐ NOU: Funció per canviar vista (Passada a BottomNavBar)
+    // Funció per canviar vista (Passada a BottomNavBar)
     const toggleDisplayMode = useCallback(() => {
         setDisplayMode(prev => prev === 'grid' ? 'list' : 'grid');
     }, []);
@@ -471,12 +469,11 @@ function App() {
     };
 
     return (
-        {/* ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa */}
+        // ⭐ FIX: Solució a l'error de sintaxi: eliminem la clau {} del comentari inicial.
+        // A més, afegim 'pb-20' per fer espai a la barra inferior fixa
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
-                
-                {/* ⭐ ELIMINATS: Botó d'Usuari i Gestor de Llistes (ara a BottomNavBar) */}
             </header>
 
             {/* Feedback Message (Sense canvis) */}
