@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2, ArrowUpDown } from 'lucide-react'; 
+// ⭐ ATENCIÓ: Eliminem RotateCcw i ArrowUpDown de l'import d'App.jsx, ja que s'usen al nou component.
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, ListChecks, Trash2 } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
-// ⭐ IMPORTACIÓ NOVA: Afegim un nou component, el Modal de Confirmació
-import ConfirmationModal from './components/ConfirmationModal'; // ⭐ MANTENIM L'IMPORT
-
-// ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+// ⭐ NOU IMPORT: Importem el nou menú de navegació inferior
+import BottomNavBar from './components/BottomNavBar'; // <--- AFEGIT
 
 // Components
 import AuthModal from './components/AuthModal';
@@ -15,9 +13,10 @@ import ImageModal from './components/ImageModal';
 import ProductCard from './components/ProductCard';
 import AddProductModal from './components/AddProductModal';
 import DraggableSection from './components/DraggableSection';
-// NOU COMPONENT
 import ListManagerModal from './components/ListManagerModal';
 import SectionOrderModal from './components/SectionOrderModal'; 
+import ConfirmationModal from './components/ConfirmationModal'; 
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
@@ -40,7 +39,8 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
-    const [displayMode, setDisplayMode] = useState('grid');
+    // ⭐ ESTAT DE VISTA MANTINGUT
+    const [isGridView, setIsGridView] = useState(true); 
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
     const [feedbackType, setFeedbackType] = useState('info');
@@ -49,15 +49,12 @@ function App() {
     const [editingItem, setEditingItem] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [expandedImage, setExpandedImage] = useState(null);
-    const [showAddModal, setShowAddModal] = useState(false);
-    // NOU ESTAT
+    const [showAddModal, setShowAddModal] = useState(false); // <--- MANTINGUT
     const [showListManagerModal, setShowListManagerModal] = useState(false);
     const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
-    // ⭐ NOU ESTAT: Per controlar el modal de confirmació de neteja
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
-    // Estats per controlar l'ordenació
     const [shoppingListSort, setShoppingListSort] = useState('default');
-    const [isReorderMode, setIsReorderMode] = useState(false);
+    const [isReorderMode, setIsReorderMode] = useState(false); 
     
     // Hook de Firebase
     const {
@@ -66,20 +63,17 @@ function App() {
         items,
         sectionOrder,
         isAuthReady,
-        // NOUS VALORS
         lists,
         activeListId,
         setActiveListId,
         addList,
         updateListName,
         deleteList,
-        // FUNCIONS EXISTENTS
         addItem,
         updateItem,
         deleteItem,
         toggleItemInShoppingList,
         toggleBought,
-        // **FUNCIÓ NETA PRODUCTES COMPRATS (ARA ARXIVAR)**
         clearCompletedItems,
         uploadFromExcel,
         updateItemOrder,
@@ -91,6 +85,11 @@ function App() {
         handleLogout,
         cleanImageUrl
     } = useFirebase();
+    
+    // ⭐ FUNCIÓ PER CANVIAR VISTA (Passada a BottomNavBar)
+    const toggleDisplayMode = useCallback(() => {
+        setIsGridView(prev => !prev);
+    }, []);
 
     // Seccions disponibles (Usades a modals)
     const availableSections = useMemo(() => {
@@ -365,6 +364,7 @@ function App() {
     const groupedUnboughtItems = groupItemsBySection(unboughtItems);
     const groupedBoughtItems = groupItemsBySection(boughtItems);
 
+    // ⭐ MANTINGUT
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
     // Funció per renderitzar elements en format llista
@@ -405,7 +405,7 @@ function App() {
         ));
     };
     
-    // Activar/desactivar mode reordenació
+    // Activar/desactivar mode reordenació (Passada a BottomNavBar)
     const toggleReorderMode = () => {
         setIsReorderMode(!isReorderMode);
         setFeedback(
@@ -414,6 +414,16 @@ function App() {
                 : "Mode reordenació desactivat.", 
             'info'
         );
+    };
+
+    // ⭐ Funció per obrir el modal d'ordenació de seccions (Passada a BottomNavBar)
+    const openSectionOrderModal = () => {
+        setShowSectionOrderModal(true);
+    };
+
+    // ⭐ Funció per obrir el modal d'afegir producte (Passada a BottomNavBar)
+    const openAddModal = () => {
+        setShowAddModal(true);
     };
     
     // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop (Sense canvis aquí, mantinc el teu codi)
@@ -478,12 +488,13 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
+        // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-24' per fer espai a la barra inferior fixa
+        <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-24"> 
             <header className="w-full mb-6 text-center relative">
-                {/* 1. MILLORA: Títol de la llista activa */}
+                {/* 1. Títol de la llista activa */}
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
                 
-                {/* BOTÓ DRETA: Menú Usuari (ARA SENSE CONDICIÓ userId) */}
+                {/* BOTÓ DRETA: Menú Usuari (Sense canvis) */}
                 <button 
                     onClick={() => setShowAuthModal(true)} 
                     className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
@@ -492,7 +503,7 @@ function App() {
                     <User className="w-6 h-6 text-gray-700" />
                 </button>
                 
-                {/* BOTÓ ESQUERRA: Gestor de Llistes */}
+                {/* BOTÓ ESQUERRA: Gestor de Llistes (Sense canvis) */}
                 <button 
                     onClick={() => setShowListManagerModal(true)} 
                     className="absolute top-0 left-0 p-2 rounded-full bg-[#f0f3f5] box-shadow-neomorphic-button transition-all-smooth hover:scale-110" 
@@ -502,7 +513,7 @@ function App() {
                 </button>
             </header>
 
-            {/* ⭐ MODIFICAT: El feedbackMessage es queda com està, però ara només l'utilitzem per success/error/info */}
+            {/* Feedback Message (Sense canvis) */}
             {feedbackMessage && (
                 <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 
                     rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center 
@@ -511,7 +522,7 @@ function App() {
                 </div>
             )}
 
-            {/* Botons de navegació (Sense canvis aquí, es mantenen) */}
+            {/* Botons de navegació principal (Despensa <-> Llista) (Sense canvis) */}
             <div className="w-full max-w-full flex flex-col gap-4 mb-6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button 
@@ -536,83 +547,72 @@ function App() {
                     </button>
                 </div>
 
-                {/* Botons de vista i cerca (Sense canvis) */}
-                <div className="flex justify-center items-center gap-4 flex-wrap">
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={() => setDisplayMode('grid')} 
-                            className={`p-2 rounded-md transition-all-smooth ${
-                                displayMode === 'grid' 
-                                    ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                    : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                            }`}
-                            aria-label="Vista quadrícula"
-                        >
-                            <Grid3X3 className="w-5 h-5" />
-                        </button>
-                        <button 
-                            onClick={() => setDisplayMode('list')} 
-                            className={`p-2 rounded-md transition-all-smooth ${
-                                displayMode === 'list' 
-                                    ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                    : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                            }`}
-                            aria-label="Vista llista"
-                        >
-                            <List className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Barra de cerca només a la despensa */}
+                {/* ⭐ CANVIS PRINCIPALS: Contenidor de Cerca/Opcions */}
+                {/* Aquesta secció ara conté només la cerca, l'exportació i els botons de vista de la Despensa */}
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                    
+                    {/* 1. SECCIÓ ESQUERRA (Només a la Despensa): Cerca i Exportació */}
                     {currentView === 'pantry' && (
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Cerca productes..."
-                                className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                        <div className="flex gap-2 items-center w-full sm:w-auto">
+                            <div className="relative flex-grow">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Cerca productes..."
+                                    className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            
+                            <button
+                                onClick={handleExportToExcel}
+                                className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105 flex-shrink-0"
+                                aria-label="Exportar a Excel"
+                            >
+                                <FileDown className="w-5 h-5" />
+                            </button>
                         </div>
                     )}
                     
-                    {/* Botó d'exportació només a la despensa i només en PC (amagat en mòbil) */}
+                    {/* 2. SECCIÓ DRETA: Botons de Vista (Només a la Despensa) */}
+                    {/* Aquests són els únics botons de funcionalitat que queden a dalt */}
                     {currentView === 'pantry' && (
-                        <button
-                            onClick={handleExportToExcel}
-                            className="hidden md:block p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
-                            aria-label="Exportar a Excel"
-                        >
-                            <FileDown className="w-5 h-5" />
-                        </button>
+                        <div className={`flex gap-2 items-center ${currentView === 'pantry' ? 'ml-auto' : 'mx-auto'}`}>
+                            
+                            {/* BOTONS DE VISTA (Només a la Despensa) */}
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setIsGridView(true)} 
+                                    className={`p-2 rounded-md transition-all-smooth ${
+                                        isGridView 
+                                            ? 'box-shadow-neomorphic-button-inset text-green-500' 
+                                            : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
+                                    }`}
+                                    aria-label="Vista quadrícula"
+                                >
+                                    <Grid3X3 className="w-5 h-5" />
+                                </button>
+                                <button 
+                                    onClick={() => setIsGridView(false)} 
+                                    className={`p-2 rounded-md transition-all-smooth ${
+                                        !isGridView
+                                            ? 'box-shadow-neomorphic-button-inset text-green-500' 
+                                            : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
+                                    }`}
+                                    aria-label="Vista llista"
+                                >
+                                    <List className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
                     )}
                     
-                    {/* Botons només a la llista (Sense canvis) */}
-                    {currentView === 'shoppingList' && (
-                        <>
-                            <button
-                                onClick={toggleReorderMode}
-                                className={`p-2 rounded-md transition-all-smooth ${
-                                    isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-500' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                                }`}
-                                aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació"}
-                            >
-                                <RotateCcw className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => setShowSectionOrderModal(true)}
-                                className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
-                                aria-label="Ordenar seccions"
-                            >
-                                <ArrowUpDown className="w-5 h-5" />
-                            </button>
-                        </>
-                    )}
+                    {/* ⭐ ELIMINAT OptionsMenu: La seva funcionalitat passa a BottomNavBar */}
                 </div>
             </div>
 
-            {/* Vistes principals (Sense canvis) */}
+            {/* Vistes principals (Sense canvis, isGridView ja està ajustat) */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     {/* Elements a la despensa */}
@@ -624,7 +624,7 @@ function App() {
                             <p className="text-gray-600 text-center py-4">
                                 {searchTerm ? 'No s\'han trobat elements amb aquest criteri de cerca.' : 'No hi ha elements. Afegeix-ne alguns per començar!'}
                             </p>
-                        ) : displayMode === 'grid' ? (
+                        ) : isGridView ? ( 
                             <div className={`${gridClasses} gap-4`}>
                                 {pantryItems.map(item => (
                                     <ProductCard
@@ -652,7 +652,7 @@ function App() {
                             <h2 className="text-xl font-bold mb-4 text-gray-700">
                                 Elements pendents de compra ({items.filter(item => item.isInShoppingList && !item.isBought).length})
                             </h2>
-                            {displayMode === 'grid' ? (
+                            {isGridView ? ( 
                                 <div className={`${gridClasses} gap-4`}>
                                     {items.filter(item => item.isInShoppingList && !item.isBought).map(item => (
                                         <ProductCard
@@ -711,7 +711,7 @@ function App() {
                                                     section={group.section}
                                                     items={group.items}
                                                     sectionIndex={index}
-                                                    displayMode={displayMode}
+                                                    displayMode={isGridView ? 'grid' : 'list'} 
                                                     gridClasses={gridClasses}
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
@@ -725,13 +725,11 @@ function App() {
                             )}
                         </div>
                         
-                        {/* ⭐ BOTÓ DE NETEJA/ARXIVATGE MODIFICAT amb la nova classe CSS */}
+                        {/* BOTÓ DE NETEJA/ARXIVATGE MODIFICAT amb la nova classe CSS */}
                         {boughtItems.length > 0 && (
                             <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
                                 <button
-                                    // ⭐ CRIDA AL MODAL EN LLOC DE WINDOW.CONFIRM
                                     onClick={() => setShowClearConfirmModal(true)} 
-                                    // ⭐ NOU ESTIL: Apliquem la classe per l'estil "premut" (invertit) de l'original
                                     className="w-full px-4 py-3 rounded-md font-bold text-green-500 clear-bought-button-inset transition-all-smooth flex items-center justify-center"
                                     aria-label={`Netejar i arxivar ${boughtItems.length} productes comprats`}
                                 >
@@ -739,9 +737,8 @@ function App() {
                                 </button>
                             </div>
                         )}
-                        {/* FI BOTÓ */}
 
-                        {/* Seccions per comprats (Sense canvis) */}
+                        {/* Seccions per comprats (Sense canvis, només canvi de displayMode) */}
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <h2 className="text-xl font-bold text-gray-700">
                                 Productes comprats ({boughtItems.length})
@@ -758,7 +755,7 @@ function App() {
                                     <h3 className="text-lg font-semibold mb-3 text-gray-700">
                                         {group.section || 'Sense Secció'} ({group.items.length})
                                     </h3>
-                                    {displayMode === 'grid' ? (
+                                    {isGridView ? ( 
                                         <div className={`${gridClasses} gap-4`}>
                                             {group.items.map(item => (
                                                 <ProductCard
@@ -786,18 +783,8 @@ function App() {
                 </DragDropContext>
             )}
 
-            {/* Botó flotant per afegir productes (només a la despensa) (Sense canvis) */}
-            {currentView === 'pantry' && (
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
-                        box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
-                        shadow-xl flex items-center justify-center transform hover:scale-105"
-                    aria-label="Afegir nou producte"
-                >
-                    <Plus className="w-8 h-8" />
-                </button>
-            )}
+            {/* ⭐ ELIMINAT: Botó flotant per afegir productes (la funció passa a BottomNavBar) */}
+            {/* {currentView === 'pantry' && ( ... botó flotant ... )} */}
 
             {/* Modals (Sense canvis) */}
             {showEditModal && editingItem && (
@@ -822,7 +809,6 @@ function App() {
                 />
             )}
             
-            {/* NOU MODAL DE GESTIÓ DE LLISTES (Sense canvis) */}
             {showListManagerModal && (
                 <ListManagerModal
                     lists={lists}
@@ -851,6 +837,7 @@ function App() {
             )}
             
             {showAddModal && (
+                // L'obertura d'aquest modal ara es gestiona des de BottomNavBar
                 <AddProductModal 
                     onClose={() => setShowAddModal(false)}
                     availableSections={availableSections}
@@ -860,19 +847,28 @@ function App() {
                 />
             )}
 
-            {/* ⭐ NOU MODAL DE CONFIRMACIÓ AJUSTAT */}
             {showClearConfirmModal && (
                 <ConfirmationModal
-                    // ⭐ Títol i missatge ajustats a la imatge
-                    title="" // Buit per al modal senzill
+                    title="" 
                     message="Estàs segur que vols eliminar tots els elements comprats de la llista de la compra?"
                     confirmLabel="Confirma"
                     onConfirm={executeClearCompletedItems}
                     onCancel={() => setShowClearConfirmModal(false)}
-                    isDestructive={false} // ⭐ NO DESTRUCTIU: Botons verd/gris
+                    isDestructive={false} 
                 />
             )}
-            {/* FI NOU MODAL */}
+            
+            {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR */}
+            <BottomNavBar
+                currentView={currentView}
+                isGridView={isGridView}
+                isReorderMode={isReorderMode}
+                onToggleView={toggleDisplayMode}
+                onOpenAddModal={openAddModal}
+                onOpenSectionOrderModal={openSectionOrderModal}
+                onToggleReorderMode={toggleReorderMode}
+            />
+            {/* FI INTEGRACIÓ */}
 
         </div>
     );
