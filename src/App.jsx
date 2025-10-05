@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2 } from 'lucide-react'; 
+import { ShoppingBag, Plus, User, Search, Grid3x3 as Grid3X3, List, FileDown, RotateCcw, ListChecks, Trash2, ArrowUpDown } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // ⭐ IMPORTACIÓ NOVA: Afegim els components de react-beautiful-dnd
@@ -13,7 +13,8 @@ import ProductCard from './components/ProductCard';
 import AddProductModal from './components/AddProductModal';
 import DraggableSection from './components/DraggableSection';
 // NOU COMPONENT
-import ListManagerModal from './components/ListManagerModal'; 
+import ListManagerModal from './components/ListManagerModal';
+import SectionOrderModal from './components/SectionOrderModal'; 
 
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
@@ -48,6 +49,7 @@ function App() {
     const [showAddModal, setShowAddModal] = useState(false);
     // NOU ESTAT
     const [showListManagerModal, setShowListManagerModal] = useState(false);
+    const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
     // Estats per controlar l'ordenació
     const [shoppingListSort, setShoppingListSort] = useState('default');
     const [isReorderMode, setIsReorderMode] = useState(false);
@@ -408,61 +410,65 @@ function App() {
     };
     
     // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop
-const handleDragEnd = async (result) => {
-    if (!result.destination) return;
+    const handleDragEnd = async (result) => {
+        if (!result.destination) return;
 
-    const { source, destination, type } = result;
+        const { source, destination, type } = result;
 
-    if (type === 'SECTION') {
-        // Reordenar seccions
-        try {
-            const sections = currentView === 'shoppingList' 
-                ? [...groupedUnboughtItems.map(g => g.section)]
-                : [];
-            
-            const [movedSection] = sections.splice(source.index, 1);
-            sections.splice(destination.index, 0, movedSection);
-            
-            // ⭐ MILLORA: Actualitzem totes les seccions d'un cop
-            console.log('🔄 Nou ordre de seccions:', sections);
-            
-            // Cridem la funció que guarda TOTES les seccions d'un cop
-            await updateAllSectionsOrder(sections);
-            
-            setFeedback("Ordre de seccions actualitzat!", 'success');
-            
-        } catch (error) {
-            setFeedback("Error reordenant seccions: " + error.message, 'error');
-            console.error('❌ Error:', error);
-        }
-    } else if (type === 'ITEM') {
-        // Reordenar productes dins d'una secció
-        if (source.droppableId === destination.droppableId) {
+        if (type === 'SECTION') {
+            // Reordenar seccions
             try {
-                const sectionName = source.droppableId.replace('section-items-', '');
-                const sectionItems = currentView === 'shoppingList'
-                    ? groupedUnboughtItems.find(g => g.section === sectionName)?.items || []
+                const sections = currentView === 'shoppingList' 
+                    ? [...groupedUnboughtItems.map(g => g.section)]
                     : [];
                 
-                const itemsCopy = [...sectionItems];
-                const [movedItem] = itemsCopy.splice(source.index, 1);
-                itemsCopy.splice(destination.index, 0, movedItem);
+                const [movedSection] = sections.splice(source.index, 1);
+                sections.splice(destination.index, 0, movedSection);
                 
-                // Actualitzar orderIndex dels productes
-                const updatePromises = itemsCopy.map((item, index) => 
-                    updateItemOrder(item.id, index)
+                // ⭐ MILLORA: Actualitzem totes les seccions d'un cop
+                console.log('🔄 Nou ordre de seccions:', sections);
+                
+                // Cridem updateSectionOrder per CADA secció amb el seu nou índex
+                // Això sobreescriurà completament l'ordre a Firebase
+                const updatePromises = sections.map((section, index) => 
+                    updateSectionOrder(section, index)
                 );
                 
                 await Promise.all(updatePromises);
                 
-                setFeedback("Ordre de productes actualitzat!", 'success');
+                setFeedback("Ordre de seccions actualitzat!", 'success');
+                
             } catch (error) {
-                setFeedback("Error reordenant productes: " + error.message, 'error');
+                setFeedback("Error reordenant seccions: " + error.message, 'error');
+                console.error('❌ Error:', error);
+            }
+        } else if (type === 'ITEM') {
+            // Reordenar productes dins d'una secció
+            if (source.droppableId === destination.droppableId) {
+                try {
+                    const sectionName = source.droppableId.replace('section-items-', '');
+                    const sectionItems = currentView === 'shoppingList'
+                        ? groupedUnboughtItems.find(g => g.section === sectionName)?.items || []
+                        : [];
+                    
+                    const itemsCopy = [...sectionItems];
+                    const [movedItem] = itemsCopy.splice(source.index, 1);
+                    itemsCopy.splice(destination.index, 0, movedItem);
+                    
+                    // Actualitzar orderIndex dels productes
+                    const updatePromises = itemsCopy.map((item, index) => 
+                        updateItemOrder(item.id, index)
+                    );
+                    
+                    await Promise.all(updatePromises);
+                    
+                    setFeedback("Ordre de productes actualitzat!", 'success');
+                } catch (error) {
+                    setFeedback("Error reordenant productes: " + error.message, 'error');
+                }
             }
         }
-    }
-};
-
+    };
 
     return (
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
@@ -574,17 +580,26 @@ const handleDragEnd = async (result) => {
                         </button>
                     )}
                     
-                    {/* Botó per activar mode reordenació només a la llista */}
+                    {/* Botons només a la llista */}
                     {currentView === 'shoppingList' && (
-                        <button 
-                            onClick={toggleReorderMode}
-                            className={`p-2 rounded-md transition-all-smooth ${
-                                isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-500' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                            }`}
-                            aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació"}
-                        >
-                            <RotateCcw className="w-5 h-5" />
-                        </button>
+                        <>
+                            <button
+                                onClick={toggleReorderMode}
+                                className={`p-2 rounded-md transition-all-smooth ${
+                                    isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-500' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
+                                }`}
+                                aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació"}
+                            >
+                                <RotateCcw className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => setShowSectionOrderModal(true)}
+                                className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
+                                aria-label="Ordenar seccions"
+                            >
+                                <ArrowUpDown className="w-5 h-5" />
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -811,6 +826,16 @@ const handleDragEnd = async (result) => {
                     onDeleteList={deleteList}
                     setFeedback={setFeedback}
                     onClose={() => setShowListManagerModal(false)}
+                />
+            )}
+
+            {showSectionOrderModal && (
+                <SectionOrderModal
+                    items={items}
+                    sectionOrder={sectionOrder}
+                    activeListId={activeListId}
+                    onSave={updateAllSectionsOrder}
+                    onClose={() => setShowSectionOrderModal(false)}
                 />
             )}
 
