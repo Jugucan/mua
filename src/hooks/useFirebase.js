@@ -446,9 +446,8 @@ export const useFirebase = () => {
         );
         updatedData.orderIndex = maxOrderIndex + 1;
 
-        if (!item.quantity) {
-             updatedData.quantity = '1';
-        }
+        // ⭐ AQUESTA ÉS LA CORRECCIÓ: hem eliminat les línies que posaven quantity = '1'
+        // Ara la quantitat quedarà buida (com ja està al passar a "comprats")
     }
 
     try {
@@ -503,6 +502,7 @@ export const useFirebase = () => {
       throw new Error("No s'ha pogut actualitzar l'ordre de les seccions.");
     }
   }, [userId, activeListId]);
+  
   const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
     if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
 
