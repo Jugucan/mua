@@ -728,6 +728,7 @@ export const useFirebase = () => {
     handleLogin,
     handleRegister,
     handlePasswordReset,
-    handleLogout
+    handleLogout,
+    cleanImageUrl
   };
 };
