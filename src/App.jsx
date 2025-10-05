@@ -77,6 +77,7 @@ function App() {
         uploadFromExcel,
         updateItemOrder,
         updateSectionOrder,
+        updateAllSectionsOrder,
         handleLogin,
         handleRegister,
         handlePasswordReset,
