@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, List, Grid3X3, SortAscending, Layers } from 'lucide-react';
+// ⭐ CANVI: Substituïm 'SortAscending' per 'ArrowUpDown' per solucionar l'error de Netlify
+import { Menu, X, List, Grid3X3, ArrowUpDown, Layers } from 'lucide-react'; 
 
-// Aquest component mostrarà un botó de 'tres punts' (o menú hamburguesa, tot i que usarem 'X' per tancar)
-// que obrirà un menú amb les opcions de vista i d'ordenació.
-
+// Aquest component mostrarà un botó de 'tres punts' (o menú hamburguesa)
 const OptionsMenu = ({ isGridView, onToggleView, onOpenSectionOrderModal, onReorderProducts }) => {
   // 'isOpen' controlarà si el menú desplegable està obert o tancat.
   const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +26,7 @@ const OptionsMenu = ({ isGridView, onToggleView, onOpenSectionOrderModal, onReor
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [menuRef]); // El 'menuRef' és una dependència per a la neteja.
+  }, [menuRef]);
 
   // Funció que cridem quan fem clic a una opció del menú.
   const handleOptionClick = (action) => {
@@ -88,13 +87,14 @@ const OptionsMenu = ({ isGridView, onToggleView, onOpenSectionOrderModal, onReor
               )}
             </button>
 
-            {/* OPCIÓ 2: Reordenar Productes (assumim que obre un modal o actua directament) */}
+            {/* OPCIÓ 2: Reordenar Productes (usant la icona corregida) */}
             <button
               onClick={() => handleOptionClick(onReorderProducts)}
               className="group flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               role="menuitem"
             >
-              <SortAscending className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" />
+              {/* ⭐ ÚS DE LA ICONA CORREGIDA */}
+              <ArrowUpDown className="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500" />
               Reordenar Productes
             </button>
 
