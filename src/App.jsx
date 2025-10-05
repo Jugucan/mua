@@ -408,65 +408,61 @@ function App() {
     };
     
     // ⭐ FUNCIÓ CORREGIDA: Gestionar drag & drop
-    const handleDragEnd = async (result) => {
-        if (!result.destination) return;
+const handleDragEnd = async (result) => {
+    if (!result.destination) return;
 
-        const { source, destination, type } = result;
+    const { source, destination, type } = result;
 
-        if (type === 'SECTION') {
-            // Reordenar seccions
+    if (type === 'SECTION') {
+        // Reordenar seccions
+        try {
+            const sections = currentView === 'shoppingList' 
+                ? [...groupedUnboughtItems.map(g => g.section)]
+                : [];
+            
+            const [movedSection] = sections.splice(source.index, 1);
+            sections.splice(destination.index, 0, movedSection);
+            
+            // ⭐ MILLORA: Actualitzem totes les seccions d'un cop
+            console.log('🔄 Nou ordre de seccions:', sections);
+            
+            // Cridem la funció que guarda TOTES les seccions d'un cop
+            await updateAllSectionsOrder(sections);
+            
+            setFeedback("Ordre de seccions actualitzat!", 'success');
+            
+        } catch (error) {
+            setFeedback("Error reordenant seccions: " + error.message, 'error');
+            console.error('❌ Error:', error);
+        }
+    } else if (type === 'ITEM') {
+        // Reordenar productes dins d'una secció
+        if (source.droppableId === destination.droppableId) {
             try {
-                const sections = currentView === 'shoppingList' 
-                    ? [...groupedUnboughtItems.map(g => g.section)]
+                const sectionName = source.droppableId.replace('section-items-', '');
+                const sectionItems = currentView === 'shoppingList'
+                    ? groupedUnboughtItems.find(g => g.section === sectionName)?.items || []
                     : [];
                 
-                const [movedSection] = sections.splice(source.index, 1);
-                sections.splice(destination.index, 0, movedSection);
+                const itemsCopy = [...sectionItems];
+                const [movedItem] = itemsCopy.splice(source.index, 1);
+                itemsCopy.splice(destination.index, 0, movedItem);
                 
-                // ⭐ MILLORA: Actualitzem totes les seccions d'un cop
-                console.log('🔄 Nou ordre de seccions:', sections);
-                
-                // Cridem updateSectionOrder per CADA secció amb el seu nou índex
-                // Això sobreescriurà completament l'ordre a Firebase
-                const updatePromises = sections.map((section, index) => 
-                    updateSectionOrder(section, index)
+                // Actualitzar orderIndex dels productes
+                const updatePromises = itemsCopy.map((item, index) => 
+                    updateItemOrder(item.id, index)
                 );
                 
                 await Promise.all(updatePromises);
                 
-                setFeedback("Ordre de seccions actualitzat!", 'success');
-                
+                setFeedback("Ordre de productes actualitzat!", 'success');
             } catch (error) {
-                setFeedback("Error reordenant seccions: " + error.message, 'error');
-                console.error('❌ Error:', error);
-            }
-        } else if (type === 'ITEM') {
-            // Reordenar productes dins d'una secció
-            if (source.droppableId === destination.droppableId) {
-                try {
-                    const sectionName = source.droppableId.replace('section-items-', '');
-                    const sectionItems = currentView === 'shoppingList'
-                        ? groupedUnboughtItems.find(g => g.section === sectionName)?.items || []
-                        : [];
-                    
-                    const itemsCopy = [...sectionItems];
-                    const [movedItem] = itemsCopy.splice(source.index, 1);
-                    itemsCopy.splice(destination.index, 0, movedItem);
-                    
-                    // Actualitzar orderIndex dels productes
-                    const updatePromises = itemsCopy.map((item, index) => 
-                        updateItemOrder(item.id, index)
-                    );
-                    
-                    await Promise.all(updatePromises);
-                    
-                    setFeedback("Ordre de productes actualitzat!", 'success');
-                } catch (error) {
-                    setFeedback("Error reordenant productes: " + error.message, 'error');
-                }
+                setFeedback("Error reordenant productes: " + error.message, 'error');
             }
         }
-    };
+    }
+};
+
 
     return (
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6">
