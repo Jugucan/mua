@@ -479,7 +479,32 @@ export const useFirebase = () => {
     }
   }, [userId]);
 
-  // ⭐ FUNCIÓ CORREGIDA: updateSectionOrder
+  // ⭐ NOVA FUNCIÓ: Actualitzar tot l'ordre de seccions d'un cop
+  const updateAllSectionsOrder = useCallback(async (sectionsArray) => {
+    if (!userId) throw new Error("Usuari no autenticat.");
+    
+    console.log('🔄 Actualitzant TOTES les seccions:', sectionsArray);
+    
+    // Construïm l'objecte d'ordre complet
+    const newSectionOrder = {};
+    sectionsArray.forEach((sectionName, index) => {
+      const key = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
+      newSectionOrder[key] = index;
+    });
+    
+    console.log('💾 Guardant a Firebase:', newSectionOrder);
+
+    try {
+      await setDoc(doc(db, 'sectionOrder', userId), {
+          order: newSectionOrder,
+          updatedAt: serverTimestamp()
+      });
+      console.log('✅ Guardat correctament a Firebase');
+    } catch (error) {
+      console.error("❌ Error actualitzant ordre de seccions:", error);
+      throw new Error("No s'ha pogut actualitzar l'ordre de les seccions.");
+    }
+  }, [userId]);
   const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
     if (!userId) throw new Error("Usuari no autenticat.");
     
