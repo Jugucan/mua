@@ -5,7 +5,13 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      // NOU: Definim Montserrat com la font 'sans' per defecte de Tailwind
+      fontFamily: {
+        'sans': ['Montserrat', 'sans-serif'],
+      }
+      // FI NOU
+    },
   },
   plugins: [],
 }
