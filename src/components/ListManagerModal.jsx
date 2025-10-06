@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// IMPORTACIÓ: Afegim Check
-import { X, Plus, Edit, Trash2, Check } from 'lucide-react'; 
+// IMPORTACIÓ: Afegim les icones necessàries per als botons de la captura
+import { X, Plus, Edit, Trash2, Check, Share2, FileDown, RotateCcw, ArrowUpDown, List, Grid3X3, User } from 'lucide-react'; 
 
 const ListManagerModal = ({ 
     lists, 
@@ -10,7 +10,17 @@ const ListManagerModal = ({
     onAddList, 
     onUpdateListName,
     onDeleteList,
-    setFeedback 
+    setFeedback,
+    // ⭐ NOVES PROPS AFEDITES PER AL MENÚ DEL COMPTE
+    userEmail,
+    currentListName,
+    currentDisplayMode,
+    onSetDisplayMode,
+    isReorderMode,
+    onToggleReorderMode,
+    onOpenSectionOrderModal,
+    onExportToExcel,
+    // FI NOVES PROPS
 }) => {
     const [newName, setNewName] = useState('');
     const [newListName, setNewListName] = useState('');
@@ -71,7 +81,8 @@ const ListManagerModal = ({
                 setFeedback(`Última llista buidada i reanomenada a '${result.newName}'.`, 'info');
             }
 
-            onClose(); // Tancar modal després de l'operació
+            // No tanquem el modal, ja que la gestió de llistes es fa dins del menú
+            // onClose(); // Comentem: Tancar modal després de l'operació
         } catch (error) {
             setFeedback(error.message, 'error');
         }
@@ -80,6 +91,28 @@ const ListManagerModal = ({
     const handleListClick = (listId) => {
         setActiveListId(listId);
         onClose();
+    };
+
+    const handleExport = () => {
+        if (onExportToExcel()) {
+            onClose(); // Tancar modal si l'exportació s'ha fet
+        }
+    };
+
+    const handleSectionOrder = () => {
+        onOpenSectionOrderModal(); // Obre el modal d'ordenació de seccions
+        // onClose(); // Podem deixar-lo obert si volem que l'usuari continuï gestionant llistes
+    };
+
+    const handleReorderMode = () => {
+        onToggleReorderMode(); // Activa/desactiva el mode reordenació
+        onClose(); // Tanquem el modal per tornar a la vista de la llista i veure els canvis
+    };
+
+    // Funció per canviar el mode de vista des del selector (mantenint l'estil de la captura)
+    const handleDisplayModeChange = (e) => {
+        const mode = e.target.value;
+        onSetDisplayMode(mode);
     };
 
     return (
@@ -92,9 +125,137 @@ const ListManagerModal = ({
                     <X className="w-5 h-5" />
                 </button>
                 
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Gestió de Llistes</h2>
+                {/* ⭐ NOU: EL MEU COMPTE I INFORMACIÓ DE L'USUARI */}
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3 flex items-center gap-2">
+                    <User className="w-6 h-6 text-green-500" />
+                    El meu compte
+                </h2>
                 
-                {/* Llista Activa i Canvi de Nom */}
+                <div className="mb-4">
+                    <p className="text-gray-600">Usuari: <span className="font-semibold text-gray-800">{userEmail}</span></p>
+                </div>
+
+                {/* ⭐ NOU: SELECTOR DE LLISTA ACTIVA (SIMULANT LA CAPTURA) */}
+                <div className="mb-6">
+                    <label htmlFor="activeList" className="block text-sm font-medium text-gray-700 mb-1">Les meves llistes</label>
+                    <div className="relative">
+                        <select
+                            id="activeList"
+                            value={activeListId}
+                            onChange={(e) => handleListClick(e.target.value)}
+                            className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
+                        >
+                            {lists.map(list => (
+                                <option key={list.id} value={list.id}>
+                                    {list.name} ({list.id === activeListId ? 'Propietari' : 'Altres'})
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ⭐ NOU: SELECTOR DE MODE DE VISUALITZACIÓ */}
+                <div className="mb-6">
+                    <label htmlFor="displayMode" className="block text-sm font-medium text-gray-700 mb-1">Mode de visualització</label>
+                    <div className="relative">
+                        <select
+                            id="displayMode"
+                            value={currentDisplayMode}
+                            onChange={handleDisplayModeChange}
+                            className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
+                        >
+                            <option value="list">Llista (1 columna)</option>
+                            <option value="grid">Quadrícula (2 columnes)</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ⭐ NOU: COLOR PRINCIPAL DE L'APP (Simulació del botó de la captura) */}
+                <div className="mb-6">
+                    <p className="block text-sm font-medium text-gray-700 mb-1">Color principal de l'app (per defecte)</p>
+                    <div className="h-10 w-full rounded-md bg-cyan-400"></div> {/* Color Verd Llima de la captura */}
+                </div>
+
+                {/* ⭐ NOUS BOTONS DE GESTIÓ: Basats en la teva captura */}
+                <div className="space-y-3">
+                    {/* Botó Nova Llista (Utilitza el modal d'afegir de més avall com a funció) */}
+                    <button 
+                        onClick={() => { /* Implementació amb modal/input si cal */ alert('Utilitza la secció "Afegir Nova Llista" per crear una llista.'); }}
+                        className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-green-600 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
+                    >
+                        <Plus className="w-5 h-5 mr-2" /> Nova Llista
+                    </button>
+                    
+                    {/* Botó Edita Llista (Només per a la llista activa - obre la secció d'edició) */}
+                    <button 
+                         onClick={() => { 
+                            setEditingListId(activeListId);
+                            setNewName(currentListName);
+                        }}
+                        className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-blue-600 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
+                    >
+                        <Edit className="w-5 h-5 mr-2" /> Edita Llista (Nom)
+                    </button>
+
+                    {/* Botó Comparteix (Placeholder) */}
+                    <button 
+                        onClick={() => { alert('Funcionalitat de compartir llista no implementada. Pròximament! 😉'); }}
+                        className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-indigo-600 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
+                    >
+                        <Share2 className="w-5 h-5 mr-2" /> Comparteix
+                    </button>
+                    
+                    {/* Botó per ordenar seccions (La funcionalitat que volies moure) */}
+                    <button 
+                        onClick={handleSectionOrder}
+                        className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-yellow-600 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
+                        title="Canvia l'ordre de les seccions a la llista de la compra"
+                    >
+                        <ArrowUpDown className="w-5 h-5 mr-2" /> Gestiona Seccions
+                    </button>
+                    
+                    {/* Botó per activar el mode reordenació de productes (La funcionalitat que volies moure) */}
+                    <button 
+                        onClick={handleReorderMode}
+                        className={`w-full flex items-center justify-center p-3 rounded-md font-bold transition-all-smooth ${
+                            isReorderMode
+                                ? 'box-shadow-neomorphic-button-inset text-red-600'
+                                : 'bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100'
+                        }`}
+                        title="Activa o desactiva l'arrossega i deixa anar productes"
+                    >
+                        <RotateCcw className="w-5 h-5 mr-2" /> 
+                        {isReorderMode ? 'Desactiva Reordenació Productes' : 'Activa Reordenació Productes'}
+                    </button>
+
+                    {/* Botó Exporta a Excel (La funcionalitat que volies moure) */}
+                    <button 
+                        onClick={handleExport}
+                        className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-gray-700 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
+                    >
+                        <FileDown className="w-5 h-5 mr-2" /> Exporta a Excel
+                    </button>
+
+                    {/* Botó Gestiona les meves llistes (Obrirà la llista detallada de baix) */}
+                    <button 
+                         onClick={() => { /* Simplement tanca la llista activa i mostra la resta si cal */ alert('Aquesta opció obriria una vista de gestió de totes les llistes (esborrar, duplicar, etc.). A continuació es mostra la gestió de totes les llistes.'); }}
+                        className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-gray-700 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
+                    >
+                        <List className="w-5 h-5 mr-2" /> Gestiona les meves llistes
+                    </button>
+                    
+                </div>
+                {/* FI NOUS BOTONS */}
+
+                <h3 className="text-xl font-bold text-gray-800 my-6 border-b pb-3">Gestió Avançada de Llistes</h3>
+                
+                {/* Llista Activa i Canvi de Nom (Mantinc la teva lògica de la llista activa a sota) */}
                 <div className="mb-6 p-4 rounded-lg box-shadow-neomorphic-element">
                     <h3 className="text-lg font-semibold mb-3 text-gray-700">Llista Activa:</h3>
                     {editingListId === activeListId ? (
@@ -169,9 +330,9 @@ const ListManagerModal = ({
                     </div>
                 </div>
 
-                {/* Selecció d'altres llistes */}
+                {/* Selecció d'altres llistes (Mantinc la teva lògica per si l'usuari vol canviar ràpidament de llista) */}
                 <div className="p-4 rounded-lg box-shadow-neomorphic-element max-h-48 overflow-y-auto">
-                    <h3 className="text-lg font-semibold mb-3 text-gray-700">Altres Llistes:</h3>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-700">Canviar Llista:</h3>
                     <div className="space-y-2">
                         {lists.filter(l => l.id !== activeListId).map(list => (
                             <div 
