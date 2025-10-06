@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // ICONES
-import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown } from 'lucide-react'; 
+// ⭐⭐⭐ FIX: Afegim Grid3X3 i List a la importació de lucide-react ⭐⭐⭐
+import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
@@ -552,6 +553,7 @@ function App() {
                                 }`}
                                 aria-label={displayMode === 'list' ? "Vista quadrícula" : "Vista llista"}
                             >
+                                {/* ✅ FIX Aplicat: List i Grid3X3 ara estan importats al capdamunt */}
                                 {displayMode === 'list' ? <Grid3X3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
                             </button>
 
