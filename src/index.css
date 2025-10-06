@@ -179,3 +179,11 @@ h1 {
 h2, h3, button {
   font-weight: 700;
 }
+
+/* ========================================================= */
+/* ⭐⭐⭐ CLASSE NOU PER ALS PRODUCTES COMPRATS (GRISAT) ⭐⭐⭐ */
+/* ========================================================= */
+.product-card-purchased {
+  filter: grayscale(100%) opacity(70%); /* Aplica escala de grisos i redueix l'opacitat */
+  transition: filter 0.3s ease-in-out; /* Transició suau */
+}
