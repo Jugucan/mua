@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // ICONES actualitzades per reflectir les funcions
-import { X, Plus, Edit, Trash2, Check, Share2, FileDown, ArrowUpDown, LogOut, User, List, Grid3X3 } from 'lucide-react'; 
+import { X, Plus, Edit, Trash2, Check, Share2, FileDown, ArrowUpDown, LogOut, User } from 'lucide-react'; 
 
 const ListManagerModal = ({ 
     lists, 
@@ -11,15 +11,18 @@ const ListManagerModal = ({
     onUpdateListName,
     onDeleteList,
     setFeedback,
-    userEmail, // Nova prop per mostrar l'usuari
-    currentDisplayMode, // Per mostrar el mode actual
-    onSetDisplayMode, // Per canviar el mode des del desplegable
-    onOpenSectionOrderModal, // Per obrir el modal de seccions
-    onExportToExcel, // Per exportar
-    onLogout // Per tancar sessió
+    userEmail,
+    currentDisplayMode,
+    onSetDisplayMode,
+    onOpenSectionOrderModal,
+    onExportToExcel,
+    onLogout
 }) => {
-    // Estat local per gestionar l'input de canvi de nom de la llista activa (si es prem "Edita Llista")
+    // Estat per gestionar si el quadre de Nova Llista està obert
+    const [isAddingNewList, setIsAddingNewList] = useState(false);
+    // Estat per gestionar si el quadre d'Edició de Llista està obert
     const [isEditingName, setIsEditingName] = useState(false); 
+    
     const [tempListName, setTempListName] = useState('');
     const [newListNameInput, setNewListNameInput] = useState(''); // Per al camp "Nova Llista"
     
@@ -35,7 +38,6 @@ const ListManagerModal = ({
     const handleListChange = (e) => {
         setActiveListId(e.target.value);
         setIsEditingName(false); // Sempre desactivem l'edició si canviem de llista
-        // No tanquem el modal
     };
     
     // Funció per canviar el mode de visualització
@@ -58,7 +60,14 @@ const ListManagerModal = ({
         }
     };
 
-    // FUNCIÓ: Botó "Nova Llista"
+    // FUNCIÓ: Botó "Nova Llista" - MOSTRAR INPUT
+    const handleToggleAddList = () => {
+        setIsAddingNewList(prev => !prev);
+        setIsEditingName(false); // Assegurem que l'edició estigui tancada
+        setNewListNameInput(''); // Netejem l'input al tancar
+    };
+
+    // FUNCIÓ: Afegir Nova Llista (Botó Check)
     const handleAddNewList = async () => {
         if (newListNameInput.trim() === '') {
             setFeedback("El nom de la nova llista no pot ser buit.", 'error');
@@ -68,15 +77,17 @@ const ListManagerModal = ({
             await onAddList(newListNameInput.trim());
             setFeedback(`Llista '${newListNameInput.trim()}' afegida i seleccionada!`, 'success');
             setNewListNameInput('');
+            setIsAddingNewList(false); // Tanca l'input després de l'èxit
         } catch (error) {
             setFeedback(error.message, 'error');
         }
     };
     
-    // FUNCIÓ: Botó "Edita Llista" (Canvia el nom O elimina)
-    const handleEditListClick = () => {
-        // Obra l'input de canvi de nom. Si es vol eliminar, es fa amb un botó addicional.
-        setIsEditingName(true); 
+    // FUNCIÓ: Botó "Edita Llista" (TOGGLE)
+    const handleToggleEditList = () => {
+        // ⭐ CANVI: Si ja està obert, el tanquem; si està tancat, l'obrim
+        setIsEditingName(prev => !prev); 
+        setIsAddingNewList(false); // Assegurem que la creació estigui tancada
     };
 
     // FUNCIÓ: Eliminar llista
@@ -110,13 +121,13 @@ const ListManagerModal = ({
         onClose();
     };
 
-    // Estil per als botons clàssics
-    const buttonClass = "w-full flex items-center p-3 rounded-lg bg-[#f0f3f5] text-gray-700 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth";
+    // ⭐ CANVI DE COLOR: Utilitzem el verd principal (green-500) per a les funcions secundàries
+    const appColor = 'text-green-500'; 
+    const buttonClass = `w-full flex items-center p-3 rounded-lg bg-[#f0f3f5] ${appColor} font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth`;
     const iconClass = "w-5 h-5 mr-3";
     const inputContainerClass = "mb-4 p-4 rounded-lg box-shadow-neomorphic-element";
 
     return (
-        // Ajustem el modal per a semblar més a la captura (sense elements d'overflow si és possible)
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
             <div className="bg-[#f0f3f5] rounded-xl box-shadow-neomorphic-container p-6 w-full max-w-lg relative my-8">
                 
@@ -145,9 +156,10 @@ const ListManagerModal = ({
                             onChange={handleListChange}
                             className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
                         >
+                            {/* ⭐ CANVI: Eliminem l'etiqueta "(Propietari)" */}
                             {lists.map(list => (
                                 <option key={list.id} value={list.id}>
-                                    {list.name} (Propietari)
+                                    {list.name}
                                 </option>
                             ))}
                         </select>
@@ -176,23 +188,48 @@ const ListManagerModal = ({
                     </div>
                 </div>
                 
-                {/* 2. ACCIONS CLAU AMB BOTONS (ESTIL CAPTURA) */}
+                {/* 2. ACCIONS CLAU AMB BOTONS */}
                 <div className="space-y-3 mb-6">
                     
                     {/* Botó: Nova Llista */}
                     <button 
-                        onClick={() => { /* Obra l'input d'afegir nova llista o un modal */ 
-                            setFeedback("Aquesta opció obrirà l'input d'afegir llista, no implementat com a botó simple.", 'info'); 
-                        }}
+                        onClick={handleToggleAddList}
                         className={buttonClass}
-                        title="Clica per afegir una nova llista (caldrà afegir un input)"
+                        title="Clica per afegir una nova llista"
                     >
                         <Plus className={iconClass} /> Nova Llista
                     </button>
                     
-                    {/* Botó: Edita Llista (Activa l'edició de nom i l'opció d'eliminar la llista activa) */}
+                    {/* ⭐ NOVA FUNCIONALITAT: Input de Nova Llista (Si està actiu) */}
+                    {isAddingNewList && (
+                        <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset flex gap-2 items-center">
+                            <input
+                                type="text"
+                                placeholder="Nom de la nova llista"
+                                value={newListNameInput}
+                                onChange={(e) => setNewListNameInput(e.target.value)}
+                                className="flex-grow px-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none text-gray-700"
+                            />
+                            <button 
+                                onClick={handleAddNewList}
+                                className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
+                                title="Crear nova llista"
+                            >
+                                <Check className="w-5 h-5" /> 
+                            </button>
+                            <button 
+                                onClick={handleToggleAddList} // Tanca l'input
+                                className="p-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
+                                title="Cancel·la"
+                            >
+                                <X className="w-5 h-5" /> 
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Botó: Edita Llista (TOGGLE) */}
                     <button 
-                        onClick={handleEditListClick}
+                        onClick={handleToggleEditList}
                         className={buttonClass}
                         title="Canvia el nom o elimina la llista activa"
                     >
@@ -212,12 +249,14 @@ const ListManagerModal = ({
                                 <button 
                                     onClick={handleSaveListName}
                                     className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
+                                    title="Guardar nom"
                                 >
                                     <Check className="w-5 h-5" /> 
                                 </button>
                                 <button 
-                                    onClick={() => setIsEditingName(false)}
+                                    onClick={handleToggleEditList} // Tanca el quadre d'edició
                                     className="p-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
+                                    title="Cancel·la"
                                 >
                                     <X className="w-5 h-5" /> 
                                 </button>
@@ -263,11 +302,9 @@ const ListManagerModal = ({
                         <FileDown className={iconClass} /> Exporta a Excel
                     </button>
                     
-                    {/* El botó de "Gestiona les meves llistes" de la captura es substitueix pels botons superiors, ja que és redundant */}
-                    
                 </div>
                 
-                {/* 3. TANCAR SESSIÓ (A baix de tot, separat i en vermell) */}
+                {/* 3. TANCAR SESSIÓ */}
                 <div className="mt-6 pt-4 border-t border-gray-300">
                     <button 
                         onClick={handleLogoutClick}
