@@ -116,8 +116,10 @@ const ListManagerModal = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#f0f3f5] rounded-xl box-shadow-neomorphic-container p-6 w-full max-w-lg relative">
+        // ⭐ CANVI: Flex-col per alinea el contingut i overflow-y-auto per permetre scroll a tot el modal
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col items-center justify-start overflow-y-auto p-4 pt-10 pb-10">
+            {/* ⭐ CANVI: max-h-full per assegurar que el contenidor no es desbordi. Poso un margin auto als eixos Y per centrar-lo en cas que sigui petit. */}
+            <div className="bg-[#f0f3f5] rounded-xl box-shadow-neomorphic-container p-6 w-full max-w-lg relative my-auto max-h-full">
                 <button 
                     onClick={onClose} 
                     className="absolute top-3 right-3 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button transition-all-smooth hover:scale-110"
@@ -137,7 +139,7 @@ const ListManagerModal = ({
 
                 {/* ⭐ NOU: SELECTOR DE LLISTA ACTIVA (SIMULANT LA CAPTURA) */}
                 <div className="mb-6">
-                    <label htmlFor="activeList" className="block text-sm font-medium text-gray-700 mb-1">Les meves llistes</label>
+                    <label htmlFor="activeList" className="block text-sm font-medium text-gray-700 mb-1">Llista de la compra activa</label>
                     <div className="relative">
                         <select
                             id="activeList"
@@ -176,17 +178,17 @@ const ListManagerModal = ({
                     </div>
                 </div>
 
-                {/* ⭐ NOU: COLOR PRINCIPAL DE L'APP (Simulació del botó de la captura) */}
-                <div className="mb-6">
+                {/* ⭐ ELIMINAT: COLOR PRINCIPAL DE L'APP (Eliminem aquesta secció tal com has demanat) */}
+                {/* <div className="mb-6">
                     <p className="block text-sm font-medium text-gray-700 mb-1">Color principal de l'app (per defecte)</p>
-                    <div className="h-10 w-full rounded-md bg-cyan-400"></div> {/* Color Verd Llima de la captura */}
-                </div>
+                    <div className="h-10 w-full rounded-md bg-cyan-400"></div>
+                </div> */}
 
                 {/* ⭐ NOUS BOTONS DE GESTIÓ: Basats en la teva captura */}
                 <div className="space-y-3">
                     {/* Botó Nova Llista (Utilitza el modal d'afegir de més avall com a funció) */}
                     <button 
-                        onClick={() => { /* Implementació amb modal/input si cal */ alert('Utilitza la secció "Afegir Nova Llista" per crear una llista.'); }}
+                        onClick={() => { /* Implementació amb modal/input si cal */ alert('Utilitza la secció "Afegir Nova Llista" a continuació per crear una llista.'); }}
                         className="w-full flex items-center justify-center p-3 rounded-md bg-[#f0f3f5] text-green-600 font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth"
                     >
                         <Plus className="w-5 h-5 mr-2" /> Nova Llista
