@@ -4,7 +4,7 @@ import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, L
 import * as XLSX from 'xlsx';
 
 // Components
-import BottomNavBar from './components/BottomNavBar'; 
+// import BottomNavBar from './components/BottomNavBar'; // ELIMINAT
 import ConfirmationModal from './components/ConfirmationModal'; 
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import AuthModal from './components/AuthModal';
@@ -84,9 +84,7 @@ function App() {
     } = useFirebase();
 
     // Funció per canviar vista (Passada a BottomNavBar i ListManagerModal)
-    const toggleDisplayMode = useCallback(() => {
-        setDisplayMode(prev => prev === 'grid' ? 'list' : 'grid');
-    }, []);
+    // ELIMINADA: toggleDisplayMode. Només tenim la funció directa:
     
     // Funció per establir la vista (Grid/List) des del modal
     const setDisplayModeFromModal = useCallback((mode) => {
@@ -470,8 +468,8 @@ function App() {
     };
 
     return (
-        // AJUST: El padding inferior 'pb-20' fa espai a la barra inferior
-        <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
+        // ⭐ CANVI: Eliminem el pb-20 (padding bottom) de la barra inferior eliminada
+        <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-6"> 
             <header className="w-full mb-6 text-center relative">
                 {/* ICONA DE L'USUARI A DALT A LA DRETA. CRIDA A openAccountMenu */}
                 <button 
@@ -538,7 +536,7 @@ function App() {
             </div>
             {/* FI CONTENIDOR SUPERIOR */}
 
-            {/* Vistes principals (Sense canvis, només canvi de prop) */}
+            {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
@@ -594,6 +592,28 @@ function App() {
             {currentView === 'shoppingList' && (
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div className="space-y-6">
+                        
+                        {/* ⭐ NOU: CONTROLS ESPECÍFICS DE LA LLISTA: Reordenació i Vista */}
+                        <div className="flex justify-end gap-3"> 
+                            
+                            {/* Botó per activar/desactivar el mode Reordenació */}
+                            <button 
+                                onClick={toggleReorderMode}
+                                className={`p-3 rounded-md font-bold transition-all-smooth ${
+                                    isReorderMode
+                                        ? 'box-shadow-neomorphic-button-inset text-red-600'
+                                        : 'bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100'
+                                }`}
+                                title={isReorderMode ? 'Desactiva Reordenació Productes (Ordre Lliure)' : 'Activa Reordenació Productes (Ordre Lliure)'}
+                            >
+                                <RotateCcw className="w-5 h-5" /> 
+                            </button>
+                            
+                            {/* ELIMINAT: Botó de canvi de vista (Llista/Quadrícula) - Ara està al ListManagerModal */}
+
+                        </div>
+                        {/* FI CONTROLS ESPECÍFICS */}
+                        
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-gray-700">Productes per comprar ({unboughtItems.length})</h2>
@@ -672,11 +692,12 @@ function App() {
                 </DragDropContext>
             )}
 
-            {/* BOTÓ FLOTANT REUBICAT I CONDICIONAL (Només a la Despensa) */}
+            {/* BOTÓ FLOTANT (Només a la Despensa) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={openAddModal}
-                    className="fixed bottom-20 right-6 p-4 rounded-full bg-green-500 text-white 
+                    // ⭐ AJUST: Ara que no hi ha barra inferior, el pugem una mica.
+                    className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
                         box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
                         shadow-xl flex items-center justify-center transform hover:scale-105"
                     aria-label="Afegir nou producte"
@@ -686,7 +707,7 @@ function App() {
             )}
             {/* FI BOTÓ FLOTANT */}
 
-            {/* Modals (Sense canvis importants) */}
+            {/* Modals (Sense canvis) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
@@ -715,12 +736,9 @@ function App() {
                     currentListName={currentListName}
                     currentDisplayMode={displayMode}
                     onSetDisplayMode={setDisplayModeFromModal} 
-                    isReorderMode={isReorderMode}
-                    onToggleReorderMode={toggleReorderMode} 
                     onOpenSectionOrderModal={openSectionOrderModal} 
                     onExportToExcel={handleExportToExcel} 
-                    onLogout={onLogout} // Passem la funció de tancar sessió
-                    currentView={currentView} // ⭐ NOU: Passem la vista actual!
+                    onLogout={onLogout} 
                     
                     lists={lists}
                     activeListId={activeListId}
@@ -768,14 +786,8 @@ function App() {
                 />
             )}
             
-            {/* INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB ELS TRES BOTONS COMUNS */}
-            <BottomNavBar
-                // La lògica aquí s'ha simplificat per usar la funció de menú unificada
-                onOpenAuthModal={openAccountMenu} 
-                onOpenListManagerModal={openAccountMenu} 
-            />
-            {/* FI INTEGRACIÓ */}
-
+            {/* ELIMINAT: No hi ha barra de navegació inferior */}
+            
         </div>
     );
 }
