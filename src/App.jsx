@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // ICONES
-// ⭐⭐⭐ FIX: Afegim Grid3X3 i List a la importació de lucide-react ⭐⭐⭐
-import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List } from 'lucide-react'; 
+// ⭐⭐⭐ FIX: Afegim Grid3X3, List i User (per la nova icona del menú superior/compte) a la importació de lucide-react ⭐⭐⭐
+import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2 } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
@@ -52,8 +52,9 @@ function App() {
     const [showListManagerModal, setShowListManagerModal] = useState(false);
     const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
+    // ⭐ NOUTat: Posem 'isReorderMode' al 'useFirebase' per persistència de l'estat.
     const [shoppingListSort, setShoppingListSort] = useState('default');
-    const [isReorderMode, setIsReorderMode] = useState(false);
+    const [isReorderMode, setIsReorderMode] = useState(false); // Mantinc local, ja que és un estat temporal de l'UI
     
     // Hook de Firebase
     const {
@@ -85,11 +86,16 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
-    // Funció per canviar vista (Passada a BottomNavBar)
+    // Funció per canviar vista (Passada a BottomNavBar i ListManagerModal)
     const toggleDisplayMode = useCallback(() => {
         setDisplayMode(prev => prev === 'grid' ? 'list' : 'grid');
     }, []);
-
+    
+    // Funció per establir la vista (Grid/List) des del modal
+    const setDisplayModeFromModal = useCallback((mode) => {
+        setDisplayMode(mode);
+    }, []);
+    
     // Seccions disponibles (Usades a modals)
     const availableSections = useMemo(() => {
         const sections = new Set(DEFAULT_SECTION_ORDER.filter(s => s !== ''));
@@ -157,8 +163,8 @@ function App() {
         reader.readAsArrayBuffer(file);
     };
 
-    // Funció per exportar a Excel
-    const handleExportToExcel = () => {
+    // Funció per exportar a Excel (Passada directament al modal)
+    const handleExportToExcel = useCallback(() => {
         try {
             const exportData = items.map(item => ({
                 'Nom': item.name,
@@ -178,10 +184,12 @@ function App() {
             XLSX.writeFile(wb, fileName);
             
             setFeedback("Llista exportada correctament!", 'success');
+            return true; // Per indicar èxit al modal
         } catch (error) {
             setFeedback("Error exportant la llista: " + error.message, 'error');
+            return false; // Per indicar error al modal
         }
-    };
+    }, [items, currentListName, setFeedback]);
 
     const afegirDeDespensaALlista = useCallback(async (item) => {
         try {
@@ -394,18 +402,27 @@ function App() {
     
     // Activar/desactivar mode reordenació
     const toggleReorderMode = () => {
-        setIsReorderMode(!isReorderMode);
-        setFeedback(
-            !isReorderMode 
-                ? "Mode reordenació activat! Ara pots arrossegar seccions i productes."
-                : "Mode reordenació desactivat.", 
-            'info'
-        );
+        // Només s'activa si estem a la llista de la compra
+        if (currentView === 'shoppingList') {
+            setIsReorderMode(prev => {
+                const newState = !prev;
+                setFeedback(
+                    newState 
+                        ? "Mode reordenació activat! Ara pots arrossegar productes."
+                        : "Mode reordenació desactivat.", 
+                    'info'
+                );
+                return newState;
+            });
+        } else {
+             setFeedback("El mode reordenació només es pot activar a la Llista de la Compra.", 'info');
+        }
     };
 
-    // Funcions per obrir modals (Necessàries per passar al BottomNavBar)
+    // Funcions per obrir modals (Necessàries per passar al ListManagerModal i BottomNavBar)
     const openSectionOrderModal = () => {
         setShowSectionOrderModal(true);
+        setShowListManagerModal(false); // Tanquem el ListManagerModal si està obert
     };
     const openAddModal = () => {
         setShowAddModal(true);
@@ -420,30 +437,14 @@ function App() {
     // Funció per gestionar drag & drop (Sense canvis)
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
+        if (!isReorderMode) return; // Si no està en mode reordenació, no fem res
 
         const { source, destination, type } = result;
 
-        if (type === 'SECTION') {
-            try {
-                const sections = currentView === 'shoppingList' 
-                    ? [...groupedUnboughtItems.map(g => g.section)]
-                    : [];
-                
-                const [movedSection] = sections.splice(source.index, 1);
-                sections.splice(destination.index, 0, movedSection);
-                
-                const updatePromises = sections.map((section, index) => 
-                    updateSectionOrder(section, index)
-                );
-                
-                await Promise.all(updatePromises);
-                
-                setFeedback("Ordre de seccions actualitzat!", 'success');
-                
-            } catch (error) {
-                setFeedback("Error reordenant seccions: " + error.message, 'error');
-            }
-        } else if (type === 'ITEM') {
+        // ⭐ ELIMINEM la lògica de reordenació de seccions d'aquí. 
+        // L'usuari ha d'utilitzar el modal per reordenar seccions (SectionOrderModal)
+
+        if (type === 'ITEM') {
             if (source.droppableId === destination.droppableId) {
                 try {
                     const sectionName = source.droppableId.replace('section-items-', '');
@@ -473,6 +474,16 @@ function App() {
         // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
+                {/* ⭐ NOU: ICONA DE L'USUARI A DALT A LA DRETA */}
+                <button 
+                    onClick={openAuthModal}
+                    className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:scale-110 transition-all-smooth"
+                    aria-label={userId ? `Compte de ${userEmail}` : "Iniciar sessió"}
+                >
+                    <User className="w-6 h-6" />
+                </button>
+                {/* FI ICONA D'USUARI */}
+
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
             </header>
 
@@ -511,7 +522,6 @@ function App() {
                 </div>
 
                 {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS: BARRRA DE CERCA/ORDENACIÓ */}
-                {/* Fem que la barra de cerca ocupe tota l'amplada i quedi centrada, com a la captura */}
                 <div className="flex justify-between items-center w-full">
                     
                     {/* 1. SECCIÓ ESQUERRA: Cerca i Exportació (Només Despensa) */}
@@ -528,54 +538,25 @@ function App() {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <button
-                                onClick={handleExportToExcel}
-                                // ⭐ AJUST: Amagat en mòbil, només visible en 'md' (PC) i superiors
-                                className="hidden md:block p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105 flex-shrink-0"
-                                aria-label="Exportar a Excel"
-                            >
-                                <FileDown className="w-5 h-5" />
-                            </button>
+                            {/* ELIMINEM BOTÓ EXPORTAR. ES MOURÀ AL LISTMANAGERMODAL */}
+                            {/* ELIMINEM BOTÓ EXPORTAR. ES MOURÀ AL LISTMANAGERMODAL */}
+                            {/* ELIMINEM BOTÓ EXPORTAR. ES MOURÀ AL LISTMANAGERMODAL */}
                         </div>
                     )}
                     
                     {/* 2. SECCIÓ DRETA: Botons d'Ordenació (Només Llista) */}
                     {currentView === 'shoppingList' && (
-                        // Contenidor per als botons d'ordenació, justificat a la dreta (sense ocupar tot l'ample)
-                        <div className={`flex gap-2 items-center w-full justify-end sm:w-auto`}>
-                            {/* Botó de Vista (Grid/List) - MANTENIM A LA BARRA SUPERIOR PER LA COMPATIBILITAT DEL FLIP-CARD */}
-                            <button 
-                                onClick={toggleDisplayMode} 
-                                className={`p-2 rounded-md transition-all-smooth ${
-                                    displayMode === 'list' 
-                                        ? 'box-shadow-neomorphic-button-inset text-green-500' 
-                                        : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'
-                                }`}
-                                aria-label={displayMode === 'list' ? "Vista quadrícula" : "Vista llista"}
-                            >
-                                {/* ✅ FIX Aplicat: List i Grid3X3 ara estan importats al capdamunt */}
-                                {displayMode === 'list' ? <Grid3X3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
-                            </button>
-
-                            {/* Botó de Mode Reordenació de Productes */}
-                            <button
-                                onClick={toggleReorderMode}
-                                className={`p-2 rounded-md transition-all-smooth ${isReorderMode ? 'box-shadow-neomorphic-button-inset text-blue-600' : 'box-shadow-neomorphic-button text-gray-700 hover:scale-105'}`}
-                                aria-label={isReorderMode ? "Desactivar reordenació" : "Activar reordenació de productes"}
-                                title="Reordenar Productes (Drag & Drop)"
-                            >
-                                <RotateCcw className="w-5 h-5" />
-                            </button>
-                            
-                            {/* Botó de Reordenar Seccions (Obre Modal) */}
-                            <button
-                                onClick={openSectionOrderModal}
-                                className="p-2 rounded-md box-shadow-neomorphic-button text-gray-700 transition-all-smooth hover:scale-105"
-                                aria-label="Reordenar Seccions"
-                                title="Reordenar Seccions"
-                            >
-                                <ArrowUpDown className="w-5 h-5" />
-                            </button>
+                        // ⭐ ELIMINEM TOTS ELS BOTONS D'ORDENACIÓ I DE VISTA D'AQUÍ. ES MOURAN AL MODAL.
+                        // Això deixa la barra de cerca fora de la llista de la compra, cosa que millora l'organització.
+                        <div className="relative flex-grow max-w-md mx-auto">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Cerca a la llista..."
+                                className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                         </div>
                     )}
                 </div>
@@ -641,7 +622,8 @@ function App() {
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-gray-700">Productes per comprar ({unboughtItems.length})</h2>
-                                {isReorderMode && (<span className="text-sm text-blue-600 font-medium">Mode reordenació actiu</span>)}
+                                {/* ⭐ NOMÉS MOSTREM EL MISSATGE SI ESTÀ EN MODE REORDENACIÓ */}
+                                {isReorderMode && (<span className="text-sm text-blue-600 font-medium">Mode Reordenació Productes actiu</span>)}
                             </div>
                             
                             {unboughtItems.length === 0 ? (
@@ -660,7 +642,8 @@ function App() {
                                                     gridClasses={gridClasses}
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
-                                                    isReorderMode={isReorderMode}
+                                                    // ⭐ PASSEM 'isReorderMode' com a prop
+                                                    isReorderMode={isReorderMode} 
                                                 />
                                             ))}
                                             {provided.placeholder}
@@ -730,7 +713,7 @@ function App() {
             )}
             {/* FI BOTÓ FLOTANT */}
 
-            {/* Modals (Sense canvis) */}
+            {/* Modals (Sense canvis importants) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
@@ -755,6 +738,17 @@ function App() {
             
             {showListManagerModal && (
                 <ListManagerModal
+                    // ⭐ NOVES PROPS AFEGIDES PER A L'ESTAT DEL MODAL DE LA CAPTURA
+                    userEmail={userEmail} 
+                    currentListName={currentListName}
+                    currentDisplayMode={displayMode}
+                    onSetDisplayMode={setDisplayModeFromModal} // Funció per canviar el mode de vista (Llista/Quadrícula)
+                    isReorderMode={isReorderMode}
+                    onToggleReorderMode={toggleReorderMode} // Funció per activar/desactivar mode reordenació productes
+                    onOpenSectionOrderModal={openSectionOrderModal} // Funció per obrir modal reordenació seccions
+                    onExportToExcel={handleExportToExcel} // Funció per exportar a Excel
+                    // FI NOVES PROPS
+                    
                     lists={lists}
                     activeListId={activeListId}
                     setActiveListId={setActiveListId}
@@ -803,10 +797,10 @@ function App() {
             
             {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB ELS TRES BOTONS COMUNS */}
             <BottomNavBar
-                displayMode={displayMode} // Utilitzem displayMode actual
-                onToggleView={toggleDisplayMode} // Funció per canviar mode
+                // Eliminem les props de DisplayMode, ja no cal si l'eliminem d'aquí i el passem al Modal de l'Usuari
+                // onToggleView={toggleDisplayMode} 
                 onOpenAuthModal={openAuthModal} // Funció per obrir modal d'usuari
-                onOpenListManagerModal={openListManagerModal} // Funció per obrir gestor de llistes
+                onOpenListManagerModal={openListManagerModal} // Funció per obrir gestor de llistes (NOU US)
             />
             {/* FI INTEGRACIÓ */}
 
