@@ -24,7 +24,8 @@ const ProductCard = ({
   additionalClasses = "",
   opacity = 1,
   onPressAndHold = null, 
-  isDraggable = false 
+  isDraggable = false,
+  isShoppingList = false // ⭐⭐⭐ NOVA PROPIETAT (Per defecte, és 'false' per si no la passes) ⭐⭐⭐
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -120,15 +121,17 @@ const ProductCard = ({
     return <ShoppingBag className={`${className} text-gray-600`} />;
   };
   
-  // ⭐⭐⭐ NOU: Classe condicional per a productes comprats ⭐⭐⭐
-  const purchasedClass = item.isBought ? 'product-card-purchased' : '';
-  const nameStyleClass = item.isBought ? 'line-through text-gray-400' : 
+  // ⭐⭐⭐ LÒGICA CLAU MODIFICADA: Només aplicar grisat si és llista de la compra I està comprat ⭐⭐⭐
+  const shouldBeGrayedOut = isShoppingList && item.isBought;
+  const purchasedClass = shouldBeGrayedOut ? 'product-card-purchased' : '';
+  
+  const nameStyleClass = shouldBeGrayedOut ? 'line-through text-gray-400' : 
     (additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : '');
 
   return (
     <>
       <div 
-        className={`relative w-full h-full ${purchasedClass}`} // Aplicar la classe de grisat al contenidor principal
+        className={`relative w-full h-full ${purchasedClass}`} // Aplicar la classe de grisat aquí
         style={{ opacity }}
         onMouseDown={onPressAndHold ? handlePressStart : null}
         onMouseUp={onPressAndHold ? handlePressEnd : null}
@@ -141,7 +144,6 @@ const ProductCard = ({
 
             {/* Front */}
             <div
-              // Mantenim l'additionalClasses però afegim el grisat a tot el contenidor DIV
               className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`}
               onClick={handleCardClick}
               title={actionLabel}
@@ -178,7 +180,6 @@ const ProductCard = ({
             {/* Back */}
             {item.secondIcon && (
               <div
-                // Mantenim l'additionalClasses però afegim el grisat a tot el contenidor DIV
                 className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`}
                 onClick={handleCardClick}
                 title={actionLabel}
@@ -221,8 +222,8 @@ const ProductCard = ({
               e.stopPropagation(); 
               onEdit(item); 
             }} 
-            // Farem que el botó d'edició també sembli desactivat si el producte és comprat
-            className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${item.isBought ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110`} 
+            // També fem que els botons semblin desactivats si s'ha de grisar el producte
+            className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${shouldBeGrayedOut ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110`} 
             aria-label={`Edita ${item.name}`}
           >
             <Pencil className="w-4 h-4" />
@@ -231,8 +232,8 @@ const ProductCard = ({
         
         {isDraggable && (
           <div 
-            // Farem que la icona d'arrossegar també sembli desactivada si el producte és comprat
-            className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${item.isBought ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 cursor-grab`}
+            // També fem que les icones semblin desactivades si s'ha de grisar el producte
+            className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${shouldBeGrayedOut ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 cursor-grab`}
           >
             <Menu className="w-4 h-4" />
           </div>
