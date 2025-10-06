@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // ICONES
-// ⭐⭐⭐ CANVI: Afegim Grid3X3, List i User (per la nova icona del menú superior/compte) a la importació de lucide-react ⭐⭐⭐
-import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2 } from 'lucide-react'; 
+import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2, LogOut } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
@@ -20,7 +19,7 @@ import SectionOrderModal from './components/SectionOrderModal';
 // Hook personalitzat
 import { useFirebase } from './hooks/useFirebase';
 
-// NOU: Llista de seccions per defecte, amb un ordre predefinit
+// Llista de seccions per defecte, amb un ordre predefinit
 const DEFAULT_SECTION_ORDER = [
     'Fruita i Verdura', 
     'Carn i Peix',
@@ -38,7 +37,6 @@ const DEFAULT_SECTION_MAP = new Map(DEFAULT_SECTION_ORDER.map((section, index) =
 function App() {
     // Estats locals
     const [currentView, setCurrentView] = useState('pantry');
-    // ESTAT MANTINGUT
     const [displayMode, setDisplayMode] = useState('grid'); 
     const [searchTerm, setSearchTerm] = useState('');
     const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -52,9 +50,8 @@ function App() {
     const [showListManagerModal, setShowListManagerModal] = useState(false);
     const [showSectionOrderModal, setShowSectionOrderModal] = useState(false);
     const [showClearConfirmModal, setShowClearConfirmModal] = useState(false);
-    // ⭐ NOUTat: Posem 'isReorderMode' al 'useFirebase' per persistència de l'estat.
     const [shoppingListSort, setShoppingListSort] = useState('default');
-    const [isReorderMode, setIsReorderMode] = useState(false); // Mantinc local, ja que és un estat temporal de l'UI
+    const [isReorderMode, setIsReorderMode] = useState(false); 
     
     // Hook de Firebase
     const {
@@ -428,7 +425,7 @@ function App() {
         setShowAddModal(true);
     };
     
-    // ⭐ NOUTAT: Funció per gestionar l'obertura del menú superior
+    // Funció per gestionar l'obertura del menú superior
     const openAccountMenu = () => {
         if (userId) {
             // Si l'usuari ha iniciat sessió, obrim el Menú del Compte (ListManagerModal)
@@ -439,26 +436,12 @@ function App() {
         }
     };
     
-    // ⭐ NOUTAT: Funció per obrir el modal de gestió de llistes des de la barra inferior (si ja tens la lògica de la icona a BottomNavBar)
-    // Decidim mantenir aquesta funció però assignar-la a una altra icona, o simplement eliminar-la de la barra inferior si l'única gestió és al compte.
-    const openListManagerModal = () => {
-         // Com que el ListManagerModal és el teu "Menú del Compte" on es fa la gestió de llistes, obrirem directament l'AuthModal si no hi ha sessió.
-        if (userId) {
-            setShowListManagerModal(true);
-        } else {
-            setShowAuthModal(true);
-        }
-    };
-
     // Funció per gestionar drag & drop (Sense canvis)
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
         if (!isReorderMode) return; // Si no està en mode reordenació, no fem res
 
         const { source, destination, type } = result;
-
-        // ⭐ ELIMINEM la lògica de reordenació de seccions d'aquí. 
-        // L'usuari ha d'utilitzar el modal per reordenar seccions (SectionOrderModal)
 
         if (type === 'ITEM') {
             if (source.droppableId === destination.droppableId) {
@@ -487,12 +470,12 @@ function App() {
     };
 
     return (
-        // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa
+        // AJUST: El padding inferior 'pb-20' fa espai a la barra inferior
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
-                {/* ⭐ NOU: ICONA DE L'USUARI A DALT A LA DRETA. CRIDA A openAccountMenu */}
+                {/* ICONA DE L'USUARI A DALT A LA DRETA. CRIDA A openAccountMenu */}
                 <button 
-                    onClick={openAccountMenu} // ⭐ CANVI: Crida a la nova funció unificada
+                    onClick={openAccountMenu} 
                     className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:scale-110 transition-all-smooth"
                     aria-label={userId ? `Compte de ${userEmail}` : "Iniciar sessió"}
                 >
@@ -540,36 +523,17 @@ function App() {
                 {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS: BARRRA DE CERCA/ORDENACIÓ */}
                 <div className="flex justify-between items-center w-full">
                     
-                    {/* 1. SECCIÓ ESQUERRA: Cerca i Exportació (Només Despensa) */}
-                    {currentView === 'pantry' && (
-                        // Contenidor per a la barra de cerca i exportació
-                        <div className="flex gap-2 items-center w-full max-w-md mx-auto">
-                            <div className="relative flex-grow">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Cerca productes..."
-                                    className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* 2. SECCIÓ DRETA: Botons d'Ordenació (Només Llista) */}
-                    {currentView === 'shoppingList' && (
-                        <div className="relative flex-grow max-w-md mx-auto">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Cerca a la llista..."
-                                className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    )}
+                    {/* BARRA DE CERCA UNIFICADA */}
+                    <div className="relative flex-grow max-w-md mx-auto">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder={currentView === 'pantry' ? "Cerca productes a la despensa..." : "Cerca a la llista..."}
+                            className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
             {/* FI CONTENIDOR SUPERIOR */}
@@ -633,7 +597,7 @@ function App() {
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-gray-700">Productes per comprar ({unboughtItems.length})</h2>
-                                {/* ⭐ NOMÉS MOSTREM EL MISSATGE SI ESTÀ EN MODE REORDENACIÓ */}
+                                {/* NOMÉS MOSTREM EL MISSATGE SI ESTÀ EN MODE REORDENACIÓ */}
                                 {isReorderMode && (<span className="text-sm text-blue-600 font-medium">Mode Reordenació Productes actiu</span>)}
                             </div>
                             
@@ -653,7 +617,6 @@ function App() {
                                                     gridClasses={gridClasses}
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
-                                                    // ⭐ PASSEM 'isReorderMode' com a prop
                                                     isReorderMode={isReorderMode} 
                                                 />
                                             ))}
@@ -709,11 +672,10 @@ function App() {
                 </DragDropContext>
             )}
 
-            {/* ⭐ BOTÓ FLOTANT REUBICAT I CONDICIONAL (Només a la Despensa) */}
+            {/* BOTÓ FLOTANT REUBICAT I CONDICIONAL (Només a la Despensa) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={openAddModal}
-                    // ⭐ AJUST: El padding inferior 'pb-20' a l'App.jsx fa l'espai
                     className="fixed bottom-20 right-6 p-4 rounded-full bg-green-500 text-white 
                         box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
                         shadow-xl flex items-center justify-center transform hover:scale-105"
@@ -749,16 +711,16 @@ function App() {
             
             {showListManagerModal && (
                 <ListManagerModal
-                    // ⭐ NOVES PROPS AFEGIDES PER A L'ESTAT DEL MODAL DE LA CAPTURA
                     userEmail={userEmail} 
                     currentListName={currentListName}
                     currentDisplayMode={displayMode}
-                    onSetDisplayMode={setDisplayModeFromModal} // Funció per canviar el mode de vista (Llista/Quadrícula)
+                    onSetDisplayMode={setDisplayModeFromModal} 
                     isReorderMode={isReorderMode}
-                    onToggleReorderMode={toggleReorderMode} // Funció per activar/desactivar mode reordenació productes
-                    onOpenSectionOrderModal={openSectionOrderModal} // Funció per obrir modal reordenació seccions
-                    onExportToExcel={handleExportToExcel} // Funció per exportar a Excel
-                    // FI NOVES PROPS
+                    onToggleReorderMode={toggleReorderMode} 
+                    onOpenSectionOrderModal={openSectionOrderModal} 
+                    onExportToExcel={handleExportToExcel} 
+                    onLogout={onLogout} // Passem la funció de tancar sessió
+                    currentView={currentView} // ⭐ NOU: Passem la vista actual!
                     
                     lists={lists}
                     activeListId={activeListId}
@@ -806,12 +768,11 @@ function App() {
                 />
             )}
             
-            {/* ⭐ INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB ELS TRES BOTONS COMUNS */}
+            {/* INTEGRACIÓ DE LA BARRA DE NAVEGACIÓ INFERIOR AMB ELS TRES BOTONS COMUNS */}
             <BottomNavBar
-                // Eliminem les props de DisplayMode, ja no cal si l'eliminem d'aquí i el passem al Modal de l'Usuari
-                // onToggleView={toggleDisplayMode} 
-                onOpenAuthModal={openAccountMenu} // ⭐ CANVI: La icona de llistes del NavBar inferior ara crida a 'openAccountMenu'
-                onOpenListManagerModal={openAccountMenu} // ⭐ CANVI: Utilitzem openAccountMenu per a qualsevol funció de menú/llistes
+                // La lògica aquí s'ha simplificat per usar la funció de menú unificada
+                onOpenAuthModal={openAccountMenu} 
+                onOpenListManagerModal={openAccountMenu} 
             />
             {/* FI INTEGRACIÓ */}
 
