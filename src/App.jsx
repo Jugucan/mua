@@ -358,13 +358,13 @@ function App() {
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista (Sense canvis)
+    // Funció per renderitzar elements en format llista (Sense canvis de fons, el grisat ho farà ProductCard)
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div 
                 key={item.id} 
-                // ⭐ CANVI: Afegim la classe 'grayscale-full' si item.isBought és cert
-                className={`list-item ${item.isBought ? 'grayscale-full box-shadow-neomorphic-element-bought' : isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
+                // ⭐ CANVI: Hem tret 'grayscale-full' d'aquí. Ara ho fa ProductCard
+                className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
                 onClick={(e) => { 
                     if (!requireDoubleClick) handleToggleBought(item, item.isBought);
                 }}
@@ -573,6 +573,7 @@ function App() {
                                         additionalClasses="box-shadow-neomorphic-element cursor-pointer hover:box-shadow-neomorphic-element-hover"
                                         showEditButton={true}
                                         requireDoubleClick={false}
+                                        isShoppingList={false} // ⭐⭐ EXPLÍCITAMENT FALS PER LA DESPENSA ⭐⭐
                                     />
                                 ))}
                             </div>
@@ -596,6 +597,7 @@ function App() {
                                            additionalClasses="box-shadow-neomorphic-element-red cursor-pointer"
                                             showEditButton={true}
                                             requireDoubleClick={false}
+                                            isShoppingList={false} // ⭐⭐ EXPLÍCITAMENT FALS PER LA DESPENSA (pendents) ⭐⭐
                                         />
                                     ))}
                                 </div>
@@ -636,7 +638,8 @@ function App() {
                                                     gridClasses={gridClasses}
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
-                                                    isReorderMode={isReorderMode} 
+                                                    isReorderMode={isReorderMode}
+                                                    isShoppingList={true} // ⭐⭐ AFEGIT A DRAGGABLE SECTION PER ALS ELEMENTS PENDENTS ⭐⭐
                                                 />
                                             ))}
                                             {provided.placeholder}
@@ -674,11 +677,12 @@ function App() {
                                                     onEdit={null}
                                                     onAction={() => handleToggleBought(item, item.isBought)}
                                                     actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
-                                                    // ⭐ CANVI: Afegim 'grayscale-full' per l'efecte blanc i negre
-                                                    additionalClasses="box-shadow-neomorphic-element-bought grayscale-full"
+                                                    // ⭐⭐ CANVI CLAU: isShoppingList={true} AFEGIT AQUÍ ⭐⭐
+                                                    additionalClasses="box-shadow-neomorphic-element-bought" // Eliminem 'grayscale-full' d'aquí
                                                     showEditButton={false}
                                                     requireDoubleClick={true}
                                                     opacity={0.75}
+                                                    isShoppingList={true} // ⭐⭐⭐ ÉS LA LLISTA DE LA COMPRA, COMPRAT=GRISAT ⭐⭐⭐
                                                 />
                                             ))}
                                         </div>
