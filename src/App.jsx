@@ -18,7 +18,9 @@ import ListManagerModal from './components/ListManagerModal';
 import SectionOrderModal from './components/SectionOrderModal'; 
 
 // Hook personalitzat
-import { useSupabase } from './useSupabase';
+// ❌ ANTERIOR: import { useSupabase } from './useSupabase';
+// ✅ CORRECCIÓ: Apuntem a la carpeta 'hooks'
+import { useSupabase } from './hooks/useSupabase';
 
 // NOU: Llista de seccions per defecte, amb un ordre predefinit
 const DEFAULT_SECTION_ORDER = [
