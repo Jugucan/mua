@@ -18,9 +18,7 @@ import ListManagerModal from './components/ListManagerModal';
 import SectionOrderModal from './components/SectionOrderModal'; 
 
 // Hook personalitzat
-// ❌ ANTERIOR: import { useSupabase } from './useSupabase';
-// ✅ CORRECCIÓ: Apuntem a la carpeta 'hooks'
-import { useSupabase } from './hooks/useSupabase';
+import { useFirebase } from './hooks/useFirebase';
 
 // NOU: Llista de seccions per defecte, amb un ordre predefinit
 const DEFAULT_SECTION_ORDER = [
@@ -85,7 +83,7 @@ function App() {
         handlePasswordReset,
         handleLogout,
         cleanImageUrl
-    } = useSupabase();
+    } = useFirebase();
 
     // Funció per canviar vista (Passada a BottomNavBar)
     const toggleDisplayMode = useCallback(() => {
