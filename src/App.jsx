@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // ICONES
-// ⭐⭐⭐ FIX: Afegim Grid3X3, List i User (per la nova icona del menú superior/compte) a la importació de lucide-react ⭐⭐⭐
+// ⭐⭐⭐ CANVI: Afegim Grid3X3, List i User (per la nova icona del menú superior/compte) a la importació de lucide-react ⭐⭐⭐
 import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2 } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
@@ -419,7 +419,7 @@ function App() {
         }
     };
 
-    // Funcions per obrir modals (Necessàries per passar al ListManagerModal i BottomNavBar)
+    // Funcions per obrir modals
     const openSectionOrderModal = () => {
         setShowSectionOrderModal(true);
         setShowListManagerModal(false); // Tanquem el ListManagerModal si està obert
@@ -427,11 +427,27 @@ function App() {
     const openAddModal = () => {
         setShowAddModal(true);
     };
-    const openAuthModal = () => {
-        setShowAuthModal(true);
+    
+    // ⭐ NOUTAT: Funció per gestionar l'obertura del menú superior
+    const openAccountMenu = () => {
+        if (userId) {
+            // Si l'usuari ha iniciat sessió, obrim el Menú del Compte (ListManagerModal)
+            setShowListManagerModal(true);
+        } else {
+            // Si no ha iniciat sessió, obrim el modal d'autenticació
+            setShowAuthModal(true);
+        }
     };
+    
+    // ⭐ NOUTAT: Funció per obrir el modal de gestió de llistes des de la barra inferior (si ja tens la lògica de la icona a BottomNavBar)
+    // Decidim mantenir aquesta funció però assignar-la a una altra icona, o simplement eliminar-la de la barra inferior si l'única gestió és al compte.
     const openListManagerModal = () => {
-        setShowListManagerModal(true);
+         // Com que el ListManagerModal és el teu "Menú del Compte" on es fa la gestió de llistes, obrirem directament l'AuthModal si no hi ha sessió.
+        if (userId) {
+            setShowListManagerModal(true);
+        } else {
+            setShowAuthModal(true);
+        }
     };
 
     // Funció per gestionar drag & drop (Sense canvis)
@@ -474,9 +490,9 @@ function App() {
         // ⭐ CANVI AL PADDING INFERIOR: Afegim 'pb-20' per fer espai a la barra inferior fixa
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-20"> 
             <header className="w-full mb-6 text-center relative">
-                {/* ⭐ NOU: ICONA DE L'USUARI A DALT A LA DRETA */}
+                {/* ⭐ NOU: ICONA DE L'USUARI A DALT A LA DRETA. CRIDA A openAccountMenu */}
                 <button 
-                    onClick={openAuthModal}
+                    onClick={openAccountMenu} // ⭐ CANVI: Crida a la nova funció unificada
                     className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:scale-110 transition-all-smooth"
                     aria-label={userId ? `Compte de ${userEmail}` : "Iniciar sessió"}
                 >
@@ -538,16 +554,11 @@ function App() {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            {/* ELIMINEM BOTÓ EXPORTAR. ES MOURÀ AL LISTMANAGERMODAL */}
-                            {/* ELIMINEM BOTÓ EXPORTAR. ES MOURÀ AL LISTMANAGERMODAL */}
-                            {/* ELIMINEM BOTÓ EXPORTAR. ES MOURÀ AL LISTMANAGERMODAL */}
                         </div>
                     )}
                     
                     {/* 2. SECCIÓ DRETA: Botons d'Ordenació (Només Llista) */}
                     {currentView === 'shoppingList' && (
-                        // ⭐ ELIMINEM TOTS ELS BOTONS D'ORDENACIÓ I DE VISTA D'AQUÍ. ES MOURAN AL MODAL.
-                        // Això deixa la barra de cerca fora de la llista de la compra, cosa que millora l'organització.
                         <div className="relative flex-grow max-w-md mx-auto">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -799,8 +810,8 @@ function App() {
             <BottomNavBar
                 // Eliminem les props de DisplayMode, ja no cal si l'eliminem d'aquí i el passem al Modal de l'Usuari
                 // onToggleView={toggleDisplayMode} 
-                onOpenAuthModal={openAuthModal} // Funció per obrir modal d'usuari
-                onOpenListManagerModal={openListManagerModal} // Funció per obrir gestor de llistes (NOU US)
+                onOpenAuthModal={openAccountMenu} // ⭐ CANVI: La icona de llistes del NavBar inferior ara crida a 'openAccountMenu'
+                onOpenListManagerModal={openAccountMenu} // ⭐ CANVI: Utilitzem openAccountMenu per a qualsevol funció de menú/llistes
             />
             {/* FI INTEGRACIÓ */}
 
