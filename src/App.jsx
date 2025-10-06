@@ -82,6 +82,11 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
+    // ⭐ NOU: Efecte per actualitzar el títol de la pestanya del navegador
+    useEffect(() => {
+        document.title = "Mua"; 
+    }, []);
+
     // Funció per establir la vista (Grid/List) des del modal
     const setDisplayModeFromModal = useCallback((mode) => {
         setDisplayMode(mode);
@@ -358,7 +363,8 @@ function App() {
         return itemsList.map(item => (
             <div 
                 key={item.id} 
-                className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
+                // ⭐ CANVI: Afegim la classe 'grayscale-full' si item.isBought és cert
+                className={`list-item ${item.isBought ? 'grayscale-full box-shadow-neomorphic-element-bought' : isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
                 onClick={(e) => { 
                     if (!requireDoubleClick) handleToggleBought(item, item.isBought);
                 }}
@@ -668,7 +674,8 @@ function App() {
                                                     onEdit={null}
                                                     onAction={() => handleToggleBought(item, item.isBought)}
                                                     actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
-                                                    additionalClasses="box-shadow-neomorphic-element-bought"
+                                                    // ⭐ CANVI: Afegim 'grayscale-full' per l'efecte blanc i negre
+                                                    additionalClasses="box-shadow-neomorphic-element-bought grayscale-full"
                                                     showEditButton={false}
                                                     requireDoubleClick={true}
                                                     opacity={0.75}
