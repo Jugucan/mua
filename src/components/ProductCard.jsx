@@ -119,11 +119,16 @@ const ProductCard = ({
     }
     return <ShoppingBag className={`${className} text-gray-600`} />;
   };
+  
+  // ⭐⭐⭐ NOU: Classe condicional per a productes comprats ⭐⭐⭐
+  const purchasedClass = item.isBought ? 'product-card-purchased' : '';
+  const nameStyleClass = item.isBought ? 'line-through text-gray-400' : 
+    (additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : '');
 
   return (
     <>
       <div 
-        className="relative w-full h-full" 
+        className={`relative w-full h-full ${purchasedClass}`} // Aplicar la classe de grisat al contenidor principal
         style={{ opacity }}
         onMouseDown={onPressAndHold ? handlePressStart : null}
         onMouseUp={onPressAndHold ? handlePressEnd : null}
@@ -136,6 +141,7 @@ const ProductCard = ({
 
             {/* Front */}
             <div
+              // Mantenim l'additionalClasses però afegim el grisat a tot el contenidor DIV
               className={`flip-card-front bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`}
               onClick={handleCardClick}
               title={actionLabel}
@@ -162,9 +168,9 @@ const ProductCard = ({
               <div className="flex-shrink-0 mb-3">{renderItemIcon(item.icon, 'w-16 h-16')}</div>
 
               <div className="text-center w-full flex-grow flex flex-col justify-center">
-                <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${
-                  additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : ''
-                }`}>{item.name}</span>
+                <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${nameStyleClass}`}>
+                  {item.name}
+                </span>
                 {item.section && (<span className="text-xs text-gray-400 block text-center">{item.section}</span>)}
               </div>
             </div>
@@ -172,6 +178,7 @@ const ProductCard = ({
             {/* Back */}
             {item.secondIcon && (
               <div
+                // Mantenim l'additionalClasses però afegim el grisat a tot el contenidor DIV
                 className={`flip-card-back bg-white rounded-lg p-4 flex flex-col items-center justify-center min-h-[180px] w-full ${additionalClasses} cursor-pointer select-none`}
                 onClick={handleCardClick}
                 title={actionLabel}
@@ -198,9 +205,9 @@ const ProductCard = ({
                 </div>
 
                 <div className="text-center w-full flex-grow flex flex-col justify-center">
-                  <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${
-                    additionalClasses.includes('box-shadow-neomorphic-element-red') && !item.isBought ? 'product-name-pending' : ''
-                  }`}>{item.name}</span>
+                  <span className={`font-semibold text-sm block text-center mb-1 leading-tight break-words ${nameStyleClass}`}>
+                    {item.name}
+                  </span>
                   {item.section && (<span className="text-xs text-gray-400 block text-center">{item.section}</span>)}
                 </div>
               </div>
@@ -214,7 +221,8 @@ const ProductCard = ({
               e.stopPropagation(); 
               onEdit(item); 
             }} 
-            className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110" 
+            // Farem que el botó d'edició també sembli desactivat si el producte és comprat
+            className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${item.isBought ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110`} 
             aria-label={`Edita ${item.name}`}
           >
             <Pencil className="w-4 h-4" />
@@ -223,7 +231,8 @@ const ProductCard = ({
         
         {isDraggable && (
           <div 
-            className="absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] text-gray-600 box-shadow-neomorphic-button-small z-10 cursor-grab"
+            // Farem que la icona d'arrossegar també sembli desactivada si el producte és comprat
+            className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${item.isBought ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 cursor-grab`}
           >
             <Menu className="w-4 h-4" />
           </div>
