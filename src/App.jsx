@@ -4,7 +4,6 @@ import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, L
 import * as XLSX from 'xlsx';
 
 // Components
-// import BottomNavBar from './components/BottomNavBar'; // ELIMINAT
 import ConfirmationModal from './components/ConfirmationModal'; 
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import AuthModal from './components/AuthModal';
@@ -83,9 +82,6 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
-    // Funció per canviar vista (Passada a BottomNavBar i ListManagerModal)
-    // ELIMINADA: toggleDisplayMode. Només tenim la funció directa:
-    
     // Funció per establir la vista (Grid/List) des del modal
     const setDisplayModeFromModal = useCallback((mode) => {
         setDisplayMode(mode);
@@ -468,7 +464,7 @@ function App() {
     };
 
     return (
-        // ⭐ CANVI: Eliminem el pb-20 (padding bottom) de la barra inferior eliminada
+        // Ajustem el padding inferior 'pb-6'
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-6"> 
             <header className="w-full mb-6 text-center relative">
                 {/* ICONA DE L'USUARI A DALT A LA DRETA. CRIDA A openAccountMenu */}
@@ -518,20 +514,36 @@ function App() {
                     </button>
                 </div>
 
-                {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS: BARRRA DE CERCA/ORDENACIÓ */}
-                <div className="flex justify-between items-center w-full">
+                {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS: BARRRA DE CERCA + ICONA REORDENACIÓ */}
+                <div className="flex justify-center items-center w-full gap-3">
                     
-                    {/* BARRA DE CERCA UNIFICADA */}
-                    <div className="relative flex-grow max-w-md mx-auto">
+                    {/* BARRA DE CERCA UNIFICADA (flex-grow per omplir l'espai restant) */}
+                    <div className="relative flex-grow max-w-lg">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             placeholder={currentView === 'pantry' ? "Cerca productes a la despensa..." : "Cerca a la llista..."}
-                            className="pl-10 pr-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
+                            className="pl-10 pr-4 py-3 rounded-md box-shadow-neomorphic-input focus:outline-none w-full"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+
+                    {/* ICONA DE REORDENACIÓ (Visible només a la Llista de la Compra) */}
+                    {currentView === 'shoppingList' && (
+                        <button 
+                            onClick={toggleReorderMode}
+                            // Ajust de classes per coincidir amb l'altura de l'input (p-3)
+                            className={`p-3 rounded-md font-bold transition-all-smooth flex-shrink-0 ${
+                                isReorderMode
+                                    ? 'box-shadow-neomorphic-button-inset text-red-600'
+                                    : 'bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100'
+                            }`}
+                            title={isReorderMode ? 'Desactiva Reordenació Productes (Ordre Lliure)' : 'Activa Reordenació Productes (Ordre Lliure)'}
+                        >
+                            <RotateCcw className="w-5 h-5" /> 
+                        </button>
+                    )}
                 </div>
             </div>
             {/* FI CONTENIDOR SUPERIOR */}
@@ -593,26 +605,7 @@ function App() {
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div className="space-y-6">
                         
-                        {/* ⭐ NOU: CONTROLS ESPECÍFICS DE LA LLISTA: Reordenació i Vista */}
-                        <div className="flex justify-end gap-3"> 
-                            
-                            {/* Botó per activar/desactivar el mode Reordenació */}
-                            <button 
-                                onClick={toggleReorderMode}
-                                className={`p-3 rounded-md font-bold transition-all-smooth ${
-                                    isReorderMode
-                                        ? 'box-shadow-neomorphic-button-inset text-red-600'
-                                        : 'bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100'
-                                }`}
-                                title={isReorderMode ? 'Desactiva Reordenació Productes (Ordre Lliure)' : 'Activa Reordenació Productes (Ordre Lliure)'}
-                            >
-                                <RotateCcw className="w-5 h-5" /> 
-                            </button>
-                            
-                            {/* ELIMINAT: Botó de canvi de vista (Llista/Quadrícula) - Ara està al ListManagerModal */}
-
-                        </div>
-                        {/* FI CONTROLS ESPECÍFICS */}
+                        {/* El control de reordenació ja és a dalt amb la barra de cerca */}
                         
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <div className="flex justify-between items-center">
@@ -696,7 +689,7 @@ function App() {
             {currentView === 'pantry' && (
                 <button
                     onClick={openAddModal}
-                    // ⭐ AJUST: Ara que no hi ha barra inferior, el pugem una mica.
+                    // Posició ajustada a bottom-6
                     className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
                         box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
                         shadow-xl flex items-center justify-center transform hover:scale-105"
@@ -786,7 +779,6 @@ function App() {
                 />
             )}
             
-            {/* ELIMINAT: No hi ha barra de navegació inferior */}
             
         </div>
     );
