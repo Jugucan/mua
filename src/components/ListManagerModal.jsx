@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // ICONES actualitzades per reflectir les funcions
 import { X, Plus, Edit, Trash2, Check, Share2, FileDown, ArrowUpDown, LogOut, User } from 'lucide-react'; 
+import ShareListModal from './ShareListModal'; // ⭐ NOU IMPORT
 
 const ListManagerModal = ({ 
     lists, 
@@ -16,12 +17,18 @@ const ListManagerModal = ({
     onSetDisplayMode,
     onOpenSectionOrderModal,
     onExportToExcel,
-    onLogout
+    onLogout,
+    // ⭐ NOVES PROPS PER COMPARTIR
+    onShareList,
+    onRemoveListAccess,
+    getListSharedWith
 }) => {
     // Estat per gestionar si el quadre de Nova Llista està obert
     const [isAddingNewList, setIsAddingNewList] = useState(false);
     // Estat per gestionar si el quadre d'Edició de Llista està obert
     const [isEditingName, setIsEditingName] = useState(false); 
+    // ⭐ NOU: Estat per mostrar el modal de compartir
+    const [showShareModal, setShowShareModal] = useState(false);
     
     const [tempListName, setTempListName] = useState('');
     const [newListNameInput, setNewListNameInput] = useState(''); // Per al camp "Nova Llista"
@@ -85,7 +92,6 @@ const ListManagerModal = ({
     
     // FUNCIÓ: Botó "Edita Llista" (TOGGLE)
     const handleToggleEditList = () => {
-        // ⭐ CANVI: Si ja està obert, el tanquem; si està tancat, l'obrim
         setIsEditingName(prev => !prev); 
         setIsAddingNewList(false); // Assegurem que la creació estigui tancada
     };
@@ -121,201 +127,220 @@ const ListManagerModal = ({
         onClose();
     };
 
-    // ⭐ CANVI DE COLOR: Utilitzem el verd principal (green-500) per a les funcions secundàries
+    // ⭐ NOVA FUNCIÓ: Obrir modal de compartir
+    const handleOpenShareModal = () => {
+        setShowShareModal(true);
+    };
+
     const appColor = 'text-green-500'; 
     const buttonClass = `w-full flex items-center p-3 rounded-lg bg-[#f0f3f5] ${appColor} font-bold box-shadow-neomorphic-button hover:shadow-inner hover:bg-gray-100 transition-all-smooth`;
     const iconClass = "w-5 h-5 mr-3";
     const inputContainerClass = "mb-4 p-4 rounded-lg box-shadow-neomorphic-element";
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
-            <div className="bg-[#f0f3f5] rounded-xl box-shadow-neomorphic-container p-6 w-full max-w-lg relative my-8">
-                
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-3 right-3 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button transition-all-smooth hover:scale-110"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-                
-                {/* 1. EL MEU COMPTE I INFORMACIÓ DE L'USUARI */}
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">El meu compte</h2>
-                
-                {/* Usuari */}
-                <div className="mb-4 text-lg text-gray-700">
-                    Usuari: <span className="font-semibold text-gray-800 break-words">{userEmail}</span>
-                </div>
-
-                {/* Les meves Llistes (Selector) */}
-                <div className={inputContainerClass}>
-                    <label htmlFor="activeList" className="block text-sm font-medium text-gray-700 mb-1">Les meves llistes</label>
-                    <div className="relative">
-                        <select
-                            id="activeList"
-                            value={activeListId}
-                            onChange={handleListChange}
-                            className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
-                        >
-                            {/* ⭐ CANVI: Eliminem l'etiqueta "(Propietari)" */}
-                            {lists.map(list => (
-                                <option key={list.id} value={list.id}>
-                                    {list.name}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mode de visualització (Selector) */}
-                <div className={inputContainerClass}>
-                    <label htmlFor="displayMode" className="block text-sm font-medium text-gray-700 mb-1">Mode de visualització</label>
-                    <div className="relative">
-                        <select
-                            id="displayMode"
-                            value={currentDisplayMode}
-                            onChange={handleDisplayModeChange}
-                            className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
-                        >
-                            <option value="grid">Quadrícula (2 columnes)</option>
-                            <option value="list">Llista (1 columna)</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* 2. ACCIONS CLAU AMB BOTONS */}
-                <div className="space-y-3 mb-6">
+        <>
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+                <div className="bg-[#f0f3f5] rounded-xl box-shadow-neomorphic-container p-6 w-full max-w-lg relative my-8">
                     
-                    {/* Botó: Nova Llista */}
                     <button 
-                        onClick={handleToggleAddList}
-                        className={buttonClass}
-                        title="Clica per afegir una nova llista"
+                        onClick={onClose} 
+                        className="absolute top-3 right-3 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button transition-all-smooth hover:scale-110"
                     >
-                        <Plus className={iconClass} /> Nova Llista
+                        <X className="w-5 h-5" />
                     </button>
                     
-                    {/* ⭐ NOVA FUNCIONALITAT: Input de Nova Llista (Si està actiu) */}
-                    {isAddingNewList && (
-                        <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset flex gap-2 items-center">
-                            <input
-                                type="text"
-                                placeholder="Nom de la nova llista"
-                                value={newListNameInput}
-                                onChange={(e) => setNewListNameInput(e.target.value)}
-                                className="flex-grow px-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none text-gray-700"
-                            />
-                            <button 
-                                onClick={handleAddNewList}
-                                className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
-                                title="Crear nova llista"
-                            >
-                                <Check className="w-5 h-5" /> 
-                            </button>
-                            <button 
-                                onClick={handleToggleAddList} // Tanca l'input
-                                className="p-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
-                                title="Cancel·la"
-                            >
-                                <X className="w-5 h-5" /> 
-                            </button>
-                        </div>
-                    )}
+                    {/* 1. EL MEU COMPTE I INFORMACIÓ DE L'USUARI */}
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">El meu compte</h2>
                     
-                    {/* Botó: Edita Llista (TOGGLE) */}
-                    <button 
-                        onClick={handleToggleEditList}
-                        className={buttonClass}
-                        title="Canvia el nom o elimina la llista activa"
-                    >
-                        <Edit className={iconClass} /> Edita Llista
-                    </button>
+                    {/* Usuari */}
+                    <div className="mb-4 text-lg text-gray-700">
+                        Usuari: <span className="font-semibold text-gray-800 break-words">{userEmail}</span>
+                    </div>
 
-                    {/* Input/Controls d'Edició de Llista Activa (Si està actiu) */}
-                    {isEditingName && (
-                        <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset space-y-2">
-                            <div className="flex gap-2 items-center">
+                    {/* Les meves Llistes (Selector) */}
+                    <div className={inputContainerClass}>
+                        <label htmlFor="activeList" className="block text-sm font-medium text-gray-700 mb-1">Les meves llistes</label>
+                        <div className="relative">
+                            <select
+                                id="activeList"
+                                value={activeListId}
+                                onChange={handleListChange}
+                                className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
+                            >
+                                {lists.map(list => (
+                                    <option key={list.id} value={list.id}>
+                                        {list.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mode de visualització (Selector) */}
+                    <div className={inputContainerClass}>
+                        <label htmlFor="displayMode" className="block text-sm font-medium text-gray-700 mb-1">Mode de visualització</label>
+                        <div className="relative">
+                            <select
+                                id="displayMode"
+                                value={currentDisplayMode}
+                                onChange={handleDisplayModeChange}
+                                className="w-full px-4 py-2 rounded-md appearance-none box-shadow-neomorphic-input focus:outline-none text-gray-700 font-medium cursor-pointer"
+                            >
+                                <option value="grid">Quadrícula (2 columnes)</option>
+                                <option value="list">Llista (1 columna)</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* 2. ACCIONS CLAU AMB BOTONS */}
+                    <div className="space-y-3 mb-6">
+                        
+                        {/* Botó: Nova Llista */}
+                        <button 
+                            onClick={handleToggleAddList}
+                            className={buttonClass}
+                            title="Clica per afegir una nova llista"
+                        >
+                            <Plus className={iconClass} /> Nova Llista
+                        </button>
+                        
+                        {/* Input de Nova Llista (Si està actiu) */}
+                        {isAddingNewList && (
+                            <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset flex gap-2 items-center">
                                 <input
                                     type="text"
-                                    value={tempListName}
-                                    onChange={(e) => setTempListName(e.target.value)}
+                                    placeholder="Nom de la nova llista"
+                                    value={newListNameInput}
+                                    onChange={(e) => setNewListNameInput(e.target.value)}
                                     className="flex-grow px-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none text-gray-700"
                                 />
                                 <button 
-                                    onClick={handleSaveListName}
+                                    onClick={handleAddNewList}
                                     className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
-                                    title="Guardar nom"
+                                    title="Crear nova llista"
                                 >
                                     <Check className="w-5 h-5" /> 
                                 </button>
                                 <button 
-                                    onClick={handleToggleEditList} // Tanca el quadre d'edició
+                                    onClick={handleToggleAddList}
                                     className="p-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
                                     title="Cancel·la"
                                 >
                                     <X className="w-5 h-5" /> 
                                 </button>
                             </div>
-                            {/* Botó per eliminar quan s'està editant */}
-                            <button
-                                onClick={handleDeleteActiveList}
-                                className="w-full flex items-center justify-center p-2 rounded-md bg-red-500 text-white font-bold mt-2 hover:bg-red-600 transition-all-smooth"
-                                title="Eliminar llista activa"
-                            >
-                                <Trash2 className="w-4 h-4 mr-2" /> Elimina Llista
-                            </button>
-                        </div>
-                    )}
-                    
-                    {/* Botó: Comparteix */}
-                    <button 
-                        onClick={() => { setFeedback('Funcionalitat de compartir llista no implementada. Pròximament! 😉', 'info'); }}
-                        className={buttonClass}
-                    >
-                        <Share2 className={iconClass} /> Comparteix
-                    </button>
-                    
-                    {/* Botó: Gestiona Seccions */}
-                    <button 
-                        onClick={() => {
-                            onOpenSectionOrderModal();
-                            onClose();
-                        }}
-                        className={buttonClass}
-                    >
-                        <ArrowUpDown className={iconClass} /> Gestiona Seccions
-                    </button>
-                    
-                    {/* Botó: Exporta a Excel */}
-                    <button 
-                        onClick={() => {
-                            onExportToExcel();
-                            onClose();
-                        }}
-                        className={buttonClass}
-                    >
-                        <FileDown className={iconClass} /> Exporta a Excel
-                    </button>
-                    
-                </div>
-                
-                {/* 3. TANCAR SESSIÓ */}
-                <div className="mt-6 pt-4 border-t border-gray-300">
-                    <button 
-                        onClick={handleLogoutClick}
-                        className="w-full flex items-center justify-center p-3 rounded-md bg-red-500 text-white font-bold box-shadow-neomorphic-button hover:bg-red-600 transition-all-smooth"
-                    >
-                        <LogOut className="w-5 h-5 mr-2" /> Tancar Sessió
-                    </button>
-                </div>
+                        )}
+                        
+                        {/* Botó: Edita Llista (TOGGLE) */}
+                        <button 
+                            onClick={handleToggleEditList}
+                            className={buttonClass}
+                            title="Canvia el nom o elimina la llista activa"
+                        >
+                            <Edit className={iconClass} /> Edita Llista
+                        </button>
 
+                        {/* Input/Controls d'Edició de Llista Activa (Si està actiu) */}
+                        {isEditingName && (
+                            <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset space-y-2">
+                                <div className="flex gap-2 items-center">
+                                    <input
+                                        type="text"
+                                        value={tempListName}
+                                        onChange={(e) => setTempListName(e.target.value)}
+                                        className="flex-grow px-4 py-2 rounded-md box-shadow-neomorphic-input focus:outline-none text-gray-700"
+                                    />
+                                    <button 
+                                        onClick={handleSaveListName}
+                                        className="p-2 rounded-md bg-green-500 text-white box-shadow-neomorphic-button hover:bg-green-600"
+                                        title="Guardar nom"
+                                    >
+                                        <Check className="w-5 h-5" /> 
+                                    </button>
+                                    <button 
+                                        onClick={handleToggleEditList}
+                                        className="p-2 rounded-md bg-red-500 text-white box-shadow-neomorphic-button hover:bg-red-600"
+                                        title="Cancel·la"
+                                    >
+                                        <X className="w-5 h-5" /> 
+                                    </button>
+                                </div>
+                                {/* Botó per eliminar quan s'està editant */}
+                                <button
+                                    onClick={handleDeleteActiveList}
+                                    className="w-full flex items-center justify-center p-2 rounded-md bg-red-500 text-white font-bold mt-2 hover:bg-red-600 transition-all-smooth"
+                                    title="Eliminar llista activa"
+                                >
+                                    <Trash2 className="w-4 h-4 mr-2" /> Elimina Llista
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* ⭐ BOTÓ MODIFICAT: Comparteix */}
+                        <button 
+                            onClick={handleOpenShareModal}
+                            className={buttonClass}
+                            title="Comparteix aquesta llista amb altres usuaris"
+                        >
+                            <Share2 className={iconClass} /> Comparteix
+                        </button>
+                        
+                        {/* Botó: Gestiona Seccions */}
+                        <button 
+                            onClick={() => {
+                                onOpenSectionOrderModal();
+                                onClose();
+                            }}
+                            className={buttonClass}
+                        >
+                            <ArrowUpDown className={iconClass} /> Gestiona Seccions
+                        </button>
+                        
+                        {/* Botó: Exporta a Excel */}
+                        <button 
+                            onClick={() => {
+                                onExportToExcel();
+                                onClose();
+                            }}
+                            className={buttonClass}
+                        >
+                            <FileDown className={iconClass} /> Exporta a Excel
+                        </button>
+                        
+                    </div>
+                    
+                    {/* 3. TANCAR SESSIÓ */}
+                    <div className="mt-6 pt-4 border-t border-gray-300">
+                        <button 
+                            onClick={handleLogoutClick}
+                            className="w-full flex items-center justify-center p-3 rounded-md bg-red-500 text-white font-bold box-shadow-neomorphic-button hover:bg-red-600 transition-all-smooth"
+                        >
+                            <LogOut className="w-5 h-5 mr-2" /> Tancar Sessió
+                        </button>
+                    </div>
+
+                </div>
             </div>
-        </div>
+
+            {/* ⭐ NOU: Modal de compartir llista */}
+            {showShareModal && (
+                <ShareListModal
+                    listId={activeListId}
+                    listName={activeList.name}
+                    currentUserEmail={userEmail}
+                    sharedWith={getListSharedWith(activeListId)}
+                    onShare={onShareList}
+                    onRemoveAccess={onRemoveListAccess}
+                    onClose={() => setShowShareModal(false)}
+                />
+            )}
+        </>
     );
 };
 
