@@ -83,20 +83,20 @@ function App() {
     } = useFirebase();
 
     // ⭐ FUNCIONS TEMPORALS per compartir llistes (les completarem després)
-const getListSharedWith = useCallback((listId) => {
-    // De moment retornem un array buit
-    return [];
-}, []);
+    const getListSharedWith = useCallback((listId) => {
+        // De moment retornem un array buit
+        return [];
+    }, []);
 
-const handleShareList = useCallback(async (listId, email) => {
-    // De moment només mostrem un missatge
-    throw new Error("Funció de compartir encara en desenvolupament");
-}, []);
+    const handleShareList = useCallback(async (listId, email) => {
+        // De moment només mostrem un missatge
+        throw new Error("Funció de compartir encara en desenvolupament");
+    }, []);
 
-const handleRemoveListAccess = useCallback(async (listId, email) => {
-    // De moment només mostrem un missatge
-    throw new Error("Funció d'eliminar accés encara en desenvolupament");
-}, []);
+    const handleRemoveListAccess = useCallback(async (listId, email) => {
+        // De moment només mostrem un missatge
+        throw new Error("Funció d'eliminar accés encara en desenvolupament");
+    }, []);
 
     // ⭐ NOU: Efecte per actualitzar el títol de la pestanya del navegador
     useEffect(() => {
@@ -196,10 +196,10 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
             XLSX.writeFile(wb, fileName);
             
             setFeedback("Llista exportada correctament!", 'success');
-            return true; // Per indicar èxit al modal
+            return true;
         } catch (error) {
             setFeedback("Error exportant la llista: " + error.message, 'error');
-            return false; // Per indicar error al modal
+            return false;
         }
     }, [items, currentListName, setFeedback]);
 
@@ -374,12 +374,11 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
 
     const gridClasses = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
-    // Funció per renderitzar elements en format llista (Sense canvis de fons, el grisat ho farà ProductCard)
+    // Funció per renderitzar elements en format llista
     const renderListItems = (itemsList, isRed = false, requireDoubleClick = false) => {
         return itemsList.map(item => (
             <div 
                 key={item.id} 
-                // ⭐ CANVI: Hem tret 'grayscale-full' d'aquí. Ara ho fa ProductCard
                 className={`list-item ${isRed ? 'box-shadow-neomorphic-element-red' : 'box-shadow-neomorphic-element'} transition-all-smooth`}
                 onClick={(e) => { 
                     if (!requireDoubleClick) handleToggleBought(item, item.isBought);
@@ -415,7 +414,6 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
     
     // Activar/desactivar mode reordenació
     const toggleReorderMode = () => {
-        // Només s'activa si estem a la llista de la compra
         if (currentView === 'shoppingList') {
             setIsReorderMode(prev => {
                 const newState = !prev;
@@ -435,7 +433,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
     // Funcions per obrir modals
     const openSectionOrderModal = () => {
         setShowSectionOrderModal(true);
-        setShowListManagerModal(false); // Tanquem el ListManagerModal si està obert
+        setShowListManagerModal(false);
     };
     const openAddModal = () => {
         setShowAddModal(true);
@@ -444,18 +442,16 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
     // Funció per gestionar l'obertura del menú superior
     const openAccountMenu = () => {
         if (userId) {
-            // Si l'usuari ha iniciat sessió, obrim el Menú del Compte (ListManagerModal)
             setShowListManagerModal(true);
         } else {
-            // Si no ha iniciat sessió, obrim el modal d'autenticació
             setShowAuthModal(true);
         }
     };
     
-    // Funció per gestionar drag & drop (Sense canvis)
+    // Funció per gestionar drag & drop
     const handleDragEnd = async (result) => {
         if (!result.destination) return;
-        if (!isReorderMode) return; // Si no està en mode reordenació, no fem res
+        if (!isReorderMode) return;
 
         const { source, destination, type } = result;
 
@@ -486,10 +482,8 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
     };
 
     return (
-        // Ajustem el padding inferior 'pb-6'
         <div className="min-h-screen bg-[#f0f3f5] text-gray-700 flex flex-col p-4 sm:p-6 pb-6"> 
             <header className="w-full mb-6 text-center relative">
-                {/* ICONA DE L'USUARI A DALT A LA DRETA. CRIDA A openAccountMenu */}
                 <button 
                     onClick={openAccountMenu} 
                     className="absolute top-0 right-0 p-2 rounded-full bg-[#f0f3f5] text-gray-700 box-shadow-neomorphic-button hover:scale-110 transition-all-smooth"
@@ -497,12 +491,10 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                 >
                     <User className="w-6 h-6" />
                 </button>
-                {/* FI ICONA D'USUARI */}
 
                 <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
             </header>
 
-            {/* Feedback Message (Sense canvis) */}
             {feedbackMessage && (
                 <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 text-white px-4 py-2 
                     rounded-md shadow-lg z-50 transition-opacity duration-300 opacity-100 flex items-center 
@@ -511,7 +503,6 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                 </div>
             )}
 
-            {/* Botons de navegació principal (Despensa <-> Llista) (Sense canvis) */}
             <div className="w-full max-w-full flex flex-col gap-4 mb-6 mx-auto">
                 <div className="flex justify-center gap-4">
                     <button 
@@ -536,10 +527,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                     </button>
                 </div>
 
-                {/* CONTENIDOR DE FUNCIONALITATS SUPERIORS: BARRRA DE CERCA + ICONA REORDENACIÓ */}
                 <div className="flex justify-center items-center w-full gap-3">
-                    
-                    {/* BARRA DE CERCA UNIFICADA (flex-grow per omplir l'espai restant) */}
                     <div className="relative flex-grow max-w-lg">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -551,11 +539,9 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                         />
                     </div>
 
-                    {/* ICONA DE REORDENACIÓ (Visible només a la Llista de la Compra) */}
                     {currentView === 'shoppingList' && (
                         <button 
                             onClick={toggleReorderMode}
-                            // Ajust de classes per coincidir amb l'altura de l'input (p-3)
                             className={`p-3 rounded-md font-bold transition-all-smooth flex-shrink-0 ${
                                 isReorderMode
                                     ? 'box-shadow-neomorphic-button-inset text-red-600'
@@ -568,9 +554,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                     )}
                 </div>
             </div>
-            {/* FI CONTENIDOR SUPERIOR */}
 
-            {/* Vistes principals */}
             {currentView === 'pantry' && (
                 <div className="space-y-6">
                     <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full">
@@ -589,7 +573,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                                         additionalClasses="box-shadow-neomorphic-element cursor-pointer hover:box-shadow-neomorphic-element-hover"
                                         showEditButton={true}
                                         requireDoubleClick={false}
-                                        isShoppingList={false} // ⭐⭐ EXPLÍCITAMENT FALS PER LA DESPENSA ⭐⭐
+                                        isShoppingList={false}
                                     />
                                 ))}
                             </div>
@@ -613,7 +597,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                                            additionalClasses="box-shadow-neomorphic-element-red cursor-pointer"
                                             showEditButton={true}
                                             requireDoubleClick={false}
-                                            isShoppingList={false} // ⭐⭐ EXPLÍCITAMENT FALS PER LA DESPENSA (pendents) ⭐⭐
+                                            isShoppingList={false}
                                         />
                                     ))}
                                 </div>
@@ -628,13 +612,9 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
             {currentView === 'shoppingList' && (
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <div className="space-y-6">
-                        
-                        {/* El control de reordenació ja és a dalt amb la barra de cerca */}
-                        
                         <div className="bg-[#f0f3f5] p-4 rounded-lg box-shadow-neomorphic-container mx-auto w-full space-y-4">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-gray-700">Productes per comprar ({unboughtItems.length})</h2>
-                                {/* NOMÉS MOSTREM EL MISSATGE SI ESTÀ EN MODE REORDENACIÓ */}
                                 {isReorderMode && (<span className="text-sm text-blue-600 font-medium">Mode Reordenació Productes actiu</span>)}
                             </div>
                             
@@ -655,7 +635,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                                                     handleToggleBought={handleToggleBought}
                                                     renderListItems={renderListItems}
                                                     isReorderMode={isReorderMode}
-                                                    isShoppingList={true} // ⭐⭐ AFEGIT A DRAGGABLE SECTION PER ALS ELEMENTS PENDENTS ⭐⭐
+                                                    isShoppingList={true}
                                                 />
                                             ))}
                                             {provided.placeholder}
@@ -693,12 +673,11 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                                                     onEdit={null}
                                                     onAction={() => handleToggleBought(item, item.isBought)}
                                                     actionLabel={`Doble clic per desmarcar ${item.name} com comprat i netejar quantitat`}
-                                                    // ⭐⭐ CANVI CLAU: isShoppingList={true} AFEGIT AQUÍ ⭐⭐
-                                                    additionalClasses="box-shadow-neomorphic-element-bought" // Eliminem 'grayscale-full' d'aquí
+                                                    additionalClasses="box-shadow-neomorphic-element-bought"
                                                     showEditButton={false}
                                                     requireDoubleClick={true}
                                                     opacity={0.75}
-                                                    isShoppingList={true} // ⭐⭐⭐ ÉS LA LLISTA DE LA COMPRA, COMPRAT=GRISAT ⭐⭐⭐
+                                                    isShoppingList={true}
                                                 />
                                             ))}
                                         </div>
@@ -712,11 +691,9 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                 </DragDropContext>
             )}
 
-            {/* BOTÓ FLOTANT (Només a la Despensa) */}
             {currentView === 'pantry' && (
                 <button
                     onClick={openAddModal}
-                    // Posició ajustada a bottom-6
                     className="fixed bottom-6 right-6 p-4 rounded-full bg-green-500 text-white 
                         box-shadow-neomorphic-fab hover:bg-green-600 transition-all-smooth z-40 
                         shadow-xl flex items-center justify-center transform hover:scale-105"
@@ -725,9 +702,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                     <Plus className="w-8 h-8" />
                 </button>
             )}
-            {/* FI BOTÓ FLOTANT */}
 
-            {/* Modals (Sense canvis) */}
             {showEditModal && editingItem && (
                 <EditItemModal 
                     item={editingItem} 
@@ -767,6 +742,9 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                     onUpdateListName={updateListName}
                     onDeleteList={deleteList}
                     setFeedback={setFeedback}
+                    onShareList={handleShareList}
+                    onRemoveListAccess={handleRemoveListAccess}
+                    getListSharedWith={getListSharedWith}
                     onClose={() => setShowListManagerModal(false)}
                 />
             )}
