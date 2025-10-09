@@ -82,6 +82,22 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
+    // ⭐ FUNCIONS TEMPORALS per compartir llistes (les completarem després)
+const getListSharedWith = useCallback((listId) => {
+    // De moment retornem un array buit
+    return [];
+}, []);
+
+const handleShareList = useCallback(async (listId, email) => {
+    // De moment només mostrem un missatge
+    throw new Error("Funció de compartir encara en desenvolupament");
+}, []);
+
+const handleRemoveListAccess = useCallback(async (listId, email) => {
+    // De moment només mostrem un missatge
+    throw new Error("Funció d'eliminar accés encara en desenvolupament");
+}, []);
+
     // ⭐ NOU: Efecte per actualitzar el títol de la pestanya del navegador
     useEffect(() => {
         document.title = "Mua"; 
