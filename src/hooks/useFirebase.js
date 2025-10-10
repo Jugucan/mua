@@ -68,6 +68,8 @@ export const useFirebase = () => {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState(null);
+  // ⭐ NOU: Estat per guardar les llistes compartides
+  const [sharedLists, setSharedLists] = useState({});
 
 
   // ----------------------------------------------------
@@ -89,7 +91,12 @@ export const useFirebase = () => {
                 lists: [{ id: defaultListId, name: "La Meva Llista" }],
                 activeListId: defaultListId
             });
-            await setDoc(doc(db, 'lists', defaultListId), { name: "La Meva Llista", userId: user.uid, createdAt: serverTimestamp() });
+            await setDoc(doc(db, 'lists', defaultListId), { 
+                name: "La Meva Llista", 
+                userId: user.uid, 
+                createdAt: serverTimestamp(),
+                sharedWith: [] // ⭐ NOU: Array d'usuaris amb accés
+            });
             setActiveListId(defaultListId);
 
         } else {
@@ -103,6 +110,7 @@ export const useFirebase = () => {
         setUserEmail(null);
         setLists([]);
         setActiveListId(null);
+        setSharedLists({});
       }
       setIsAuthReady(true);
     });
@@ -130,6 +138,37 @@ export const useFirebase = () => {
 
     return unsub;
   }, [userId]);
+
+  // ⭐ NOU: Escoltar canvis a les llistes per saber amb qui estan compartides
+  useEffect(() => {
+    if (!lists || lists.length === 0) {
+        setSharedLists({});
+        return;
+    }
+
+    const unsubscribes = lists.map(list => {
+        const listRef = doc(db, 'lists', list.id);
+        
+        return onSnapshot(listRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setSharedLists(prev => ({
+                    ...prev,
+                    [list.id]: {
+                        ownerId: data.userId,
+                        sharedWith: data.sharedWith || []
+                    }
+                }));
+            }
+        }, (error) => {
+            console.error(`Error escoltant llista ${list.id}:`, error);
+        });
+    });
+
+    return () => {
+        unsubscribes.forEach(unsub => unsub());
+    };
+  }, [lists]);
 
   useEffect(() => {
     if (!userId || !activeListId) return;
@@ -216,7 +255,8 @@ export const useFirebase = () => {
       await setDoc(newListRef, {
           name: name,
           userId: userId,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          sharedWith: [] // ⭐ NOU: Array buit per usuaris compartits
       });
 
       const newLists = [...lists, { id: newListId, name: name }];
@@ -275,6 +315,159 @@ export const useFirebase = () => {
       });
 
   }, [userId]);
+
+
+  // ----------------------------------------------------
+  // 2B. ⭐ NOVES FUNCIONS PER COMPARTIR LLISTES
+  // ----------------------------------------------------
+
+  // Funció per buscar un usuari per email
+  const findUserByEmail = useCallback(async (email) => {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', email.toLowerCase()));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+          return null;
+      }
+      
+      return {
+          uid: snapshot.docs[0].id,
+          email: snapshot.docs[0].data().email
+      };
+  }, []);
+
+  // Funció per compartir una llista amb un altre usuari
+  const shareList = useCallback(async (listId, targetEmail) => {
+      if (!userId || !userEmail) throw new Error("Usuari no autenticat.");
+      
+      // Normalitzem l'email
+      const normalizedEmail = targetEmail.toLowerCase().trim();
+      
+      // Busquem l'usuari amb aquest email
+      const targetUser = await findUserByEmail(normalizedEmail);
+      
+      if (!targetUser) {
+          throw new Error("Aquest usuari no està registrat a l'aplicació.");
+      }
+      
+      if (targetUser.uid === userId) {
+          throw new Error("No pots compartir una llista amb tu mateix/a.");
+      }
+      
+      // Obtenim la informació de la llista
+      const listRef = doc(db, 'lists', listId);
+      const listSnap = await getDoc(listRef);
+      
+      if (!listSnap.exists()) {
+          throw new Error("La llista no existeix.");
+      }
+      
+      const listData = listSnap.data();
+      
+      // Comprovem si ja està compartida amb aquest usuari
+      const currentSharedWith = listData.sharedWith || [];
+      if (currentSharedWith.some(user => user.email === normalizedEmail)) {
+          throw new Error("Aquesta llista ja està compartida amb aquest usuari.");
+      }
+      
+      // Afegim l'usuari a la llista compartida
+      const updatedSharedWith = [
+          ...currentSharedWith,
+          {
+              uid: targetUser.uid,
+              email: normalizedEmail,
+              addedAt: new Date().toISOString()
+          }
+      ];
+      
+      // Actualitzem la llista a Firebase
+      await updateDoc(listRef, {
+          sharedWith: updatedSharedWith,
+          updatedAt: serverTimestamp()
+      });
+      
+      // Afegim la llista al document userLists de l'usuari objectiu
+      const targetUserListsRef = doc(db, 'userLists', targetUser.uid);
+      const targetUserListsSnap = await getDoc(targetUserListsRef);
+      
+      if (targetUserListsSnap.exists()) {
+          const targetUserData = targetUserListsSnap.data();
+          const targetUserLists = targetUserData.lists || [];
+          
+          // Comprovem si ja té aquesta llista
+          if (!targetUserLists.some(l => l.id === listId)) {
+              targetUserLists.push({
+                  id: listId,
+                  name: listData.name
+              });
+              
+              await updateDoc(targetUserListsRef, {
+                  lists: targetUserLists,
+                  updatedAt: serverTimestamp()
+              });
+          }
+      }
+      
+      return true;
+  }, [userId, userEmail, findUserByEmail]);
+
+  // Funció per eliminar l'accés d'un usuari a una llista
+  const removeListAccess = useCallback(async (listId, targetEmail) => {
+      if (!userId) throw new Error("Usuari no autenticat.");
+      
+      const normalizedEmail = targetEmail.toLowerCase().trim();
+      
+      // Obtenim la informació de la llista
+      const listRef = doc(db, 'lists', listId);
+      const listSnap = await getDoc(listRef);
+      
+      if (!listSnap.exists()) {
+          throw new Error("La llista no existeix.");
+      }
+      
+      const listData = listSnap.data();
+      const currentSharedWith = listData.sharedWith || [];
+      
+      // Trobem l'usuari a eliminar
+      const userToRemove = currentSharedWith.find(user => user.email === normalizedEmail);
+      
+      if (!userToRemove) {
+          throw new Error("Aquest usuari no té accés a la llista.");
+      }
+      
+      // Eliminem l'usuari de la llista compartida
+      const updatedSharedWith = currentSharedWith.filter(user => user.email !== normalizedEmail);
+      
+      await updateDoc(listRef, {
+          sharedWith: updatedSharedWith,
+          updatedAt: serverTimestamp()
+      });
+      
+      // Eliminem la llista del document userLists de l'usuari objectiu
+      const targetUserListsRef = doc(db, 'userLists', userToRemove.uid);
+      const targetUserListsSnap = await getDoc(targetUserListsRef);
+      
+      if (targetUserListsSnap.exists()) {
+          const targetUserData = targetUserListsSnap.data();
+          const targetUserLists = targetUserData.lists || [];
+          
+          const updatedTargetLists = targetUserLists.filter(l => l.id !== listId);
+          
+          await updateDoc(targetUserListsRef, {
+              lists: updatedTargetLists,
+              updatedAt: serverTimestamp()
+          });
+      }
+      
+      return true;
+  }, [userId]);
+
+  // Funció per obtenir amb qui està compartida una llista
+  const getListSharedWith = useCallback((listId) => {
+      if (!sharedLists[listId]) return [];
+      return sharedLists[listId].sharedWith || [];
+  }, [sharedLists]);
 
 
   // ----------------------------------------------------
@@ -427,13 +620,8 @@ export const useFirebase = () => {
     };
 
     if (newStatus) {
-        // Quan marquem com a comprat:
-        // - Mantenim isInShoppingList a true perquè aparegui a "Productes comprats"
-        // - Buidem la quantitat
-        // - L'orderIndex es manté per si el desmarquem
         updatedData.quantity = '';
     } else {
-        // Si desmarquem com a comprat, torna a la llista de la compra
         updatedData.isInShoppingList = true;
 
         const sectionItems = items.filter(i =>
@@ -445,9 +633,6 @@ export const useFirebase = () => {
             (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
         );
         updatedData.orderIndex = maxOrderIndex + 1;
-
-        // ⭐ AQUESTA ÉS LA CORRECCIÓ: hem eliminat les línies que posaven quantity = '1'
-        // Ara la quantitat quedarà buida (com ja està al passar a "comprats")
     }
 
     try {
@@ -477,7 +662,6 @@ export const useFirebase = () => {
     }
   }, [userId]);
 
-  // ⭐ NOVA FUNCIÓ: Actualitzar tot l'ordre de seccions d'un cop
   const updateAllSectionsOrder = useCallback(async (sectionsArray) => {
     if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
 
@@ -543,7 +727,6 @@ export const useFirebase = () => {
   const clearCompletedItems = useCallback(async () => {
     if (!userId || !activeListId) return 0;
 
-    // Busquem només productes comprats de la llista activa
     const q = query(
         collection(db, 'items'),
         where('userId', '==', userId),
@@ -561,10 +744,9 @@ export const useFirebase = () => {
     let count = 0;
 
     snapshot.docs.forEach((docSnap) => {
-        // Arxivem els productes comprats: tornen a la despensa
         batch.update(docSnap.ref, {
             isBought: false,
-            isInShoppingList: false,  // Ara SÍ els traiem de la llista
+            isInShoppingList: false,
             quantity: '',
             orderIndex: -1,
             updatedAt: serverTimestamp()
@@ -664,7 +846,16 @@ export const useFirebase = () => {
 
   const handleLogin = useCallback(async (email, password) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // ⭐ NOU: Guardem l'email a la col·lecció 'users' per poder buscar usuaris
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+          email: email.toLowerCase(),
+          updatedAt: serverTimestamp()
+      }, { merge: true });
+      
       return true;
     } catch (error) {
       console.error("Error iniciant sessió:", error);
@@ -674,7 +865,17 @@ export const useFirebase = () => {
 
   const handleRegister = useCallback(async (email, password) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // ⭐ NOU: Guardem l'email a la col·lecció 'users' per poder buscar usuaris
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+          email: email.toLowerCase(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+      });
+      
       return true;
     } catch (error) {
       console.error("Error registrant usuari:", error);
@@ -729,6 +930,10 @@ export const useFirebase = () => {
     handleRegister,
     handlePasswordReset,
     handleLogout,
-    cleanImageUrl
+    cleanImageUrl,
+    // ⭐ NOVES FUNCIONS EXPORTADES
+    shareList,
+    removeListAccess,
+    getListSharedWith
   };
 };
