@@ -611,9 +611,6 @@ export const useFirebase = () => {
     }
   }, [userId, items, activeListId]);
 
-  // ------------------------------------------------------------------
-  // ⭐ FUNCIÓ MODIFICADA PER PERMETRE EL SOL CLIC (De Despensa a Per Comprar)
-  // ------------------------------------------------------------------
   const toggleBought = useCallback(async (item, newStatus) => {
     if (!userId) throw new Error("Usuari no autenticat.");
 
@@ -622,29 +619,20 @@ export const useFirebase = () => {
         updatedAt: serverTimestamp()
     };
 
-    // SI L'ELEMENT ES MARCA COM A COMPRAT (Va a la Despensa)
     if (newStatus) {
-        updatedData.quantity = ''; // Treiem la quantitat (ja està a la despensa)
-        // L'ítem es manté a isInShoppingList: true per defecte.
+        updatedData.quantity = '';
     } else {
-        // SI L'ELEMENT ES DESMARCA COM A COMPRAT (Torna a 'Per Comprar')
-        
-        // 1. Assegurem que es mantingui a la llista de la compra per complir l'objectiu del sol clic.
-        updatedData.isInShoppingList = true; 
+        updatedData.isInShoppingList = true;
 
-        // 2. Recalculem l'ordre perquè es mostri al final de la seva secció a 'Per Comprar'
         const sectionItems = items.filter(i =>
             (i.section || '') === (item.section || '') &&
             i.listId === activeListId &&
-            i.isInShoppingList === true &&
-            i.id !== item.id // <--- IMPORTANT: Excloem l'ítem actual del càlcul
+            i.isInShoppingList === true
         );
         const maxOrderIndex = sectionItems.reduce((max, i) =>
             (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
         );
         updatedData.orderIndex = maxOrderIndex + 1;
-        // La quantitat es manté si existia, o s'hauria de restablir al valor que tenia abans de comprar.
-        // Aquí no la toquem per mantenir la lògica original, ja que l'objectiu és l'estat.
     }
 
     try {
@@ -932,7 +920,7 @@ export const useFirebase = () => {
     updateItem,
     deleteItem,
     toggleItemInShoppingList,
-    toggleBought, // Aquesta és la funció que hem modificat!
+    toggleBought,
     clearCompletedItems,
     uploadFromExcel,
     updateItemOrder,
