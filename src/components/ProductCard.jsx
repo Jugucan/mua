@@ -25,8 +25,7 @@ const ProductCard = ({
   opacity = 1,
   onPressAndHold = null, 
   isDraggable = false,
-  isShoppingList = false, 
-  isPantryList = false 
+  isShoppingList = false // ⭐⭐⭐ NOVA PROPIETAT (Per defecte, és 'false' per si no la passes) ⭐⭐⭐
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -74,16 +73,11 @@ const ProductCard = ({
       }
     }
     
-    // ⭐⭐⭐ MODIFICACIÓ DEFINITIVA: Forçar sol clic si no es requereix doble clic 
-    // O si l'ítem ja està comprat (assumim que és l'acció de la Despensa) ⭐⭐⭐
-    if (!requireDoubleClick || item.isBought) {
+    if (!requireDoubleClick) {
       if (onAction) onAction();
       return;
     }
-    // ⭐⭐⭐ FI MODIFICACIÓ DEFINITIVA ⭐⭐⭐
 
-
-    // Lògica de doble clic (només si requireDoubleClick és true I item.isBought és false)
     setClickCount(prev => prev + 1);
     if (clickTimer) {
       clearTimeout(clickTimer);
@@ -127,8 +121,8 @@ const ProductCard = ({
     return <ShoppingBag className={`${className} text-gray-600`} />;
   };
   
-  // LÒGICA DE GRISAT: Només aplicar grisat si és llista de la compra I està comprat
-  const shouldBeGrayedOut = isShoppingList && item.isBought && !isPantryList; 
+  // ⭐⭐⭐ LÒGICA CLAU MODIFICADA: Només aplicar grisat si és llista de la compra I està comprat ⭐⭐⭐
+  const shouldBeGrayedOut = isShoppingList && item.isBought;
   const purchasedClass = shouldBeGrayedOut ? 'product-card-purchased' : '';
   
   const nameStyleClass = shouldBeGrayedOut ? 'line-through text-gray-400' : 
@@ -137,7 +131,7 @@ const ProductCard = ({
   return (
     <>
       <div 
-        className={`relative w-full h-full ${purchasedClass}`}
+        className={`relative w-full h-full ${purchasedClass}`} // Aplicar la classe de grisat aquí
         style={{ opacity }}
         onMouseDown={onPressAndHold ? handlePressStart : null}
         onMouseUp={onPressAndHold ? handlePressEnd : null}
@@ -228,6 +222,7 @@ const ProductCard = ({
               e.stopPropagation(); 
               onEdit(item); 
             }} 
+            // També fem que els botons semblin desactivats si s'ha de grisar el producte
             className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${shouldBeGrayedOut ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 transition-all-smooth hover:scale-110`} 
             aria-label={`Edita ${item.name}`}
           >
@@ -237,6 +232,7 @@ const ProductCard = ({
         
         {isDraggable && (
           <div 
+            // També fem que les icones semblin desactivades si s'ha de grisar el producte
             className={`absolute top-2 right-2 p-1 rounded-full bg-[#f0f3f5] ${shouldBeGrayedOut ? 'text-gray-400' : 'text-gray-600'} box-shadow-neomorphic-button-small z-10 cursor-grab`}
           >
             <Menu className="w-4 h-4" />
