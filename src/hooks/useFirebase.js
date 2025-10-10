@@ -381,33 +381,43 @@ export const useFirebase = () => {
           }
       ];
       
-      // Actualitzem la llista a Firebase
+      // Actualitzem la llista a Firebase (col·lecció 'lists')
       await updateDoc(listRef, {
           sharedWith: updatedSharedWith,
           updatedAt: serverTimestamp()
       });
       
-      // Afegim la llista al document userLists de l'usuari objectiu
+      // ⭐ MODIFICACIÓ CLAU AQUÍ: Gestionem el document userLists de l'usuari objectiu
       const targetUserListsRef = doc(db, 'userLists', targetUser.uid);
       const targetUserListsSnap = await getDoc(targetUserListsRef);
       
+      const newListEntry = { id: listId, name: listData.name };
+
       if (targetUserListsSnap.exists()) {
+          // El document userLists de l'usuari existeix
           const targetUserData = targetUserListsSnap.data();
           const targetUserLists = targetUserData.lists || [];
           
-          // Comprovem si ja té aquesta llista
+          // Comprovem si ja té aquesta llista (en cas que no s'hagi eliminat per algun motiu)
           if (!targetUserLists.some(l => l.id === listId)) {
-              targetUserLists.push({
-                  id: listId,
-                  name: listData.name
-              });
+              // Si no la té, l'afegim
+              targetUserLists.push(newListEntry);
               
               await updateDoc(targetUserListsRef, {
                   lists: targetUserLists,
                   updatedAt: serverTimestamp()
               });
           }
+      } else {
+          // El document userLists de l'usuari NO existeix (és un usuari nou)
+          // El creem amb la llista compartida com a única llista.
+          await setDoc(targetUserListsRef, {
+              lists: [newListEntry],
+              activeListId: listId,
+              updatedAt: serverTimestamp()
+          });
       }
+      // ⭐ FINAL MODIFICACIÓ
       
       return true;
   }, [userId, userEmail, findUserByEmail]);
@@ -453,9 +463,20 @@ export const useFirebase = () => {
           const targetUserLists = targetUserData.lists || [];
           
           const updatedTargetLists = targetUserLists.filter(l => l.id !== listId);
+
+          // ⭐ MODIFICACIÓ CLAU AQUÍ: Si la llista eliminada era l'activa, canviem l'activa al primer element
+          let newActiveListId = targetUserData.activeListId;
+          if (newActiveListId === listId && updatedTargetLists.length > 0) {
+              newActiveListId = updatedTargetLists[0].id;
+          } else if (newActiveListId === listId && updatedTargetLists.length === 0) {
+              // Si no li queda cap llista, posem activeListId a null (o a la llista per defecte si en tingués una de pròpia)
+              newActiveListId = null; 
+          }
+          // ⭐ FINAL MODIFICACIÓ
           
           await updateDoc(targetUserListsRef, {
               lists: updatedTargetLists,
+              activeListId: newActiveListId, // S'ha d'actualitzar l'activeListId
               updatedAt: serverTimestamp()
           });
       }
