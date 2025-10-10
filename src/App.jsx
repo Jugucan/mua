@@ -82,21 +82,26 @@ function App() {
         cleanImageUrl
     } = useFirebase();
 
-    // ⭐ FUNCIONS TEMPORALS per compartir llistes (les completarem després)
-    const getListSharedWith = useCallback((listId) => {
-        // De moment retornem un array buit
-        return [];
-    }, []);
+    // ⭐ FUNCIONS REALS per compartir llistes
+const { shareList, removeListAccess, getListSharedWith } = useFirebase();
 
-    const handleShareList = useCallback(async (listId, email) => {
-        // De moment només mostrem un missatge
-        throw new Error("Funció de compartir encara en desenvolupament");
-    }, []);
+const handleShareList = useCallback(async (listId, email) => {
+    try {
+        await shareList(listId, email);
+        return true;
+    } catch (error) {
+        throw error;
+    }
+}, [shareList]);
 
-    const handleRemoveListAccess = useCallback(async (listId, email) => {
-        // De moment només mostrem un missatge
-        throw new Error("Funció d'eliminar accés encara en desenvolupament");
-    }, []);
+const handleRemoveListAccess = useCallback(async (listId, email) => {
+    try {
+        await removeListAccess(listId, email);
+        return true;
+    } catch (error) {
+        throw error;
+    }
+}, [removeListAccess]);
 
     // ⭐ NOU: Efecte per actualitzar el títol de la pestanya del navegador
     useEffect(() => {
