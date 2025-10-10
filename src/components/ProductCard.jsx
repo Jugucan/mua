@@ -25,7 +25,8 @@ const ProductCard = ({
   opacity = 1,
   onPressAndHold = null, 
   isDraggable = false,
-  isShoppingList = false // ⭐⭐⭐ NOVA PROPIETAT (Per defecte, és 'false' per si no la passes) ⭐⭐⭐
+  isShoppingList = false, // Propietat per la llista de la compra
+  isPantryList = false // ⭐⭐⭐ NOVA PROPIETAT PER LA DESPENSA ⭐⭐⭐
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -121,8 +122,9 @@ const ProductCard = ({
     return <ShoppingBag className={`${className} text-gray-600`} />;
   };
   
-  // ⭐⭐⭐ LÒGICA CLAU MODIFICADA: Només aplicar grisat si és llista de la compra I està comprat ⭐⭐⭐
-  const shouldBeGrayedOut = isShoppingList && item.isBought;
+  // LÒGICA CLAU MODIFICADA: Només aplicar grisat si és llista de la compra I està comprat
+  // Però NO si estem a la Despensa.
+  const shouldBeGrayedOut = isShoppingList && item.isBought && !isPantryList; 
   const purchasedClass = shouldBeGrayedOut ? 'product-card-purchased' : '';
   
   const nameStyleClass = shouldBeGrayedOut ? 'line-through text-gray-400' : 
