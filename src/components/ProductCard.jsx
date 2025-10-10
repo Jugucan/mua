@@ -26,7 +26,7 @@ const ProductCard = ({
   onPressAndHold = null, 
   isDraggable = false,
   isShoppingList = false, // Propietat per la llista de la compra
-  isPantryList = false // ⭐⭐⭐ NOVA PROPIETAT PER LA DESPENSA ⭐⭐⭐
+  isPantryList = false // ⭐ NOVA PROPIETAT PER LA DESPENSA (ja modificada) ⭐
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [clickCount, setClickCount] = useState(0);
@@ -74,11 +74,15 @@ const ProductCard = ({
       }
     }
     
-    if (!requireDoubleClick) {
+    // ⭐⭐⭐ MODIFICACIÓ CLAU AQUÍ: Forçar el sol clic si estem a la Despensa ⭐⭐⭐
+    // O si requireDoubleClick és false (comportament normal)
+    if (!requireDoubleClick || isPantryList) {
       if (onAction) onAction();
       return;
     }
+    // ⭐⭐⭐ FI MODIFICACIÓ CLAU ⭐⭐⭐
 
+    // Lògica de doble clic (només si requireDoubleClick és true I NO estem a la Despensa)
     setClickCount(prev => prev + 1);
     if (clickTimer) {
       clearTimeout(clickTimer);
@@ -123,7 +127,7 @@ const ProductCard = ({
   };
   
   // LÒGICA CLAU MODIFICADA: Només aplicar grisat si és llista de la compra I està comprat
-  // Però NO si estem a la Despensa.
+  // Però NO si estem a la Despensa (isPantryList).
   const shouldBeGrayedOut = isShoppingList && item.isBought && !isPantryList; 
   const purchasedClass = shouldBeGrayedOut ? 'product-card-purchased' : '';
   
