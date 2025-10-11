@@ -178,8 +178,8 @@ export const useFirebase = () => {
     const unsub = onSnapshot(sectionsRef, (docSnap) => {
         if (docSnap.exists()) {
             const rawOrder = docSnap.data().order || {};
-            // console.log('📥 RAW ORDER des de Firebase:', rawOrder); // Descomenta si cal debug
-            
+            console.log('📥 RAW ORDER des de Firebase:', rawOrder);
+
             const normalizedOrder = {};
 
             Object.keys(rawOrder).forEach(key => {
@@ -187,14 +187,14 @@ export const useFirebase = () => {
                 normalizedOrder[normalizedKey] = rawOrder[key];
             });
 
-            // console.log('✅ NORMALIZED ORDER aplicat:', normalizedOrder); // Descomenta si cal debug
+            console.log('✅ NORMALIZED ORDER aplicat:', normalizedOrder);
             setSectionOrder(normalizedOrder);
         } else {
             const defaultOrder = DEFAULT_SECTION_ORDER.reduce((acc, section, index) => {
                 acc[section] = index;
                 return acc;
             }, {});
-            // console.log('🔄 Usant ordre per defecte:', defaultOrder); // Descomenta si cal debug
+            console.log('🔄 Usant ordre per defecte:', defaultOrder);
             setSectionOrder(defaultOrder);
         }
     }, (error) => {
@@ -256,7 +256,7 @@ export const useFirebase = () => {
           name: name,
           userId: userId,
           createdAt: serverTimestamp(),
-          sharedWith: [] // ⭐ Array buit per usuaris compartits
+          sharedWith: [] // ⭐ NOU: Array buit per usuaris compartits
       });
 
       const newLists = [...lists, { id: newListId, name: name }];
@@ -290,7 +290,6 @@ export const useFirebase = () => {
       const snapshot = await getDocs(q);
       const batch = writeBatch(db);
 
-      // Només movem els items a la nova llista si l'usuari és el propietari dels items (el que sempre haurien de ser)
       snapshot.docs.forEach(docSnap => {
           batch.update(docSnap.ref, { listId: newActiveListId });
       });
@@ -301,37 +300,6 @@ export const useFirebase = () => {
           activeListId: newActiveListId,
           updatedAt: serverTimestamp()
       });
-
-      // ⭐ NOU: Netegem l'accés a tots els usuaris compartits
-      const listSnap = await getDoc(doc(db, 'lists', listId));
-      if (listSnap.exists()) {
-          const listData = listSnap.data();
-          const sharedUsers = listData.sharedWith || [];
-
-          for (const user of sharedUsers) {
-              const targetUserListsRef = doc(db, 'userLists', user.uid);
-              const targetUserListsSnap = await getDoc(targetUserListsRef);
-              
-              if (targetUserListsSnap.exists()) {
-                  const targetUserData = targetUserListsSnap.data();
-                  const updatedTargetLists = (targetUserData.lists || []).filter(l => l.id !== listId);
-
-                  let newActiveListIdTarget = targetUserData.activeListId;
-                  if (newActiveListIdTarget === listId && updatedTargetLists.length > 0) {
-                      newActiveListIdTarget = updatedTargetLists[0].id;
-                  } else if (newActiveListIdTarget === listId && updatedTargetLists.length === 0) {
-                      newActiveListIdTarget = null; 
-                  }
-                  
-                  batch.update(targetUserListsRef, {
-                      lists: updatedTargetLists,
-                      activeListId: newActiveListIdTarget,
-                      updatedAt: serverTimestamp()
-                  });
-              }
-          }
-      }
-      // ⭐ FI NOU
 
       await batch.commit();
 
@@ -350,7 +318,7 @@ export const useFirebase = () => {
 
 
   // ----------------------------------------------------
-  // 2B. FUNCIONS PER COMPARTIR LLISTES
+  // 2B. ⭐ NOVES FUNCIONS PER COMPARTIR LLISTES
   // ----------------------------------------------------
 
   // Funció per buscar un usuari per email
@@ -363,10 +331,9 @@ export const useFirebase = () => {
           return null;
       }
       
-      const userData = snapshot.docs[0].data();
       return {
           uid: snapshot.docs[0].id,
-          email: userData.email
+          email: snapshot.docs[0].data().email
       };
   }, []);
 
@@ -374,15 +341,6 @@ export const useFirebase = () => {
   const shareList = useCallback(async (listId, targetEmail) => {
       if (!userId || !userEmail) throw new Error("Usuari no autenticat.");
       
-      // ⭐ MODIFICACIÓ CLAU: Comprovem que la llista existeixi i sigui propietat de l'usuari (A)
-      const isListInUserLists = lists.some(l => l.id === listId);
-      if (!isListInUserLists) {
-          // Si la llista no és a les nostres llistes (lists), significa que no hi ha accés
-          // o que no existeix, encara que el document lists/listId hi sigui.
-          throw new Error("La llista no existeix al teu perfil o no tens permís per compartir-la.");
-      }
-      // ⭐ FI MODIFICACIÓ CLAU
-
       // Normalitzem l'email
       const normalizedEmail = targetEmail.toLowerCase().trim();
       
@@ -397,13 +355,12 @@ export const useFirebase = () => {
           throw new Error("No pots compartir una llista amb tu mateix/a.");
       }
       
-      // Obtenim la informació de la llista (per assegurar-nos que existeix i per obtenir les dades)
+      // Obtenim la informació de la llista
       const listRef = doc(db, 'lists', listId);
       const listSnap = await getDoc(listRef);
       
       if (!listSnap.exists()) {
-          // Aquesta línia hauria de ser innecessària gràcies a la comprovació anterior, però la mantenim per seguretat a nivell de DB.
-          throw new Error("Error de dades: La llista no existeix a la base de dades.");
+          throw new Error("La llista no existeix.");
       }
       
       const listData = listSnap.data();
@@ -414,7 +371,7 @@ export const useFirebase = () => {
           throw new Error("Aquesta llista ja està compartida amb aquest usuari.");
       }
       
-      // 1. Afegim l'usuari a la llista compartida
+      // Afegim l'usuari a la llista compartida
       const updatedSharedWith = [
           ...currentSharedWith,
           {
@@ -424,43 +381,38 @@ export const useFirebase = () => {
           }
       ];
       
-      // Actualitzem la llista a Firebase (col·lecció 'lists')
+      // Actualitzem la llista a Firebase
       await updateDoc(listRef, {
           sharedWith: updatedSharedWith,
           updatedAt: serverTimestamp()
       });
       
-      // 2. Assegurem que la referència a la llista s'afegeix al document userLists de l'usuari objectiu
+      // Afegim la llista al document userLists de l'usuari objectiu
       const targetUserListsRef = doc(db, 'userLists', targetUser.uid);
       const targetUserListsSnap = await getDoc(targetUserListsRef);
       
-      const newListEntry = { id: listId, name: listData.name };
-
       if (targetUserListsSnap.exists()) {
           const targetUserData = targetUserListsSnap.data();
           const targetUserLists = targetUserData.lists || [];
           
+          // Comprovem si ja té aquesta llista
           if (!targetUserLists.some(l => l.id === listId)) {
-              targetUserLists.push(newListEntry);
+              targetUserLists.push({
+                  id: listId,
+                  name: listData.name
+              });
               
               await updateDoc(targetUserListsRef, {
                   lists: targetUserLists,
                   updatedAt: serverTimestamp()
               });
           }
-      } else {
-          // El document userLists de l'usuari NO existeix. El creem.
-          await setDoc(targetUserListsRef, {
-              lists: [newListEntry],
-              activeListId: listId, // La llista activa serà aquesta
-              updatedAt: serverTimestamp()
-          });
       }
       
       return true;
-  }, [userId, userEmail, findUserByEmail, lists]); // L'estat 'lists' és ara una dependència
+  }, [userId, userEmail, findUserByEmail]);
 
-  // Funció per eliminar l'accés d'un usuari a una llista (o per a un convidat abandonar)
+  // Funció per eliminar l'accés d'un usuari a una llista
   const removeListAccess = useCallback(async (listId, targetEmail) => {
       if (!userId) throw new Error("Usuari no autenticat.");
       
@@ -471,42 +423,28 @@ export const useFirebase = () => {
       const listSnap = await getDoc(listRef);
       
       if (!listSnap.exists()) {
-          // Si la llista principal ja no existeix, no podem fer res més.
-          throw new Error("La llista ja no existeix.");
+          throw new Error("La llista no existeix.");
       }
       
       const listData = listSnap.data();
-      const isOwner = userId === listData.userId;
+      const currentSharedWith = listData.sharedWith || [];
       
-      // Busquem l'usuari a eliminar/abandonar (si és el mateix que fa la crida, és l'usuari que abandona)
-      const userToRemove = listData.sharedWith.find(user => user.email === normalizedEmail);
+      // Trobem l'usuari a eliminar
+      const userToRemove = currentSharedWith.find(user => user.email === normalizedEmail);
       
-      if (isOwner) {
-          // 1. Propietari eliminant un convidat
-          if (!userToRemove) {
-              throw new Error("L'usuari convidat ja no té accés a aquesta llista.");
-          }
-          // 2. Propietari intentant abandonar-se a si mateix (no hauria de passar per la UI, però per seguretat)
-          if (userToRemove.uid === userId) {
-             throw new Error("El propietari no pot abandonar la llista. Utilitza la funció d'eliminar llista si cal.");
-          }
-
-      } else {
-          // Usuari Convidat Abandonant
-          if (!userToRemove || userToRemove.uid !== userId) {
-             throw new Error("Només pots eliminar l'accés a tu mateix/a.");
-          }
+      if (!userToRemove) {
+          throw new Error("Aquest usuari no té accés a la llista.");
       }
-
-      // 1. ELIMINEM L'ACCÉS a la llista 'lists/listId'
-      const updatedSharedWith = listData.sharedWith.filter(user => user.email !== normalizedEmail);
+      
+      // Eliminem l'usuari de la llista compartida
+      const updatedSharedWith = currentSharedWith.filter(user => user.email !== normalizedEmail);
       
       await updateDoc(listRef, {
           sharedWith: updatedSharedWith,
           updatedAt: serverTimestamp()
       });
       
-      // 2. ELIMINEM LA REFERÈNCIA de la llista del document 'userLists/userId' de l'usuari objectiu (userToRemove)
+      // Eliminem la llista del document userLists de l'usuari objectiu
       const targetUserListsRef = doc(db, 'userLists', userToRemove.uid);
       const targetUserListsSnap = await getDoc(targetUserListsRef);
       
@@ -515,24 +453,15 @@ export const useFirebase = () => {
           const targetUserLists = targetUserData.lists || [];
           
           const updatedTargetLists = targetUserLists.filter(l => l.id !== listId);
-
-          // Gestió de l'activeListId quan s'abandona
-          let newActiveListId = targetUserData.activeListId;
-          if (newActiveListId === listId && updatedTargetLists.length > 0) {
-              newActiveListId = updatedTargetLists[0].id; // La nova llista activa serà la primera
-          } else if (newActiveListId === listId && updatedTargetLists.length === 0) {
-              newActiveListId = null; // No li queda cap llista
-          }
           
           await updateDoc(targetUserListsRef, {
               lists: updatedTargetLists,
-              activeListId: newActiveListId,
               updatedAt: serverTimestamp()
           });
       }
       
       return true;
-  }, [userId, userEmail]);
+  }, [userId]);
 
   // Funció per obtenir amb qui està compartida una llista
   const getListSharedWith = useCallback((listId) => {
@@ -540,7 +469,10 @@ export const useFirebase = () => {
       return sharedLists[listId].sharedWith || [];
   }, [sharedLists]);
 
-  // ... (La resta de funcions es mantenen igual)
+
+  // ----------------------------------------------------
+  // 3. GESTIÓ D'ELEMENTS
+  // ----------------------------------------------------
 
   const addItem = useCallback(async (itemData) => {
     if (!userId || !activeListId) throw new Error("Usuari o llista no seleccionada.");
@@ -733,7 +665,7 @@ export const useFirebase = () => {
   const updateAllSectionsOrder = useCallback(async (sectionsArray) => {
     if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
 
-    // console.log('🔄 Actualitzant TOTES les seccions per llista:', activeListId, sectionsArray); // Descomenta si cal debug
+    console.log('🔄 Actualitzant TOTES les seccions per llista:', activeListId, sectionsArray);
 
     const newSectionOrder = {};
     sectionsArray.forEach((sectionName, index) => {
@@ -741,14 +673,14 @@ export const useFirebase = () => {
       newSectionOrder[key] = index;
     });
 
-    // console.log('💾 Guardant a Firebase:', newSectionOrder); // Descomenta si cal debug
+    console.log('💾 Guardant a Firebase:', newSectionOrder);
 
     try {
       await setDoc(doc(db, 'sectionOrder', `${userId}_${activeListId}`), {
           order: newSectionOrder,
           updatedAt: serverTimestamp()
       });
-      // console.log('✅ Guardat correctament a Firebase'); // Descomenta si cal debug
+      console.log('✅ Guardat correctament a Firebase');
     } catch (error) {
       console.error("❌ Error actualitzant ordre de seccions:", error);
       throw new Error("No s'ha pogut actualitzar l'ordre de les seccions.");
@@ -758,7 +690,7 @@ export const useFirebase = () => {
   const updateSectionOrder = useCallback(async (sectionName, newIndex) => {
     if (!userId || !activeListId) throw new Error("Usuari no autenticat o llista no seleccionada.");
 
-    // console.log(`🔄 Actualitzant secció "${sectionName}" a índex ${newIndex}`); // Descomenta si cal debug
+    console.log(`🔄 Actualitzant secció "${sectionName}" a índex ${newIndex}`);
 
     const sectionKey = sectionName === '' ? 'SENSE_SECCIO' : sectionName;
 
@@ -777,14 +709,14 @@ export const useFirebase = () => {
 
     newSectionOrder[sectionKey] = newIndex;
 
-    // console.log('💾 Guardant a Firebase:', newSectionOrder); // Descomenta si cal debug
+    console.log('💾 Guardant a Firebase:', newSectionOrder);
 
     try {
       await setDoc(doc(db, 'sectionOrder', `${userId}_${activeListId}`), {
           order: newSectionOrder,
           updatedAt: serverTimestamp()
       });
-      // console.log('✅ Guardat correctament a Firebase'); // Descomenta si cal debug
+      console.log('✅ Guardat correctament a Firebase');
     } catch (error) {
       console.error("❌ Error actualitzant ordre de secció:", error);
       throw new Error("No s'ha pogut actualitzar l'ordre de la secció.");
@@ -917,7 +849,7 @@ export const useFirebase = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // ⭐ Guardem l'email a la col·lecció 'users' per poder buscar usuaris
+      // ⭐ NOU: Guardem l'email a la col·lecció 'users' per poder buscar usuaris
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {
           email: email.toLowerCase(),
@@ -936,7 +868,7 @@ export const useFirebase = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // ⭐ Guardem l'email a la col·lecció 'users' per poder buscar usuaris
+      // ⭐ NOU: Guardem l'email a la col·lecció 'users' per poder buscar usuaris
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {
           email: email.toLowerCase(),
@@ -999,7 +931,7 @@ export const useFirebase = () => {
     handlePasswordReset,
     handleLogout,
     cleanImageUrl,
-    // Funcions de llistes compartides
+    // ⭐ NOVES FUNCIONS EXPORTADES
     shareList,
     removeListAccess,
     getListSharedWith
