@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // ICONES actualitzades per reflectir les funcions
-import { X, Plus, Edit, Trash2, Check, Share2, FileDown, ArrowUpDown, LogOut, User } from 'lucide-react'; 
-import ShareListModal from './ShareListModal'; // ⭐ NOU IMPORT
+import { X, Plus, Edit, Trash2, Check, Share2, FileDown, ArrowUpDown, LogOut, User, UserMinus } from 'lucide-react'; 
+import ShareListModal from './ShareListModal';
 
 const ListManagerModal = ({ 
     lists, 
@@ -18,22 +18,22 @@ const ListManagerModal = ({
     onOpenSectionOrderModal,
     onExportToExcel,
     onLogout,
-    // ⭐ NOVES PROPS PER COMPARTIR
     onShareList,
     onRemoveListAccess,
-    getListSharedWith
+    getListSharedWith,
+    isListOwner // ⭐ NOVA PROP per saber si ets propietari
 }) => {
-    // Estat per gestionar si el quadre de Nova Llista està obert
     const [isAddingNewList, setIsAddingNewList] = useState(false);
-    // Estat per gestionar si el quadre d'Edició de Llista està obert
     const [isEditingName, setIsEditingName] = useState(false); 
-    // ⭐ NOU: Estat per mostrar el modal de compartir
     const [showShareModal, setShowShareModal] = useState(false);
     
     const [tempListName, setTempListName] = useState('');
-    const [newListNameInput, setNewListNameInput] = useState(''); // Per al camp "Nova Llista"
+    const [newListNameInput, setNewListNameInput] = useState('');
     
     const activeList = lists.find(l => l.id === activeListId) || { name: 'Carregant...' };
+
+    // ⭐ NOU: Comprovar si l'usuari és propietari de la llista activa
+    const isOwner = isListOwner ? isListOwner(activeListId) : true;
 
     useEffect(() => {
         if (isEditingName) {
@@ -41,18 +41,15 @@ const ListManagerModal = ({
         }
     }, [isEditingName, activeList.name]);
     
-    // Funció per seleccionar una llista del desplegable
     const handleListChange = (e) => {
         setActiveListId(e.target.value);
-        setIsEditingName(false); // Sempre desactivem l'edició si canviem de llista
+        setIsEditingName(false);
     };
     
-    // Funció per canviar el mode de visualització
     const handleDisplayModeChange = (e) => {
         onSetDisplayMode(e.target.value);
     };
 
-    // FUNCIÓ: Guardar el nom de la llista activa
     const handleSaveListName = async () => {
         if (tempListName.trim() === '') {
             setFeedback("El nom no pot ser buit.", 'error');
@@ -67,14 +64,12 @@ const ListManagerModal = ({
         }
     };
 
-    // FUNCIÓ: Botó "Nova Llista" - MOSTRAR INPUT
     const handleToggleAddList = () => {
         setIsAddingNewList(prev => !prev);
-        setIsEditingName(false); // Assegurem que l'edició estigui tancada
-        setNewListNameInput(''); // Netejem l'input al tancar
+        setIsEditingName(false);
+        setNewListNameInput('');
     };
 
-    // FUNCIÓ: Afegir Nova Llista (Botó Check)
     const handleAddNewList = async () => {
         if (newListNameInput.trim() === '') {
             setFeedback("El nom de la nova llista no pot ser buit.", 'error');
@@ -84,50 +79,54 @@ const ListManagerModal = ({
             await onAddList(newListNameInput.trim());
             setFeedback(`Llista '${newListNameInput.trim()}' afegida i seleccionada!`, 'success');
             setNewListNameInput('');
-            setIsAddingNewList(false); // Tanca l'input després de l'èxit
+            setIsAddingNewList(false);
         } catch (error) {
             setFeedback(error.message, 'error');
         }
     };
     
-    // FUNCIÓ: Botó "Edita Llista" (TOGGLE)
     const handleToggleEditList = () => {
         setIsEditingName(prev => !prev); 
-        setIsAddingNewList(false); // Assegurem que la creació estigui tancada
+        setIsAddingNewList(false);
     };
 
-    // FUNCIÓ: Eliminar llista
+    // ⭐ FUNCIÓ MODIFICADA: Ara diferencia entre eliminar i sortir
     const handleDeleteActiveList = async () => {
-        const isLastList = lists.length === 1 && activeListId === lists[0].id;
+        if (lists.length === 1) {
+            setFeedback("No pots eliminar l'única llista que tens.", 'error');
+            return;
+        }
 
-        const confirmMsg = isLastList
-            ? `ATENCIÓ: És la teva única llista. Si continues, es buidarà i es canviarà el nom a "Llista Principal". Estàs segur?`
-            : `Estàs segur que vols eliminar la llista "${activeList.name}"? Aquesta acció esborrarà tots els seus productes!`;
+        let confirmMsg;
+        let successMsg;
+
+        if (isOwner) {
+            // PROPIETARI: Elimina per a tothom
+            confirmMsg = `Estàs segur que vols eliminar la llista "${activeList.name}"? Aquesta acció esborrarà la llista per a tots els usuaris amb qui l'has compartida!`;
+            successMsg = `Llista '${activeList.name}' eliminada per a tots els usuaris.`;
+        } else {
+            // USUARI COMPARTIT: Només surt de la llista
+            confirmMsg = `Estàs segur que vols sortir de la llista compartida "${activeList.name}"? Ja no tindràs accés als seus productes.`;
+            successMsg = `Has sortit de la llista '${activeList.name}'.`;
+        }
             
         const confirmDelete = window.confirm(confirmMsg);
         if (!confirmDelete) return;
 
         try {
-            const result = await onDeleteList(activeListId);
-
-            if (result.action === 'deleted') {
-                setFeedback(`Llista '${activeList.name}' eliminada.`, 'success');
-            } else if (result.action === 'renamed') {
-                setFeedback(`Última llista buidada i reanomenada a '${result.newName}'.`, 'info');
-            }
-            setIsEditingName(false); // Tancar mode edició
+            await onDeleteList(activeListId);
+            setFeedback(successMsg, 'success');
+            setIsEditingName(false);
         } catch (error) {
             setFeedback(error.message, 'error');
         }
     };
 
-    // FUNCIÓ: Tancar sessió
     const handleLogoutClick = () => {
         onLogout();
         onClose();
     };
 
-    // ⭐ NOVA FUNCIÓ: Obrir modal de compartir
     const handleOpenShareModal = () => {
         setShowShareModal(true);
     };
@@ -149,15 +148,12 @@ const ListManagerModal = ({
                         <X className="w-5 h-5" />
                     </button>
                     
-                    {/* 1. EL MEU COMPTE I INFORMACIÓ DE L'USUARI */}
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">El meu compte</h2>
                     
-                    {/* Usuari */}
                     <div className="mb-4 text-lg text-gray-700">
                         Usuari: <span className="font-semibold text-gray-800 break-words">{userEmail}</span>
                     </div>
 
-                    {/* Les meves Llistes (Selector) */}
                     <div className={inputContainerClass}>
                         <label htmlFor="activeList" className="block text-sm font-medium text-gray-700 mb-1">Les meves llistes</label>
                         <div className="relative">
@@ -179,7 +175,6 @@ const ListManagerModal = ({
                         </div>
                     </div>
 
-                    {/* Mode de visualització (Selector) */}
                     <div className={inputContainerClass}>
                         <label htmlFor="displayMode" className="block text-sm font-medium text-gray-700 mb-1">Mode de visualització</label>
                         <div className="relative">
@@ -198,10 +193,8 @@ const ListManagerModal = ({
                         </div>
                     </div>
                     
-                    {/* 2. ACCIONS CLAU AMB BOTONS */}
                     <div className="space-y-3 mb-6">
                         
-                        {/* Botó: Nova Llista */}
                         <button 
                             onClick={handleToggleAddList}
                             className={buttonClass}
@@ -210,7 +203,6 @@ const ListManagerModal = ({
                             <Plus className={iconClass} /> Nova Llista
                         </button>
                         
-                        {/* Input de Nova Llista (Si està actiu) */}
                         {isAddingNewList && (
                             <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset flex gap-2 items-center">
                                 <input
@@ -237,7 +229,6 @@ const ListManagerModal = ({
                             </div>
                         )}
                         
-                        {/* Botó: Edita Llista (TOGGLE) */}
                         <button 
                             onClick={handleToggleEditList}
                             className={buttonClass}
@@ -246,7 +237,6 @@ const ListManagerModal = ({
                             <Edit className={iconClass} /> Edita Llista
                         </button>
 
-                        {/* Input/Controls d'Edició de Llista Activa (Si està actiu) */}
                         {isEditingName && (
                             <div className="p-4 rounded-lg box-shadow-neomorphic-element-inset space-y-2">
                                 <div className="flex gap-2 items-center">
@@ -271,18 +261,26 @@ const ListManagerModal = ({
                                         <X className="w-5 h-5" /> 
                                     </button>
                                 </div>
-                                {/* Botó per eliminar quan s'està editant */}
+                                
+                                {/* ⭐ BOTÓ MODIFICAT: Canvia segons si ets propietari o no */}
                                 <button
                                     onClick={handleDeleteActiveList}
                                     className="w-full flex items-center justify-center p-2 rounded-md bg-red-500 text-white font-bold mt-2 hover:bg-red-600 transition-all-smooth"
-                                    title="Eliminar llista activa"
+                                    title={isOwner ? "Eliminar llista per a tots els usuaris" : "Sortir d'aquesta llista compartida"}
                                 >
-                                    <Trash2 className="w-4 h-4 mr-2" /> Elimina Llista
+                                    {isOwner ? (
+                                        <>
+                                            <Trash2 className="w-4 h-4 mr-2" /> Elimina Llista
+                                        </>
+                                    ) : (
+                                        <>
+                                            <UserMinus className="w-4 h-4 mr-2" /> Surt de Llista Compartida
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         )}
                         
-                        {/* ⭐ BOTÓ MODIFICAT: Comparteix */}
                         <button 
                             onClick={handleOpenShareModal}
                             className={buttonClass}
@@ -291,7 +289,6 @@ const ListManagerModal = ({
                             <Share2 className={iconClass} /> Comparteix
                         </button>
                         
-                        {/* Botó: Gestiona Seccions */}
                         <button 
                             onClick={() => {
                                 onOpenSectionOrderModal();
@@ -302,7 +299,6 @@ const ListManagerModal = ({
                             <ArrowUpDown className={iconClass} /> Gestiona Seccions
                         </button>
                         
-                        {/* Botó: Exporta a Excel */}
                         <button 
                             onClick={() => {
                                 onExportToExcel();
@@ -315,7 +311,6 @@ const ListManagerModal = ({
                         
                     </div>
                     
-                    {/* 3. TANCAR SESSIÓ */}
                     <div className="mt-6 pt-4 border-t border-gray-300">
                         <button 
                             onClick={handleLogoutClick}
@@ -328,7 +323,6 @@ const ListManagerModal = ({
                 </div>
             </div>
 
-            {/* ⭐ NOU: Modal de compartir llista */}
             {showShareModal && (
                 <ShareListModal
                     listId={activeListId}
