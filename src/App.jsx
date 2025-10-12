@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // ICONES
-import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2, LogOut } from 'lucide-react'; 
+import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2, LogOut, Users } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
@@ -61,6 +61,7 @@ function App() {
         isAuthReady,
         lists,
         activeListId,
+        currentListName, // ⭐ NOU: Nom sincronitzat en temps real
         setActiveListId,
         addList,
         updateListName,
@@ -79,31 +80,41 @@ function App() {
         handleRegister,
         handlePasswordReset,
         handleLogout,
-        cleanImageUrl
+        cleanImageUrl,
+        shareList,
+        removeListAccess,
+        getListSharedWith,
+        isListOwner // ⭐ NOU: Per saber si ets propietari
     } = useFirebase();
 
-    // ⭐ FUNCIONS REALS per compartir llistes
-const { shareList, removeListAccess, getListSharedWith } = useFirebase();
+    // ⭐ FUNCIONS per compartir llistes
+    const handleShareList = useCallback(async (listId, email) => {
+        try {
+            await shareList(listId, email);
+            return true;
+        } catch (error) {
+            throw error;
+        }
+    }, [shareList]);
 
-const handleShareList = useCallback(async (listId, email) => {
-    try {
-        await shareList(listId, email);
-        return true;
-    } catch (error) {
-        throw error;
-    }
-}, [shareList]);
+    const handleRemoveListAccess = useCallback(async (listId, email) => {
+        try {
+            await removeListAccess(listId, email);
+            return true;
+        } catch (error) {
+            throw error;
+        }
+    }, [removeListAccess]);
 
-const handleRemoveListAccess = useCallback(async (listId, email) => {
-    try {
-        await removeListAccess(listId, email);
-        return true;
-    } catch (error) {
-        throw error;
-    }
-}, [removeListAccess]);
+    // ⭐ NOU: Comprovar si la llista activa és compartida
+    const isActiveListShared = useMemo(() => {
+        if (!activeListId) return false;
+        const sharedWith = getListSharedWith(activeListId);
+        const isOwner = isListOwner(activeListId);
+        return sharedWith.length > 0 || !isOwner;
+    }, [activeListId, getListSharedWith, isListOwner]);
 
-    // ⭐ NOU: Efecte per actualitzar el títol de la pestanya del navegador
+    // Efecte per actualitzar el títol de la pestanya del navegador
     useEffect(() => {
         document.title = "Mua"; 
     }, []);
@@ -123,12 +134,6 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
         });
         return Array.from(sections).sort();
     }, [items]);
-    
-    // Calcula el nom de la llista activa
-    const currentListName = useMemo(() => {
-        const activeList = lists.find(l => l.id === activeListId);
-        return activeList ? activeList.name : 'Carregant...';
-    }, [lists, activeListId]);
     
     // Funció unificada per al feedback
     const setFeedback = useCallback((message, type) => {
@@ -180,7 +185,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
         reader.readAsArrayBuffer(file);
     };
 
-    // Funció per exportar a Excel (Passada directament al modal)
+    // Funció per exportar a Excel
     const handleExportToExcel = useCallback(() => {
         try {
             const exportData = items.map(item => ({
@@ -497,7 +502,16 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                     <User className="w-6 h-6" />
                 </button>
 
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">{currentListName}</h1> 
+                {/* ⭐ NOU: Títol amb icona de compartit */}
+                <div className="flex items-center justify-center gap-2">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">{currentListName || 'Carregant...'}</h1>
+                    {isActiveListShared && (
+                        <Users 
+                            className="w-6 h-6 sm:w-7 sm:h-7 text-green-500" 
+                            title="Aquesta llista està compartida"
+                        />
+                    )}
+                </div>
             </header>
 
             {feedbackMessage && (
@@ -750,6 +764,7 @@ const handleRemoveListAccess = useCallback(async (listId, email) => {
                     onShareList={handleShareList}
                     onRemoveListAccess={handleRemoveListAccess}
                     getListSharedWith={getListSharedWith}
+                    isListOwner={isListOwner}
                     onClose={() => setShowListManagerModal(false)}
                 />
             )}
