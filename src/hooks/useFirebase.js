@@ -69,6 +69,7 @@ export const useFirebase = () => {
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState(null);
   const [sharedLists, setSharedLists] = useState({});
+  const [currentListName, setCurrentListName] = useState(''); // ⭐ NOU: Per sincronitzar el nom
 
 
   // ----------------------------------------------------
@@ -110,6 +111,7 @@ export const useFirebase = () => {
         setLists([]);
         setActiveListId(null);
         setSharedLists({});
+        setCurrentListName('');
       }
       setIsAuthReady(true);
     });
@@ -138,6 +140,7 @@ export const useFirebase = () => {
     return unsub;
   }, [userId]);
 
+  // ⭐ NOU: Listener per sincronitzar informació de llistes compartides
   useEffect(() => {
     if (!lists || lists.length === 0) {
         setSharedLists({});
@@ -154,9 +157,15 @@ export const useFirebase = () => {
                     ...prev,
                     [list.id]: {
                         ownerId: data.userId,
-                        sharedWith: data.sharedWith || []
+                        sharedWith: data.sharedWith || [],
+                        name: data.name // ⭐ També guardem el nom aquí
                     }
                 }));
+                
+                // ⭐ Si és la llista activa, actualitzem el nom local
+                if (list.id === activeListId) {
+                    setCurrentListName(data.name);
+                }
             }
         }, (error) => {
             console.error(`Error escoltant llista ${list.id}:`, error);
@@ -166,7 +175,7 @@ export const useFirebase = () => {
     return () => {
         unsubscribes.forEach(unsub => unsub());
     };
-  }, [lists]);
+  }, [lists, activeListId]);
 
   useEffect(() => {
     if (!userId || !activeListId) return;
@@ -202,15 +211,16 @@ export const useFirebase = () => {
     return unsub;
   }, [userId, activeListId]);
 
+  // ⭐ MODIFICAT: Ara carrega productes de TOTA la llista (no només de l'usuari actual)
   useEffect(() => {
     if (!userId || !activeListId) {
       setItems([]);
       return;
     }
 
+    // Només filtrem per listId, NO per userId
     const q = query(
       collection(db, 'items'),
-      where('userId', '==', userId),
       where('listId', '==', activeListId),
       orderBy('isInShoppingList', 'desc'),
       orderBy('orderIndex', 'asc'),
@@ -223,6 +233,7 @@ export const useFirebase = () => {
         ...doc.data()
       }));
       setItems(fetchedItems);
+      console.log(`✅ Carregats ${fetchedItems.length} productes de la llista ${activeListId}`);
     }, (error) => {
         console.error("Error carregar items:", error);
     });
@@ -265,16 +276,21 @@ export const useFirebase = () => {
   const updateListName = useCallback(async (listId, newName) => {
       if (!userId) throw new Error("Usuari no autenticat.");
 
-      await updateDoc(doc(db, 'lists', listId), { name: newName });
+      // ⭐ Actualitzem el document principal de la llista
+      await updateDoc(doc(db, 'lists', listId), { 
+          name: newName,
+          updatedAt: serverTimestamp()
+      });
 
+      // També actualitzem la còpia local
       const newLists = lists.map(l => l.id === listId ? { ...l, name: newName } : l);
       await updateListsInFirestore(newLists, activeListId);
 
   }, [userId, lists, activeListId, updateListsInFirestore]);
 
-  // ⭐ NOVA FUNCIÓ: Comprovar si l'usuari és el propietari d'una llista
+  // ⭐ Comprovar si l'usuari és el propietari d'una llista
   const isListOwner = useCallback((listId) => {
-      if (!sharedLists[listId]) return true; // Si no tenim info, assumim que és propietari
+      if (!sharedLists[listId]) return true;
       return sharedLists[listId].ownerId === userId;
   }, [sharedLists, userId]);
 
@@ -289,7 +305,6 @@ export const useFirebase = () => {
           // El PROPIETARI esborra la llista completament
           console.log("🗑️ Propietari esborrant llista per a tothom");
 
-          // Obtenim tots els usuaris amb qui està compartida
           const listRef = doc(db, 'lists', listId);
           const listSnap = await getDoc(listRef);
           
@@ -297,7 +312,6 @@ export const useFirebase = () => {
               const listData = listSnap.data();
               const sharedWith = listData.sharedWith || [];
 
-              // Eliminem la llista de tots els usuaris amb qui estava compartida
               const batch = writeBatch(db);
 
               for (const user of sharedWith) {
@@ -309,7 +323,6 @@ export const useFirebase = () => {
                       const userLists = userData.lists || [];
                       const updatedUserLists = userLists.filter(l => l.id !== listId);
                       
-                      // Si era la llista activa, canviem-la
                       let newActiveId = userData.activeListId;
                       if (userData.activeListId === listId && updatedUserLists.length > 0) {
                           newActiveId = updatedUserLists[0].id;
@@ -326,13 +339,12 @@ export const useFirebase = () => {
               await batch.commit();
           }
 
-          // Ara eliminem la llista del propietari
           const remainingLists = lists.filter(l => l.id !== listId);
           const newActiveListId = remainingLists[0].id;
 
+          // ⭐ MODIFICAT: Esborrem TOTS els productes de la llista (no només els de l'usuari)
           const q = query(
             collection(db, 'items'),
-            where('userId', '==', userId),
             where('listId', '==', listId)
           );
 
@@ -340,7 +352,7 @@ export const useFirebase = () => {
           const ownerBatch = writeBatch(db);
 
           snapshot.docs.forEach(docSnap => {
-              ownerBatch.update(docSnap.ref, { listId: newActiveListId });
+              ownerBatch.delete(docSnap.ref);
           });
 
           ownerBatch.delete(doc(db, 'lists', listId));
@@ -353,13 +365,12 @@ export const useFirebase = () => {
           await ownerBatch.commit();
 
       } else {
-          // USUARI COMPARTIT abandona la llista (només per ell)
+          // USUARI COMPARTIT abandona la llista
           console.log("👋 Usuari compartit abandonant llista");
 
           const remainingLists = lists.filter(l => l.id !== listId);
           const newActiveListId = remainingLists[0].id;
 
-          // Eliminem l'usuari de la llista de compartits a Firebase
           const listRef = doc(db, 'lists', listId);
           const listSnap = await getDoc(listRef);
           
@@ -374,7 +385,6 @@ export const useFirebase = () => {
               });
           }
 
-          // Actualitzem el document userLists de l'usuari
           await updateDoc(doc(db, 'userLists', userId), {
               lists: remainingLists,
               activeListId: newActiveListId,
@@ -518,7 +528,6 @@ export const useFirebase = () => {
           
           const updatedTargetLists = targetUserLists.filter(l => l.id !== listId);
           
-          // Si era la llista activa, canviem-la
           let newActiveId = targetUserData.activeListId;
           if (targetUserData.activeListId === listId && updatedTargetLists.length > 0) {
               newActiveId = updatedTargetLists[0].id;
@@ -799,7 +808,6 @@ export const useFirebase = () => {
 
     const q = query(
         collection(db, 'items'),
-        where('userId', '==', userId),
         where('listId', '==', activeListId),
         where('isBought', '==', true)
     );
@@ -980,6 +988,7 @@ export const useFirebase = () => {
     isAuthReady,
     lists,
     activeListId,
+    currentListName, // ⭐ NOU: Exportem el nom sincronitzat
     setActiveListId: setActiveListIdAndSave,
     addList,
     updateListName,
@@ -1002,6 +1011,6 @@ export const useFirebase = () => {
     shareList,
     removeListAccess,
     getListSharedWith,
-    isListOwner // ⭐ NOVA funció exportada per saber si ets propietari
+    isListOwner // ⭐ Funció per saber si ets propietari
   };
 };
