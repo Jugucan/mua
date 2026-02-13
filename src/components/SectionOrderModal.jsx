@@ -16,17 +16,21 @@ const SectionOrderModal = ({
         // Obtenim totes les seccions que tenen productes
         const sectionsInUse = new Set();
         items.forEach(item => {
-            if (item.section !== undefined) {
-                sectionsInUse.add(item.section);
-            }
+            // ✅ Convertim null/undefined a string buit
+            const section = item.section === null || item.section === undefined ? '' : item.section;
+            sectionsInUse.add(section);
         });
 
         const sectionsArray = Array.from(sectionsInUse);
 
         // Ordenem segons l'ordre actual guardat
         const sortedSections = sectionsArray.sort((a, b) => {
-            const orderA = sectionOrder[a];
-            const orderB = sectionOrder[b];
+            // ✅ Assegurem que a i b són sempre strings
+            const sectionA = a === null || a === undefined ? '' : String(a);
+            const sectionB = b === null || b === undefined ? '' : String(b);
+            
+            const orderA = sectionOrder[sectionA];
+            const orderB = sectionOrder[sectionB];
 
             if (orderA !== undefined && orderB !== undefined) {
                 return orderA - orderB;
@@ -34,7 +38,8 @@ const SectionOrderModal = ({
             if (orderA !== undefined) return -1;
             if (orderB !== undefined) return 1;
 
-            return a.localeCompare(b);
+            // ✅ Ara ja podem usar localeCompare sense risc
+            return sectionA.localeCompare(sectionB);
         });
 
         setLocalSections(sortedSections);
@@ -114,46 +119,61 @@ const SectionOrderModal = ({
                                             {...provided.droppableProps}
                                             className="space-y-3"
                                         >
-                                            {localSections.map((section, index) => (
-                                                <Draggable
-                                                    key={section || '__EMPTY__'}
-                                                    draggableId={section || '__EMPTY__'}
-                                                    index={index}
-                                                >
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                            {...provided.dragHandleProps}
-                                                            className={`
-                                                                flex items-center gap-3 p-4 rounded-lg
-                                                                transition-all duration-200 ease-in-out
-                                                                cursor-grab active:cursor-grabbing
-                                                                ${snapshot.isDragging
-                                                                    ? 'bg-blue-50 shadow-lg scale-105 z-50'
-                                                                    : 'bg-[#f0f3f5] box-shadow-neomorphic-element'
-                                                                }
-                                                            `}
-                                                            style={{
-                                                                ...provided.draggableProps.style,
-                                                            }}
-                                                        >
-                                                            <GripVertical className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                                                            <div className="flex-1">
-                                                                <span className="font-semibold text-gray-800">
-                                                                    {section || 'Sense Secció'}
-                                                                </span>
-                                                                <div className="text-xs text-gray-500 mt-1">
-                                                                    {items.filter(item => (item.section || '') === section).length} productes
+                                            {localSections.map((section, index) => {
+                                                // ✅ Assegurem que section sempre és un string vàlid
+                                                const sectionKey = section === null || section === undefined || section === '' 
+                                                    ? '__EMPTY__' 
+                                                    : String(section);
+                                                
+                                                const displayName = section === null || section === undefined || section === '' 
+                                                    ? 'Sense Secció' 
+                                                    : String(section);
+
+                                                return (
+                                                    <Draggable
+                                                        key={sectionKey}
+                                                        draggableId={sectionKey}
+                                                        index={index}
+                                                    >
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                                className={`
+                                                                    flex items-center gap-3 p-4 rounded-lg
+                                                                    transition-all duration-200 ease-in-out
+                                                                    cursor-grab active:cursor-grabbing
+                                                                    ${snapshot.isDragging
+                                                                        ? 'bg-blue-50 shadow-lg scale-105 z-50'
+                                                                        : 'bg-[#f0f3f5] box-shadow-neomorphic-element'
+                                                                    }
+                                                                `}
+                                                                style={{
+                                                                    ...provided.draggableProps.style,
+                                                                }}
+                                                            >
+                                                                <GripVertical className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                                                <div className="flex-1">
+                                                                    <span className="font-semibold text-gray-800">
+                                                                        {displayName}
+                                                                    </span>
+                                                                    <div className="text-xs text-gray-500 mt-1">
+                                                                        {items.filter(item => {
+                                                                            const itemSection = item.section === null || item.section === undefined ? '' : item.section;
+                                                                            const currentSection = section === null || section === undefined ? '' : section;
+                                                                            return itemSection === currentSection;
+                                                                        }).length} productes
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-sm font-medium text-gray-500">
+                                                                    #{index + 1}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-sm font-medium text-gray-500">
-                                                                #{index + 1}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </Draggable>
-                                            ))}
+                                                        )}
+                                                    </Draggable>
+                                                );
+                                            })}
                                             {provided.placeholder}
                                         </div>
                                     )}
