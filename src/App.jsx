@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // ICONES
-import { ShoppingBag, Plus, Search, FileDown, RotateCcw, ArrowUpDown, Grid3X3, List, User, Share2, LogOut, Users } from 'lucide-react'; 
+import { ShoppingBag, Plus, Search, FileDown, RotateCcw, User, Users } from 'lucide-react'; 
 import * as XLSX from 'xlsx';
 
 // Components
 import ConfirmationModal from './components/ConfirmationModal'; 
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable } from 'react-beautiful-dnd';
 import AuthModal from './components/AuthModal';
 import EditItemModal from './components/EditItemModal';
 import ImageModal from './components/ImageModal';
@@ -61,7 +61,7 @@ function App() {
         isAuthReady,
         lists,
         activeListId,
-        currentListName, // ⭐ NOU: Nom sincronitzat en temps real
+        currentListName,
         setActiveListId,
         addList,
         updateListName,
@@ -84,10 +84,10 @@ function App() {
         shareList,
         removeListAccess,
         getListSharedWith,
-        isListOwner // ⭐ NOU: Per saber si ets propietari
+        isListOwner
     } = useFirebase();
 
-    // ⭐ FUNCIONS per compartir llistes
+    // Funcions per compartir llistes
     const handleShareList = useCallback(async (listId, email) => {
         try {
             await shareList(listId, email);
@@ -106,7 +106,7 @@ function App() {
         }
     }, [removeListAccess]);
 
-    // ⭐ NOU: Comprovar si la llista activa és compartida
+    // Comprovar si la llista activa és compartida
     const isActiveListShared = useMemo(() => {
         if (!activeListId) return false;
         const sharedWith = getListSharedWith(activeListId);
@@ -502,7 +502,6 @@ function App() {
                     <User className="w-6 h-6" />
                 </button>
 
-                {/* ⭐ NOU: Títol amb icona de compartit */}
                 <div className="flex items-center justify-center gap-2">
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">{currentListName || 'Carregant...'}</h1>
                     {isActiveListShared && (
