@@ -29,12 +29,12 @@ import {
 import * as XLSX from 'xlsx';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAxE2UATyzOYGgvqkApPPzu1rSnrAGrfkI",
-  authDomain: "mua-app-eed40.firebaseapp.com",
-  projectId: "mua-app-eed40",
-  storageBucket: "mua-app-eed40.firebasestorage.app",
-  messagingSenderId: "792715069043",
-  appId: "1:792715069043:web:76d7596c5f3615312d0c06"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
@@ -69,7 +69,7 @@ export const useFirebase = () => {
   const [lists, setLists] = useState([]);
   const [activeListId, setActiveListId] = useState(null);
   const [sharedLists, setSharedLists] = useState({});
-  const [currentListName, setCurrentListName] = useState(''); // ⭐ NOU: Per sincronitzar el nom
+  const [currentListName, setCurrentListName] = useState('');
 
 
   // ----------------------------------------------------
@@ -140,7 +140,6 @@ export const useFirebase = () => {
     return unsub;
   }, [userId]);
 
-  // ⭐ NOU: Listener per sincronitzar informació de llistes compartides
   useEffect(() => {
     if (!lists || lists.length === 0) {
         setSharedLists({});
@@ -158,11 +157,10 @@ export const useFirebase = () => {
                     [list.id]: {
                         ownerId: data.userId,
                         sharedWith: data.sharedWith || [],
-                        name: data.name // ⭐ També guardem el nom aquí
+                        name: data.name
                     }
                 }));
                 
-                // ⭐ Si és la llista activa, actualitzem el nom local
                 if (list.id === activeListId) {
                     setCurrentListName(data.name);
                 }
@@ -211,14 +209,12 @@ export const useFirebase = () => {
     return unsub;
   }, [userId, activeListId]);
 
-  // ⭐ MODIFICAT: Ara carrega productes de TOTA la llista (no només de l'usuari actual)
   useEffect(() => {
     if (!userId || !activeListId) {
       setItems([]);
       return;
     }
 
-    // Només filtrem per listId, NO per userId
     const q = query(
       collection(db, 'items'),
       where('listId', '==', activeListId),
@@ -276,25 +272,21 @@ export const useFirebase = () => {
   const updateListName = useCallback(async (listId, newName) => {
       if (!userId) throw new Error("Usuari no autenticat.");
 
-      // ⭐ Actualitzem el document principal de la llista
       await updateDoc(doc(db, 'lists', listId), { 
           name: newName,
           updatedAt: serverTimestamp()
       });
 
-      // També actualitzem la còpia local
       const newLists = lists.map(l => l.id === listId ? { ...l, name: newName } : l);
       await updateListsInFirestore(newLists, activeListId);
 
   }, [userId, lists, activeListId, updateListsInFirestore]);
 
-  // ⭐ Comprovar si l'usuari és el propietari d'una llista
   const isListOwner = useCallback((listId) => {
       if (!sharedLists[listId]) return true;
       return sharedLists[listId].ownerId === userId;
   }, [sharedLists, userId]);
 
-  // ⭐ FUNCIÓ MODIFICADA: deleteList ara diferencia entre propietari i usuari compartit
   const deleteList = useCallback(async (listId) => {
       if (!userId) throw new Error("Usuari no autenticat.");
       if (lists.length <= 1) throw new Error("No pots eliminar l'última llista.");
@@ -302,7 +294,6 @@ export const useFirebase = () => {
       const isOwner = isListOwner(listId);
 
       if (isOwner) {
-          // El PROPIETARI esborra la llista completament
           console.log("🗑️ Propietari esborrant llista per a tothom");
 
           const listRef = doc(db, 'lists', listId);
@@ -342,7 +333,6 @@ export const useFirebase = () => {
           const remainingLists = lists.filter(l => l.id !== listId);
           const newActiveListId = remainingLists[0].id;
 
-          // ⭐ MODIFICAT: Esborrem TOTS els productes de la llista (no només els de l'usuari)
           const q = query(
             collection(db, 'items'),
             where('listId', '==', listId)
@@ -365,7 +355,6 @@ export const useFirebase = () => {
           await ownerBatch.commit();
 
       } else {
-          // USUARI COMPARTIT abandona la llista
           console.log("👋 Usuari compartit abandonant llista");
 
           const remainingLists = lists.filter(l => l.id !== listId);
@@ -644,8 +633,6 @@ export const useFirebase = () => {
   const toggleItemInShoppingList = useCallback(async (item) => {
     if (!userId) throw new Error("Usuari no autenticat.");
 
-    // ⭐ CAS ESPECIAL: Si el producte està comprat (isBought=true),
-    // el que volem és tornar-lo a "per comprar", NO treure'l de la llista
     if (item.isBought) {
         const sectionItems = items.filter(i =>
             (i.section || '') === (item.section || '') &&
@@ -1017,7 +1004,7 @@ export const useFirebase = () => {
     isAuthReady,
     lists,
     activeListId,
-    currentListName, // ⭐ NOU: Exportem el nom sincronitzat
+    currentListName,
     setActiveListId: setActiveListIdAndSave,
     addList,
     updateListName,
@@ -1040,6 +1027,6 @@ export const useFirebase = () => {
     shareList,
     removeListAccess,
     getListSharedWith,
-    isListOwner // ⭐ Funció per saber si ets propietari
+    isListOwner
   };
 };
