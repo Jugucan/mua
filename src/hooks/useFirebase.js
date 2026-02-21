@@ -643,6 +643,35 @@ export const useFirebase = () => {
 
   const toggleItemInShoppingList = useCallback(async (item) => {
     if (!userId) throw new Error("Usuari no autenticat.");
+
+    // ⭐ CAS ESPECIAL: Si el producte està comprat (isBought=true),
+    // el que volem és tornar-lo a "per comprar", NO treure'l de la llista
+    if (item.isBought) {
+        const sectionItems = items.filter(i =>
+            (i.section || '') === (item.section || '') &&
+            i.listId === activeListId &&
+            i.isInShoppingList === true
+        );
+        const maxOrderIndex = sectionItems.reduce((max, i) =>
+            (i.orderIndex !== undefined && i.orderIndex > max ? i.orderIndex : max), -1
+        );
+        const newOrderIndex = maxOrderIndex + 1;
+
+        try {
+            await updateDoc(doc(db, 'items', item.id), {
+                isInShoppingList: true,
+                isBought: false,
+                quantity: '',
+                orderIndex: newOrderIndex,
+                updatedAt: serverTimestamp()
+            });
+            return true;
+        } catch (error) {
+            console.error("Error canviant estat de la llista:", error);
+            throw new Error("No s'ha pogut canviar l'estat de la llista.");
+        }
+    }
+
     const newStatus = !item.isInShoppingList;
     const newQuantity = newStatus ? (item.quantity || '') : '';
 
